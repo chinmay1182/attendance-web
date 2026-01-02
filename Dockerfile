@@ -34,7 +34,6 @@ COPY .env* ./
 
 # Source .env file if it exists so next build can see env vars
 RUN \
-  if [ -f .env ]; then export $(cat .env | xargs) && echo "Loaded .env"; fi && \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
