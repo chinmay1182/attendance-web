@@ -1,87 +1,87 @@
 name: Deploy to Hostinger VPS
 
 on:
-    push:
-        branches:
-            - main
-            - master
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
-    deploy:
-        runs-on: ubuntu-latest
+  deploy:
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Deploy via SSH
-              uses: appleboy/ssh-action@v1.0.3
-              with:
-                  host: ${{ secrets.VPS_HOST }}
-                  username: ${{ secrets.VPS_USERNAME }}
-                  password: ${{ secrets.VPS_PASSWORD }} # Or use key: ${{ secrets.SSH_KEY }}
-                  port: 22
-                  script: |
-                      set -e # Exit on error
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }} # Or use key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            set -e # Exit on error
 
-                      # Configuration based on CloudPanel settings
-                      APP_DIR="/home/myaccount/htdocs/myaccount.asia"
-                      CONTAINER_NAME="attendance-web"
-                      IMAGE_NAME="attendance-web"
-                      PORT=3001
+            # Configuration based on CloudPanel settings
+            APP_DIR="/home/myaccount/htdocs/myaccount.asia"
+            CONTAINER_NAME="attendance-web"
+            IMAGE_NAME="attendance-web"
+            PORT=3001
 
-                      echo "Starting deployment to $APP_DIR..."
+            echo "Starting deployment to $APP_DIR..."
 
-                      # Check if directory exists
-                      if [ ! -d "$APP_DIR" ]; then
-                        echo "Directory $APP_DIR does not exist. Creating it..."
-                        mkdir -p $APP_DIR
-                      fi
+            # Check if directory exists
+            if [ ! -d "$APP_DIR" ]; then
+              echo "Directory $APP_DIR does not exist. Creating it..."
+              mkdir -p $APP_DIR
+            fi
 
-                      cd $APP_DIR
+            cd $APP_DIR
 
-                      # Pull latest changes
-                      echo "Pulling latest changes..."
-                      if [ -d ".git" ]; then
-                        git fetch --all
-                        git reset --hard origin/main
-                      else
-                        echo "Initializing git and cloning..."
-                        # Clone current directory . if empty, or else warn
-                        git clone git@github.com:chinmay1182/attendance-web.git .
-                      fi
+            # Pull latest changes
+            echo "Pulling latest changes..."
+            if [ -d ".git" ]; then
+              git fetch origin main || git fetch --all
+              git reset --hard origin/main
+            else
+              echo "Initializing git and cloning..."
+              # Clone current directory . if empty, or else warn
+              git clone git@github.com:chinmay1182/attendance-web.git .
+            fi
 
-                      # Build Docker Image
-                      echo "Building Docker image..."
-                      docker build -t $IMAGE_NAME .
+            # Build Docker Image
+            echo "Building Docker image..."
+            docker build -t $IMAGE_NAME .
 
-                      # Stop and remove old container
-                      echo "Stopping old container..."
-                      if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
-                          docker stop $CONTAINER_NAME
-                          docker rm $CONTAINER_NAME
-                      elif [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
-                          docker rm $CONTAINER_NAME
-                      fi
+            # Stop and remove old container
+            echo "Stopping old container..."
+            if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
+                docker stop $CONTAINER_NAME
+                docker rm $CONTAINER_NAME
+            elif [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+                docker rm $CONTAINER_NAME
+            fi
 
-                      # Run new container
-                      # Maps Host Port (3001) to Container Port (3000)
-                      echo "Starting new container on port $PORT..."
-                      if [ -f .env ]; then
-                        docker run -d \
-                          --name $CONTAINER_NAME \
-                          --restart always \
-                          -p $PORT:3000 \
-                          --env-file .env \
-                          $IMAGE_NAME
-                      else
-                        echo "Warning: .env file not found. Starting without environment variables."
-                        docker run -d \
-                          --name $CONTAINER_NAME \
-                          --restart always \
-                          -p $PORT:3000 \
-                          $IMAGE_NAME
-                      fi
+            # Run new container
+            # Maps Host Port (3001) to Container Port (3000)
+            echo "Starting new container on port $PORT..."
+            if [ -f .env ]; then
+              docker run -d \
+                --name $CONTAINER_NAME \
+                --restart always \
+                -p $PORT:3000 \
+                --env-file .env \
+                $IMAGE_NAME
+            else
+              echo "Warning: .env file not found. Starting without environment variables."
+              docker run -d \
+                --name $CONTAINER_NAME \
+                --restart always \
+                -p $PORT:3000 \
+                $IMAGE_NAME
+            fi
 
-                      # Cleanup
-                      echo "Cleaning up..."
-                      docker image prune -f
+            # Cleanup
+            echo "Cleaning up..."
+            docker image prune -f
 
-                      echo "Deployment successful!"
+            echo "Deployment successful!"
