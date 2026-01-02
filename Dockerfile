@@ -28,7 +28,13 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Copy .env file to be available during build
+# Note: Security risk in public repos, but acceptable for private VPS deployment with careful handling
+COPY .env* ./
+
+# Source .env file if it exists so next build can see env vars
 RUN \
+  if [ -f .env ]; then export $(cat .env | xargs) && echo "Loaded .env"; fi && \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
