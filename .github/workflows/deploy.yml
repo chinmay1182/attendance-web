@@ -40,8 +40,8 @@ jobs:
             # Pull latest changes
             echo "Pulling latest changes..."
             if [ -d ".git" ]; then
-              git fetch origin main || git fetch --all
-              git reset --hard origin/main
+              git fetch origin master || git fetch --all
+              git reset --hard origin/master
             else
               echo "Initializing git and cloning..."
               # Clone current directory . if empty, or else warn
