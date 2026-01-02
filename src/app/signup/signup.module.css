@@ -1,0 +1,8 @@
+// Re-using login styles for consistency
+import styles from "../login/login.module.css";
+
+export {
+    styles
+}
+
+;

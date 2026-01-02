@@ -1,0 +1,56 @@
+.dashboardContainer {
+    padding: 0;
+    max-width: 1250px;
+    /* Reduced width for better focus */
+    margin: 40px auto 0;
+    /* Add top margin for fixed navbar */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.welcomeText h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.welcomeText p {
+    color: var(--text-muted);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.logoutBtn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}

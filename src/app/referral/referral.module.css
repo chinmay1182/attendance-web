@@ -1,0 +1,103 @@
+.container {
+    padding: 0;
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+.intro {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.highlight {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.formCard {
+    background: var(--bg-card);
+    padding: 40px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.input,
+.select,
+.fileInput {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.input:focus,
+.select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(var(--primary-hue), 80%, 60%, 0.1);
+}
+
+.fileInput {
+    padding: 8px;
+}
+
+.submitBtn {
+    width: 100%;
+    padding: 14px;
+    background: #212121;
+    color: white;
+    font-weight: 600;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: var(--transition-medium);
+}
+
+.submitBtn:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}

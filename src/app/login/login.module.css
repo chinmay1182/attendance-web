@@ -1,0 +1,165 @@
+.pageWrapper {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+}
+
+.animationSide {
+    flex: 7;
+    /* 70% width */
+    /* 70% width */
+    background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%);
+    position: relative;
+    overflow: hidden;
+    display: none;
+    /* Hidden on mobile */
+}
+
+@media (min-width: 768px) {
+    .animationSide {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+.brandLogo {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 30;
+}
+
+.formSide {
+    flex: 3;
+    /* 30% width */
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    position: relative;
+    z-index: 10;
+}
+
+.card {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Reusing your existing styles but ensuring they fit the new layout */
+.title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+}
+
+.footer {
+    text-align: center;
+    margin-top: 24px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.link {
+    color: #212121;
+    font-weight: 600;
+    margin-left: 6px;
+    text-decoration: none;
+}
+
+.link:hover {
+    text-decoration: underline;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Floating Shapes for Animation Side */
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
+}
+
+.shape1 {
+    width: 400px;
+    height: 400px;
+    background: #bbf7d0;
+    top: 10%;
+    left: 10%;
+}
+
+.shape2 {
+    width: 300px;
+    height: 300px;
+    background: #86efac;
+    bottom: 20%;
+    right: 10%;
+    animation-delay: -5s;
+}
+
+.illustrationText {
+    color: var(--text-main);
+    font-weight: 800;
+    font-size: 3rem;
+    z-index: 20;
+    text-align: center;
+    line-height: 1.1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.illustrationSubtitle {
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    font-weight: 500;
+    margin-top: 16px;
+    text-align: center;
+    max-width: 80%;
+    transition: opacity 0.5s ease-in-out;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-30px);
+    }
+}
+
+.terms {
+    margin-top: 32px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.5;
+}

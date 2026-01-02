@@ -1,0 +1,83 @@
+.container {
+    padding: 0;
+    max-width: 900px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.card {
+    background: var(--bg-card);
+    padding: 40px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    transition: var(--transition-fast);
+    box-shadow: var(--glass-shadow);
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.icon {
+    font-size: 3.5rem;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.cardTitle {
+    margin-bottom: 12px;
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.cardDesc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-bottom: 24px;
+    line-height: 1.5;
+}
+
+.actionBtn {
+    padding: 12px 24px;
+    border-radius: 9999px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition-medium);
+}
+
+.primaryBtn {
+    background: #212121;
+    color: white;
+    border: none;
+}
+
+.primaryBtn:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.secondaryBtn {
+    background: white;
+    color: #212121;
+    border: 2px solid #212121;
+}
+
+.secondaryBtn:hover {
+    background: #f8fafc;
+    transform: translateY(-2px);
+}

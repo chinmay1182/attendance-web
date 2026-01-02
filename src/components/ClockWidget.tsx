@@ -1,0 +1,170 @@
+
+"use client";
+import React, { useEffect, useState } from 'react';
+import styles from './ClockWidget.module.css';
+import { useAuth } from '../context/AuthContext';
+import { attendanceService, AttendanceRecord } from '../lib/attendanceService';
+
+export const ClockWidget = () => {
+    const { user } = useAuth();
+    const [record, setRecord] = useState<AttendanceRecord | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [duration, setDuration] = useState(0); // in seconds
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Update current time every second for the digital clock
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Fetch initial attendance status
+    useEffect(() => {
+        if (user) {
+            fetchAttendance();
+        }
+    }, [user]);
+
+    const fetchAttendance = async () => {
+        try {
+            if (!user) return;
+            const data = await attendanceService.getTodayAttendance(user.uid);
+            setRecord(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Timer logic for logged-in user
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+
+        if (record?.clock_in && !record?.clock_out) {
+            // Calculate elapsed time
+            const startTime = new Date(record.clock_in).getTime();
+
+            const updateTimer = () => {
+                const now = new Date().getTime();
+                const diff = Math.floor((now - startTime) / 1000);
+                setDuration(diff);
+            };
+
+            updateTimer(); // initial call
+            interval = setInterval(updateTimer, 1000);
+        }
+
+        return () => clearInterval(interval);
+    }, [record]);
+
+    const getGeoLocation = (): Promise<{ lat: number, lng: number } | undefined> => {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                console.warn("Geolocation not supported");
+                resolve(undefined);
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                (err) => {
+                    console.error("Geo error:", err);
+                    resolve(undefined);
+                }
+            );
+        });
+    };
+
+    const handleClockIn = async () => {
+        try {
+            if (!user) return;
+            setLoading(true);
+            const loc = await getGeoLocation();
+            await attendanceService.clockIn(user.uid, loc);
+            await fetchAttendance();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to clock in");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleClockOut = async () => {
+        try {
+            if (!record) return;
+            setLoading(true);
+            const loc = await getGeoLocation();
+            await attendanceService.clockOut(record.id, loc);
+            await fetchAttendance();
+            setDuration(0);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to clock out");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const formatDuration = (subSeconds: number) => {
+        const h = Math.floor(subSeconds / 3600);
+        const m = Math.floor((subSeconds % 3600) / 60);
+        const s = subSeconds % 60;
+        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    const formatTime = (date: Date) => {
+        return date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    };
+
+    const formatDate = (date: Date) => {
+        return date.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    };
+
+    const isClockedIn = record?.clock_in && !record?.clock_out;
+    const isClockedOut = !!record?.clock_out;
+
+    return (
+        <div className={styles.container}>
+            <div className={styles.statusIndicator}>
+                <div className={`${styles.dot} ${isClockedIn ? styles.active : ''}`} />
+                <span>{isClockedIn ? 'Working' : isClockedOut ? 'Finished' : 'Absent'}</span>
+            </div>
+
+            <div className={styles.currentTime}>{formatTime(currentTime)}</div>
+            <div className={styles.date}>{formatDate(currentTime)}</div>
+
+            {isClockedIn ? (
+                <div className={`${styles.timerCircle} ${styles.active}`}>
+                    <div className={styles.timerLabel}>Effective Hours</div>
+                    <div className={styles.timerValue}>{formatDuration(duration)}</div>
+                </div>
+            ) : (
+                <div className={styles.timerCircle}>
+                    <div className={styles.timerLabel} style={{ color: 'var(--text-muted)' }}>Ready to Start</div>
+                    <div className={styles.timerValue} style={{ color: 'var(--text-muted)' }}>--:--:--</div>
+                </div>
+            )}
+
+            <div className={styles.actions}>
+                {!isClockedIn && !isClockedOut && (
+                    <button className={`${styles.clockBtn} ${styles.btnIn}`} onClick={handleClockIn} disabled={loading}>
+                        {loading ? '...' : 'CLOCK IN'}
+                    </button>
+                )}
+
+                {isClockedIn && (
+                    <button className={`${styles.clockBtn} ${styles.btnOut}`} onClick={handleClockOut} disabled={loading}>
+                        {loading ? '...' : 'CLOCK OUT'}
+                    </button>
+                )}
+
+                {isClockedOut && (
+                    <button className={`${styles.clockBtn} ${styles.btnDisabled}`} disabled>
+                        COMPLETED
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+};

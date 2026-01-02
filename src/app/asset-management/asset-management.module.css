@@ -1,0 +1,85 @@
+.container {
+    padding: 0;
+    max-width: 1200px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.thead {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.th {
+    padding: 16px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.tr {
+    border-bottom: 1px solid var(--glass-border);
+    transition: background 0.1s;
+}
+
+.tr:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+.td {
+    padding: 16px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.assetId {
+    color: var(--text-muted);
+    font-family: monospace;
+}
+
+.assetName {
+    font-weight: 600;
+}
+
+.statusBadge {
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.statusActive {
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+}
+
+.statusMaintenance {
+    background: rgba(234, 179, 8, 0.1);
+    color: #d97706;
+}
+
+.statusRetired {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+}

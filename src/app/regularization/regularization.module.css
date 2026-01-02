@@ -1,0 +1,44 @@
+.container {
+    padding: 0;
+    max-width: 600px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    box-shadow: var(--glass-shadow);
+}
+
+.subtitle {
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.row {
+    display: flex;
+    gap: 16px;
+}
+
+.card input,
+.card select,
+.card textarea {
+    width: 100%;
+}

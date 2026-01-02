@@ -1,0 +1,66 @@
+.container {
+    padding: 0;
+    max-width: 1000px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-shadow: var(--glass-shadow);
+}
+
+.sectionTitle {
+    color: var(--primary);
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.goalsList {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.goalItem {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.goalHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.goalTitle {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.goalPercentage {
+    color: var(--text-muted);
+}
+
+.progressBarBg {
+    height: 8px;
+    background: var(--bg-surface);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progressBarFill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+}

@@ -1,0 +1,121 @@
+.container {
+    padding: 0;
+    max-width: 1200px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.docCard {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.docCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.icon {
+    font-size: 2rem;
+    background: rgba(79, 70, 229, 0.1);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.info {
+    flex: 1;
+}
+
+.info h3 {
+    font-size: 1rem;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.info p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.downloadBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--primary);
+    background: transparent;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.downloadBtn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 40px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.sectionTitle {
+    font-size: 1.4rem;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.filterContainer {
+    display: flex;
+    gap: 12px;
+}
+
+.select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--glass-border);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.select:focus {
+    border-color: var(--primary);
+}
+
+.emptyState {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 12px;
+    border: 1px dashed var(--glass-border);
+}

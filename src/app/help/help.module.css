@@ -1,0 +1,159 @@
+.container {
+    padding: 0;
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.formCard {
+    background: var(--bg-card);
+    padding: 40px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 40px;
+}
+
+.sectionTitle {
+    margin-bottom: 20px;
+    color: var(--primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.formContent {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.select {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    width: 100%;
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.select:focus,
+.textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(var(--primary-hue), 80%, 60%, 0.1);
+}
+
+.textarea {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    min-height: 120px;
+    width: 100%;
+    background: white;
+    font-family: inherit;
+    font-size: 1rem;
+    outline: none;
+    transition: var(--transition-fast);
+    resize: vertical;
+}
+
+.submitBtn {
+    padding: 14px;
+    background: #212121;
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-medium);
+}
+
+.submitBtn:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.subTitle {
+    color: var(--text-main);
+    margin-bottom: 16px;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.ticketsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.emptyState {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 20px;
+}
+
+.ticketCard {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+}
+
+.ticketHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.ticketCategory {
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.ticketStatus {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.statusOpen {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.statusResolved {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.statusPending {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.ticketDesc {
+    margin: 0;
+    color: var(--text-main);
+    line-height: 1.5;
+}
+
+.ticketDate {
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}

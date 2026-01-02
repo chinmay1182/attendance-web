@@ -1,0 +1,114 @@
+.container {
+    padding: 0;
+    max-width: 1000px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    margin-bottom: 30px;
+}
+
+.mapPlaceholder {
+    height: 300px;
+    background: #f1f5f9;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: var(--text-muted);
+    border: 1px dashed var(--glass-border);
+}
+
+.formGrid {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.formGroup {
+    flex: 1;
+}
+
+.label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: 0.9rem;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(var(--primary-hue), 80%, 60%, 0.1);
+}
+
+.saveBtn {
+    padding: 12px 24px;
+    background: #212121;
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: var(--transition-medium);
+}
+
+.saveBtn:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.sitesList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.siteItem {
+    background: var(--bg-card);
+    padding: 20px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.siteItem:hover {
+    box-shadow: var(--glass-shadow);
+}
+
+.siteName {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.siteDetails {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

@@ -1,0 +1,100 @@
+.container {
+    padding: 0;
+    max-width: 800px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.pollCard {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 24px;
+    box-shadow: var(--glass-shadow);
+}
+
+.pollHeader {
+    margin-bottom: 20px;
+}
+
+.status {
+    display: inline-block;
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.pollQuestion {
+    margin: 0;
+    color: var(--primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.optionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.optionLabel {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    background: white;
+}
+
+.optionLabel:hover {
+    background: var(--bg-surface);
+    border-color: var(--primary);
+}
+
+.radio {
+    margin-right: 12px;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--primary);
+}
+
+.optionText {
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.voteBtn {
+    margin-top: 24px;
+    padding: 12px 24px;
+    background: #212121;
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-medium);
+}
+
+.voteBtn:hover {
+    background: #333;
+    transform: translateY(-2px);
+}
+
+.voteBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}

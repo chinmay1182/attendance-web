@@ -1,0 +1,97 @@
+.container {
+    padding: 0;
+    max-width: 1200px;
+    margin: 40px auto 0;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.title {
+    color: var(--text-main);
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    color: var(--text-main);
+    font-size: 1.2rem;
+}
+
+.nav button {
+    background: white;
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.nav button:hover {
+    background: var(--bg-surface);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--glass-border);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.dayName {
+    background: #f9fafb;
+    padding: 15px;
+    text-align: center;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.day {
+    background: white;
+    min-height: 120px;
+    padding: 10px;
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.emptyDay {
+    background: #f9fafb;
+}
+
+.dayNum {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.event {
+    font-size: 0.75rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.holiday {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.leave {
+    background: rgba(99, 102, 241, 0.2);
+    color: #4338ca;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}

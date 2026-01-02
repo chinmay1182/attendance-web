@@ -1,0 +1,67 @@
+.container {
+    padding: 0;
+    max-width: 1200px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+}
+
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--glass-shadow);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.thead {
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.th {
+    padding: 16px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.tr {
+    border-bottom: 1px solid var(--glass-border);
+    transition: background 0.1s;
+}
+
+.tr:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
+.td {
+    padding: 16px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+}
+
+.userCell {
+    font-weight: 600;
+}
+
+.actionCell {
+    color: #0369a1;
+    font-weight: 500;
+}
+
+.detailsCell {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}

@@ -1,0 +1,84 @@
+.container {
+    padding: 0;
+    max-width: 1000px;
+    margin: 40px auto 0;
+}
+
+.title {
+    color: var(--text-main);
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+}
+
+.heroSection {
+    background: white;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    box-shadow: var(--glass-shadow);
+}
+
+.logoBox {
+    width: 80px;
+    height: 80px;
+    background: rgba(79, 70, 229, 0.1);
+    color: var(--primary);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+}
+
+.heroSection h2 {
+    margin: 0 0 8px 0;
+    font-size: 2rem;
+}
+
+.heroSection p {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    background: white;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+}
+
+.card h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 10px;
+}
+
+.card p {
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.contactItem {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    color: var(--text-muted);
+}
+
+.contactItem strong {
+    color: var(--text-main);
+}
