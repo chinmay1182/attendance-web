@@ -29,7 +29,11 @@ export default function AssetManagementPage() {
                 { id: '3', asset_id: "KE-101", name: "Mechanical Keyboard", assigned_to: "John D.", status: "Maintenance" }
             ]);
         } else {
-            setAssets(data);
+            // Map DB field asset_code to UI field asset_id
+            setAssets(data.map((item: any) => ({
+                ...item,
+                asset_id: item.asset_code // DB uses asset_code
+            })));
         }
     };
 

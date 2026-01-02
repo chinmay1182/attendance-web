@@ -29,7 +29,11 @@ export default function LearningPage() {
                 { id: '3', title: "Project Management 101", category: "Management", description: "Learn the basics of agile and scrum methodologies." }
             ]);
         } else {
-            setCourses(data);
+            // Map DB field thumbnail_url to UI field image_url
+            setCourses(data.map((item: any) => ({
+                ...item,
+                image_url: item.thumbnail_url // DB uses thumbnail_url
+            })));
         }
     };
 
