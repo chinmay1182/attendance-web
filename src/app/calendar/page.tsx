@@ -67,9 +67,13 @@ export default function TeamCalendar() {
                 <header className={styles.header}>
                     <h1 className={styles.title}>Team Calendar</h1>
                     <div className={styles.nav}>
-                        <button onClick={() => changeMonth(-1)}>&lt;</button>
+                        <button onClick={() => changeMonth(-1)} className={styles.navBtn}>
+                            <span className="material-symbols-outlined">keyboard_arrow_left</span>
+                        </button>
                         <span>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-                        <button onClick={() => changeMonth(1)}>&gt;</button>
+                        <button onClick={() => changeMonth(1)} className={styles.navBtn}>
+                            <span className="material-symbols-outlined">keyboard_arrow_right</span>
+                        </button>
                     </div>
                 </header>
 

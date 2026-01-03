@@ -8,7 +8,7 @@
     align-items: center;
     justify-content: center;
     border: 1px solid transparent;
-    width: 100%;
+    width: auto; /* Changed from 100% to auto to fix alignment issues in widgets */
 }
 
 .primary {

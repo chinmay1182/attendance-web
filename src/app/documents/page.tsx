@@ -50,9 +50,9 @@ export default function DocumentsPage() {
     });
 
     const getIcon = (name: string) => {
-        if (name.endsWith('.pdf')) return '📄';
-        if (name.endsWith('.jpg') || name.endsWith('.png')) return '🖼️';
-        return '📁';
+        if (name.endsWith('.pdf')) return <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>picture_as_pdf</span>;
+        if (name.endsWith('.jpg') || name.endsWith('.png')) return <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>imagesmode</span>;
+        return <span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>description</span>;
     };
 
     return (
@@ -117,7 +117,7 @@ export default function DocumentsPage() {
                     {filteredPayslips.length > 0 ? (
                         filteredPayslips.map(slip => (
                             <div key={slip.id} className={styles.docCard}>
-                                <div className={styles.icon}>💰</div>
+                                <div className={styles.icon}><span className="material-symbols-outlined" style={{ fontSize: '2rem' }}>receipt</span></div>
                                 <div className={styles.info}>
                                     <h3>{slip.name}</h3>
                                     <p>Generated on {new Date(slip.created_at).toLocaleDateString()}</p>

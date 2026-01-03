@@ -22,6 +22,7 @@ export default function ExpensesPage() {
     const [title, setTitle] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState('');
+    const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -41,8 +42,27 @@ export default function ExpensesPage() {
         if (!title || !amount || !date) return toast.error("Please fill all details");
         setLoading(true);
 
+        let receiptUrl = null;
+        if (file) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user?.uid}_${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+                .from('expenses')
+                .upload(fileName, file);
+
+            if (uploadError) {
+                console.error(uploadError);
+                toast.error("Failed to upload receipt");
+                setLoading(false);
+                return;
+            }
+
+            const { data: urlData } = supabase.storage.from('expenses').getPublicUrl(fileName);
+            receiptUrl = urlData.publicUrl;
+        }
+
         const { error } = await supabase.from('expenses').insert([
-            { user_id: user?.uid, title, amount: parseFloat(amount), date, status: 'Pending' }
+            { user_id: user?.uid, title, amount: parseFloat(amount), date, status: 'Pending', receipt_url: receiptUrl }
         ]);
 
         if (error) {
@@ -53,6 +73,7 @@ export default function ExpensesPage() {
             setTitle('');
             setAmount('');
             setDate('');
+            setFile(null);
             fetchExpenses();
         }
         setLoading(false);
@@ -93,7 +114,13 @@ export default function ExpensesPage() {
                             className={styles.input}
                         />
                         <div className={styles.uploadBox}>
-                            Upload Receipt (Image/PDF)
+                            <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+                                style={{ width: '100%' }}
+                            />
+                            {file && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Selected: {file.name}</span>}
                         </div>
                     </div>
                     <button
@@ -119,6 +146,11 @@ export default function ExpensesPage() {
                                 <div className={`${styles.statusBadge} ${getStatusClass(expense.status)}`}>
                                     {expense.status}
                                 </div>
+                                {(expense as any).receipt_url && (
+                                    <a href={(expense as any).receipt_url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', fontSize: '0.8rem', color: '#3b82f6', marginTop: '4px' }}>
+                                        View Receipt
+                                    </a>
+                                )}
                             </div>
                         </div>
                     ))}
