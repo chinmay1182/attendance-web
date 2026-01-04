@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import styles from './polls.module.css';
 import toast from 'react-hot-toast';
 
@@ -13,6 +14,7 @@ type Poll = {
 };
 
 export default function PollsPage() {
+    const { user } = useAuth();
     const [polls, setPolls] = useState<Poll[]>([]);
     const [selectedOption, setSelectedOption] = useState<string>('');
 
@@ -39,10 +41,29 @@ export default function PollsPage() {
         }
     };
 
+
+
+    // ...
+
     const handleVote = async (pollId: string) => {
+        if (!user) return toast.error("You must be logged in to vote.");
         if (!selectedOption) return toast.error("Please select an option!");
-        // Simulate vote submission
-        toast.success("Vote recorded!");
+
+        const { error } = await supabase.from('poll_votes').insert([
+            { poll_id: pollId, user_id: user.uid, option_selected: selectedOption }
+        ]);
+
+        if (error) {
+            console.error(error);
+            if (error.code === '23505') { // Unique violation
+                toast.error("You have already voted on this poll!");
+            } else {
+                toast.error("Failed to submit vote.");
+            }
+        } else {
+            toast.success("Vote recorded successfully!");
+            setSelectedOption(''); // Reset selection
+        }
     };
 
     return (

@@ -51,7 +51,7 @@ export default function MySitesPage() {
                             <div className={styles.mapContainer} style={{ height: '150px', background: '#e2e8f0', borderRadius: '8px', overflow: 'hidden', marginBottom: '12px' }}>
                                 {/* Map Preview using HERE Maps Image API */}
                                 <img
-                                    src={`https://image.maps.ls.hereapi.com/context/2.1/mapview?apiKey=GDl2vmjbRIX_WuX44MJUbieWTl8A7AW9eFyLhSIDj8I&c=${site.latitude || '37.7749'},${site.longitude || '-122.4194'}&z=13&h=300&w=600`}
+                                    src={`https://image.maps.ls.hereapi.com/mia/1.6/mapview?apiKey=GDl2vmjbRIX_WuX44MJUbieWTl8A7AW9eFyLhSIDj8I&c=${site.latitude || '37.7749'},${site.longitude || '-122.4194'}&z=13&h=300&w=600`}
                                     alt="Map Preview"
                                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />

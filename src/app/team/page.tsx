@@ -159,15 +159,24 @@ export default function TeamPage() {
                                 <div className={styles.divider}></div>
 
                                 <div className={styles.info}>
-                                    <div className={styles.infoRow}>
-                                        <span>Dept:</span>
-                                        <span className={styles.infoValue}>{user.department || '-'}</span>
+                                    <div className={styles.tags}>
+                                        <span className={styles.deptBadge}>{user.department || 'General'}</span>
                                     </div>
-                                    <div className={styles.infoRow}>
-                                        <span>Email:</span>
-                                        <span className={styles.infoValue} title={user.email} style={{ fontSize: '0.85rem' }}>
-                                            {user.email.length > 20 ? user.email.substring(0, 18) + '...' : user.email}
-                                        </span>
+                                    <div className={styles.contactActions}>
+                                        <button
+                                            className={styles.actionBtn}
+                                            onClick={() => window.location.href = `mailto:${user.email}`}
+                                            title="Send Email"
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>mail</span>
+                                        </button>
+                                        <button
+                                            className={styles.actionBtn}
+                                            onClick={() => window.location.href = '/chat'}
+                                            title="Message"
+                                        >
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chat</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>

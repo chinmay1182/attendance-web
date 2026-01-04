@@ -4,6 +4,10 @@
     /* Reduced width for better focus */
     margin: 40px auto 0;
     /* Add top margin for fixed navbar */
+    background-image: url('/Group 27.svg');
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: contain;
 }
 
 .header {
