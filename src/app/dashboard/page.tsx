@@ -6,6 +6,7 @@ import { ClockWidget } from '../../components/ClockWidget';
 import { LeaveWidget } from '../../components/LeaveWidget';
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import styles from './dashboard.module.css';
 
 export default function EmployeeDashboard() {
@@ -51,7 +52,7 @@ export default function EmployeeDashboard() {
         return <span className="material-symbols-outlined">description</span>;
     };
 
-    if (loading) return <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading...</div>;
+    if (loading) return <LoadingSpinner fullScreen />;
     if (!user) return null;
 
     return (

@@ -2,6 +2,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 import Image from 'next/image';
 import { UserProfile } from '../../types/user';
 import toast from 'react-hot-toast';
@@ -128,7 +129,7 @@ export default function TeamPage() {
                 </div>
 
                 {loading ? (
-                    <p>Loading team...</p>
+                    <LoadingSpinner />
                 ) : (
                     <div className={styles.grid}>
                         {filteredUsers.map((user) => (
