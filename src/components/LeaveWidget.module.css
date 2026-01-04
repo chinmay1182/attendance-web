@@ -35,7 +35,7 @@
 .item {
     background: #f9fafb;
     /* Light background for items */
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--glass-border);
     /* Softer border */
     border-radius: var(--radius-md);
     padding: 16px;
