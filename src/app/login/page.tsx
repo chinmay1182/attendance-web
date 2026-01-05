@@ -83,8 +83,10 @@ export default function LoginPage() {
                 }
             }
 
+            // Redirect based on role
+            // Note: /admin/dashboard doesn't exist in file structure, using shared dashboard or team view
             if (role === "admin" || role === "hr") {
-                router.replace("/team");
+                router.replace("/dashboard");
             } else {
                 router.replace("/dashboard");
             }

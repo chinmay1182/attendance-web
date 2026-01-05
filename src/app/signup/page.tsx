@@ -91,7 +91,7 @@ export default function SignupPage() {
 
             // 4. Redirect
             if (role === "admin" || role === "hr") {
-                router.push("/admin/dashboard");
+                router.push("/dashboard");
             } else {
                 router.push("/dashboard");
             }
