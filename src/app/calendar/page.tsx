@@ -11,6 +11,13 @@ export default function TeamCalendar() {
 
     useEffect(() => {
         fetchEvents();
+
+        const channel = supabase.channel('calendar_updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => fetchEvents())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'public_holidays' }, () => fetchEvents())
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, [currentMonth]);
 
     const fetchEvents = async () => {
@@ -19,8 +26,8 @@ export default function TeamCalendar() {
         const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toISOString();
 
         const [holidaysRes, leavesRes] = await Promise.all([
-            supabase.from('holidays').select('*').gte('date', startOfMonth).lte('date', endOfMonth),
-            supabase.from('leaves').select('*, users(name)').eq('status', 'approved').gte('start_date', startOfMonth).lte('start_date', endOfMonth)
+            supabase.from('public_holidays').select('*').gte('date', startOfMonth).lte('date', endOfMonth),
+            supabase.from('leave_requests').select('*, users(name)').eq('status', 'approved').gte('start_date', startOfMonth).lte('start_date', endOfMonth)
         ]);
 
         const allEvents = [

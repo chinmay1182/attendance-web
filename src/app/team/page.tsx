@@ -8,6 +8,7 @@ import { UserProfile } from '../../types/user';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabaseClient';
 
 import styles from './team.module.css';
 
@@ -18,9 +19,57 @@ export default function TeamPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDept, setFilterDept] = useState('All');
 
+    const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+
     useEffect(() => {
         fetchUsers();
+        fetchOnlineStatus();
+
+        // Realtime Online Status
+        const channel = supabase.channel('team_presence')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'attendance' },
+                (payload: any) => {
+                    const log = payload.new as any;
+                    const today = new Date().toISOString().split('T')[0];
+                    if (log.date === today) {
+                        setOnlineUserIds(prev => {
+                            const newSet = new Set(prev);
+                            if (log.clock_in && !log.clock_out) {
+                                newSet.add(log.user_id);
+                            } else {
+                                newSet.delete(log.user_id);
+                            }
+                            return newSet;
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, []);
+
+    const fetchOnlineStatus = async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const { data } = await fetch('/api/team/attendance?date=' + today).then(res => res.json()).catch(() => ({ data: [] }));
+
+        // Alternative if API not available, use Supabase directly
+        // const { data } = await supabase.from('attendance').select('user_id').eq('date', today).is('clock_out', null).not('clock_in', 'is', null);
+
+        // Simulating the logic: if we had the data
+        if (data) {
+            const online = new Set<string>(data.map((r: any) => r.user_id as string));
+            setOnlineUserIds(online);
+        } else {
+            // Direct fetch fallback
+            const { data: directData } = await supabase.from('attendance').select('user_id').eq('date', today).is('clock_out', null).not('clock_in', 'is', null);
+            if (directData) {
+                setOnlineUserIds(new Set(directData.map((d: any) => d.user_id as string)));
+            }
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -149,6 +198,18 @@ export default function TeamPage() {
                                         <Image src={user.photoURL} alt={user.name} width={80} height={80} style={{ borderRadius: '50%', objectFit: 'cover' }} />
                                     ) : (
                                         user.name?.charAt(0).toUpperCase()
+                                    )}
+                                    {onlineUserIds.has(user.id) && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: 2,
+                                            right: 2,
+                                            width: 14,
+                                            height: 14,
+                                            borderRadius: '50%',
+                                            background: '#22c55e',
+                                            border: '2px solid white'
+                                        }} title="Online Now"></div>
                                     )}
                                 </div>
 

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './LeaveWidget.module.css';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { leaveService, LeaveRequest } from '../lib/leaveService';
 import { Button } from './Button';
 import { Input } from './Input';
@@ -34,6 +35,20 @@ export const LeaveWidget = () => {
             console.error(error);
         }
     };
+
+    useEffect(() => {
+        if (!user) return;
+
+        const channel = supabase.channel('leave_widget_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'leave_requests', filter: `user_id=eq.${user.uid}` },
+                () => loadLeaves()
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -130,8 +145,8 @@ export const LeaveWidget = () => {
                     ) : (
                         leaves.map(leave => (
                             <div key={leave.id} className={`${styles.item} ${leave.status === 'pending' ? styles.itemPending :
-                                    leave.status === 'approved' ? styles.itemApproved :
-                                        styles.itemRejected
+                                leave.status === 'approved' ? styles.itemApproved :
+                                    styles.itemRejected
                                 }`}>
                                 <div>
                                     <div className={styles.type}>{leave.type} Leave</div>

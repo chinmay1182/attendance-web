@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import styles from './ClockWidget.module.css';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import { attendanceService, AttendanceRecord } from '../lib/attendanceService';
 
 export const ClockWidget = () => {
@@ -36,6 +37,23 @@ export const ClockWidget = () => {
             setLoading(false);
         }
     };
+
+    // Realtime Listener
+    useEffect(() => {
+        if (!user) return;
+
+        const channel = supabase.channel('clock_widget_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'attendance', filter: `user_id=eq.${user.uid}` },
+                () => {
+                    fetchAttendance(); // Reload on any change by this user
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [user]);
 
     // Timer logic for logged-in user
     useEffect(() => {

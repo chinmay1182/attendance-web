@@ -22,7 +22,28 @@ export default function HelpPage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (user) fetchTickets();
+        if (user) {
+            fetchTickets();
+
+            const channel = supabase.channel('my_tickets')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'tickets', filter: `user_id=eq.${user.uid}` },
+                    (payload: any) => {
+                        if (payload.eventType === 'INSERT') {
+                            setTickets(prev => [payload.new, ...prev]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            setTickets(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
+                            import('react-hot-toast').then(({ default: toast }) => {
+                                toast('🎫 Ticket Status Updated: ' + payload.new.status);
+                            });
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
+        }
     }, [user]);
 
     const fetchTickets = async () => {

@@ -46,6 +46,31 @@ export default function ShiftsPage() {
         if (data) setShifts(data);
     };
 
+    useEffect(() => {
+        if (user) {
+            const channel = supabase.channel('my_shifts')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'shifts', filter: `user_id=eq.${user.uid}` },
+                    (payload: any) => {
+                        if (payload.eventType === 'INSERT') {
+                            setShifts(prev => [...prev, payload.new]);
+                            import('react-hot-toast').then(({ default: toast }) => { toast('📅 New Shift Assigned'); });
+                        } else if (payload.eventType === 'UPDATE') {
+                            setShifts(prev => prev.map(s => s.id === payload.new.id ? payload.new : s));
+                            import('react-hot-toast').then(({ default: toast }) => { toast('📅 Shift Updated'); });
+                        } else if (payload.eventType === 'DELETE') {
+                            setShifts(prev => prev.filter(s => s.id !== payload.old.id));
+                            import('react-hot-toast').then(({ default: toast }) => { toast('📅 Shift Removed'); });
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
+        }
+    }, [user]);
+
     const getShiftForDate = (date: Date) => {
         const dateStr = date.toISOString().split('T')[0];
         return shifts.find(s => s.start_time.startsWith(dateStr));

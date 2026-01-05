@@ -4,13 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 import styles from './dashboard.module.css';
 
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
 export const Navbar = () => {
-    const { logout, profile } = useAuth();
+    const { logout, profile, user } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [isHrDrpOpen, setIsHrDrpOpen] = useState(false);
@@ -30,6 +31,71 @@ export const Navbar = () => {
     };
 
     const isManagement = profile?.role === 'admin' || profile?.role === 'hr';
+
+    // Realtime Notifications System
+    React.useEffect(() => {
+        if (!user || !profile) return;
+
+        const channel = supabase.channel('global_notifications')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'notices' },
+                (payload: any) => {
+                    const newNotice = payload.new as any;
+                    // Check audience
+                    let relevant = newNotice.audience === 'all';
+                    if (newNotice.audience === 'role' && newNotice.target_id === profile.role) relevant = true;
+                    if (newNotice.audience === 'user' && newNotice.target_id === user.uid) relevant = true;
+
+                    if (relevant) {
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast('📢 New Notice: ' + newNotice.title, { duration: 5000 });
+                        });
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'leave_requests' },
+                (payload: any) => {
+                    const record = payload.new as any;
+                    // HR/Admin: New requests
+                    if (isManagement && payload.eventType === 'INSERT') {
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast('📝 New Leave Request Submitted', { icon: 'exclamation' });
+                        });
+                    }
+                    // Employee: Status updates
+                    if (!isManagement && payload.eventType === 'UPDATE' && record.user_id === user.uid) {
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast(`YOUR Leave Request was ${record.status.toUpperCase()}`, {
+                                icon: record.status === 'approved' ? '✅' : '❌'
+                            });
+                        });
+                    }
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'tasks' },
+                (payload) => {
+                    const task = payload.new as any;
+                    if (task.user_id === user.uid) {
+                        // Assumption: if I didn't create it (maybe checked by some other means, or just notify always for now)
+                        // Ideally we check if sender != me, but tasks table might not have sender.
+                        // We'll notify "New Task Logged" 
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast('📌 New Task Assigned/Logged: ' + task.title);
+                        });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user, profile, isManagement]);
 
     return (
         <nav style={{

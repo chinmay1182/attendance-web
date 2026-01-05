@@ -36,15 +36,40 @@ export default function PayrollPage() {
 
         if (data && data.length > 0) {
             setRuns(data);
-            const latest = data[0];
-            setStats({
-                totalCost: latest.total_cost,
-                employeesProcessed: latest.employees_count,
-                pendingReviews: 0, // Placeholder
-                taxDeductions: latest.total_cost * 0.1 // Simulated tax
-            });
+            updateStats(data);
         }
     };
+
+    const updateStats = (data: PayrollRun[]) => {
+        if (data.length === 0) return;
+        const latest = data[0];
+        setStats({
+            totalCost: latest.total_cost,
+            employeesProcessed: latest.employees_count,
+            pendingReviews: 0,
+            taxDeductions: latest.total_cost * 0.1
+        });
+    };
+
+    useEffect(() => {
+        const channel = supabase.channel('payroll_realtime')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'payroll_runs' },
+                (payload: any) => {
+                    const newRun = payload.new as PayrollRun;
+                    setRuns(prev => {
+                        const updated = [newRun, ...prev];
+                        updateStats(updated);
+                        return updated;
+                    });
+                    import('react-hot-toast').then(({ default: toast }) => { toast.success('New Payroll Run Completed'); });
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     const handleRunPayroll = async () => {
         setLoading(true);

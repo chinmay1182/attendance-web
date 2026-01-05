@@ -24,7 +24,34 @@ export default function TasksPage() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (user) fetchTasks();
+        if (!user) return;
+
+        // Initial Fetch
+        fetchTasks();
+
+        // Realtime Subscription
+        const channel = supabase.channel('my_tasks')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.uid}` },
+                (payload: any) => {
+                    const task = payload.new as any;
+
+                    if (payload.eventType === 'INSERT') {
+                        setTasks(prev => [task, ...prev]);
+                        import('react-hot-toast').then(({ default: toast }) => {
+                            toast.success('New task received: ' + task.title);
+                        });
+                    } else if (payload.eventType === 'UPDATE') {
+                        setTasks(prev => prev.map(t => t.id === task.id ? task : t));
+                    } else if (payload.eventType === 'DELETE') {
+                        setTasks(prev => prev.filter(t => t.id !== payload.old.id));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, [user]);
 
     const fetchTasks = async () => {
@@ -56,7 +83,7 @@ export default function TasksPage() {
         } else {
             setTitle('');
             setHours('');
-            fetchTasks();
+            // fetchTasks(); // Handled by realtime now!
             toast.success("Task added successfully");
         }
         setLoading(false);

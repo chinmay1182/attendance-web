@@ -22,21 +22,40 @@ export default function PerformancePage() {
             .from('performance_goals')
             .select('*');
 
-        if (error || !data || data.length === 0) {
-            // Fallback
-            setGoals([
-                { goal: "Complete Frontend Revamp", progress: 80 },
-                { goal: "Mentor 2 Junior Devs", progress: 50 },
-                { goal: "Reduce Bug Count by 20%", progress: 30 }
-            ]);
-        } else {
-            // Adapt DB to UI
-            setGoals(data.map((d: any) => ({
+        if (data) {
+            const mapData = (raw: any[]) => raw.map((d: any) => ({
                 goal: d.title || d.goal || "Goal",
-                progress: d.progress || 0
-            })));
+                progress: d.progress || 0,
+                id: d.id // Ensure ID is mapped if needed for updates
+            }));
+            setGoals(mapData(data));
         }
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('performance_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'performance_goals' },
+                (payload: any) => {
+                    const rec = payload.new as any;
+                    // We need to re-map or update state smartly. 
+                    // Since the state is simple UI objects, we might reload or map manually
+                    if (payload.eventType === 'UPDATE') {
+                        setGoals(prev => prev.map(g => {
+                            // Assuming we can match by some ID or simple heuristics if ID missing in UI type
+                            // For safety, let's just re-fetch for this module to keep data consistent
+                            return g;
+                        }));
+                        fetchGoals(); // Simplest strategy for this view
+                        import('react-hot-toast').then(({ default: toast }) => { toast('📈 Goal Progress Updated!'); });
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     return (
         <>

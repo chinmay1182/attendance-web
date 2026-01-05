@@ -22,15 +22,32 @@ export default function RewardsPage() {
     const fetchRewards = async () => {
         const { data, error } = await supabase.from('rewards').select('*');
         if (error || !data || data.length === 0) {
-            setRewards([
-                { id: '1', title: "Star Performer", description: "Awarded to Sarah for outstanding performance in Q4.", points: 500, icon: "🏆" },
-                { id: '2', title: "Team Player", description: "Awarded to Mike for helping the design team.", points: 200, icon: "🤝" },
-                { id: '3', title: "Bug Buster", description: "Awarded to Jenny for fixing critical prod bugs.", points: 300, icon: "🐛" }
-            ]);
+            // Fallback content handled in UI or state init if needed, but keeping simple here
+            // If empty, we might keep the hardcoded ones if that's the intended behavior
         } else {
             setRewards(data);
         }
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('rewards_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'rewards' },
+                (payload: any) => {
+                    const rec = payload.new as any;
+                    if (payload.eventType === 'INSERT') {
+                        setRewards(prev => [rec, ...prev]);
+                        import('react-hot-toast').then(({ default: toast }) => { toast('🏆 New Reward Added: ' + rec.title); });
+                    } else if (payload.eventType === 'UPDATE') {
+                        setRewards(prev => prev.map(r => r.id === rec.id ? { ...r, ...rec } : r));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     return (
         <>

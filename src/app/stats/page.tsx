@@ -102,6 +102,41 @@ export default function StatsPage() {
         }
     };
 
+    useEffect(() => {
+        // Realtime Subscription
+        const channel = supabase
+            .channel('realtime:attendance')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'attendance' },
+                async (payload) => {
+                    const newLog = payload.new as any;
+
+                    // 1. Update Recent Logs (Prepend new log)
+                    if (payload.eventType === 'INSERT') {
+                        // We need user details for the log, fetch briefly (or use optimistic UI)
+                        const { data: userData } = await supabase.from('users').select('name, department, photoURL').eq('id', newLog.user_id).single();
+                        const enrichedLog = { ...newLog, users: userData };
+
+                        setRecentLogs(prev => [enrichedLog, ...prev.slice(0, 9)]);
+
+                        // 2. Update Counts
+                        const isLate = newLog.clock_in && new Date(newLog.clock_in).getHours() >= 10;
+                        setAdminStats(prev => ({
+                            ...prev,
+                            todayPresent: prev.todayPresent + (newLog.status === 'present' || newLog.status === 'half-day' ? 1 : 0),
+                            todayLate: prev.todayLate + (isLate ? 1 : 0)
+                        }));
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
+
     const fetchAdminInitialData = async () => {
         setIsLoadingData(true);
         try {

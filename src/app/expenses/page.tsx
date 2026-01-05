@@ -83,24 +83,40 @@ export default function ExpensesPage() {
             if (profile.role === 'admin' || profile.role === 'hr') {
                 setActiveTab('all-expenses');
                 fetchAdminData();
-                subscribeToExpenses();
+                subscribeToAllExpenses();
             } else {
                 fetchMyExpenses();
+                subscribeToMyExpenses();
             }
         }
     }, [profile, user]);
 
-    const subscribeToExpenses = () => {
+    const subscribeToAllExpenses = () => {
         const subscription = supabase
-            .channel('expenses_realtime')
+            .channel('expenses_all_realtime')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
                 fetchAdminData();
             })
             .subscribe();
+        return () => { supabase.removeChannel(subscription); };
+    };
 
-        return () => {
-            subscription.unsubscribe();
-        };
+    const subscribeToMyExpenses = () => {
+        const subscription = supabase
+            .channel('expenses_my_realtime')
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `user_id=eq.${user?.uid}` },
+                (payload: any) => {
+                    // Update local state instantly
+                    setExpenses(prev => prev.map(e => e.id === payload.new.id ? { ...e, ...payload.new } : e));
+                    import('react-hot-toast').then(({ default: toast }) => {
+                        toast(`Claim ${payload.new.status}: ${payload.new.title}`);
+                    });
+                }
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(subscription); };
     };
 
     const fetchMyExpenses = async () => {

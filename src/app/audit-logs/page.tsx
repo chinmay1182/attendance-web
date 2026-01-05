@@ -21,6 +21,25 @@ export default function AuditLogsPage() {
 
     useEffect(() => {
         fetchLogs();
+
+        const channel = supabase.channel('audit_log_stream')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'audit_logs' },
+                async (payload: any) => {
+                    const newLog = payload.new;
+                    // Fetch user name if possible, or show 'System/Unknown' temporarily to avoid heavy API calls per log
+                    // faster to just show what we have or do a quick lookup if needed. 
+                    // For now, let's assume we want immediate feedback.
+                    const { data: u } = await supabase.from('users').select('name').eq('id', newLog.user_id).single();
+                    const logWithUser = { ...newLog, users: u };
+
+                    setLogs(prev => [logWithUser, ...prev.slice(0, 49)]); // Keep list manageable
+                }
+            )
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     const fetchLogs = async () => {

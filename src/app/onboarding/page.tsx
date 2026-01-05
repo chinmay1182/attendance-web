@@ -18,20 +18,16 @@ export default function OnboardingPage() {
     }, []);
 
     const fetchTasks = async () => {
-        const { data, error } = await supabase.from('onboarding_tasks').select('*');
-
-        if (error || !data || data.length === 0) {
-            setTasks([
-                { id: '1', task: "Sign Offer Letter", status: "Done" },
-                { id: '2', task: "Submit ID Proofs", status: "Done" },
-                { id: '3', task: "Setup Company Email", status: "Done" },
-                { id: '4', task: "Fill Bank Details", status: "Pending" },
-                { id: '5', task: "Complete Orientation Video", status: "Pending" }
-            ]);
-        } else {
-            setTasks(data);
-        }
+        const { data, error } = await supabase.from('onboarding_tasks').select('*').order('id');
+        if (data) setTasks(data);
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('onboarding_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'onboarding_tasks' }, () => fetchTasks())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     return (
         <>

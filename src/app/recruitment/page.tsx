@@ -57,6 +57,25 @@ export default function RecruitmentPage() {
         if (user) {
             fetchJobs();
             fetchApplications();
+
+            // Realtime Recruitment Board
+            const channel = supabase.channel('recruitment_board')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'applications' },
+                    (payload) => {
+                        const rec = payload.new as Application;
+                        if (payload.eventType === 'INSERT') {
+                            // Ideally fetch job details too, or set partial
+                            setApplications(prev => [rec, ...prev]);
+                        } else if (payload.eventType === 'UPDATE') {
+                            setApplications(prev => prev.map(a => a.id === rec.id ? { ...a, ...rec } : a));
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
         }
     }, [user]);
 

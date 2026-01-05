@@ -24,21 +24,19 @@ export default function DocumentsPage() {
 
     const fetchDocuments = async () => {
         const { data, error } = await supabase.from('documents').select('*');
-        if (error || !data || data.length === 0) {
-            // Fallback data
-            setDocuments([
-                { id: 1, name: "Offer Letter.pdf", type: "General", created_at: "2024-01-12" },
-                { id: 2, name: "ID Card Front.jpg", type: "General", created_at: "2024-01-15" },
-                { id: 3, name: "NDA Signed.pdf", type: "General", created_at: "2024-01-12" },
-                { id: 101, name: "Payslip_Jan_2024.pdf", type: "Payslip", created_at: "2024-02-01", month: "Jan", year: "2024" },
-                { id: 102, name: "Payslip_Feb_2024.pdf", type: "Payslip", created_at: "2024-03-01", month: "Feb", year: "2024" },
-                { id: 103, name: "Payslip_Mar_2024.pdf", type: "Payslip", created_at: "2024-04-01", month: "Mar", year: "2024" },
-                { id: 104, name: "Payslip_Oct_2024.pdf", type: "Payslip", created_at: "2024-11-01", month: "Oct", year: "2024" },
-            ]);
-        } else {
-            setDocuments(data);
-        }
+        if (data) setDocuments(data);
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('docs_realtime')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'documents' },
+                () => fetchDocuments()
+            )
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     const generalDocuments = documents.filter(d => d.type === 'General');
     const payslips = documents.filter(d => d.type === 'Payslip');

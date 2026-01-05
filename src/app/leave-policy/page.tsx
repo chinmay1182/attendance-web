@@ -51,16 +51,39 @@ export default function LeavesPage() {
     useEffect(() => {
         if (user) {
             fetchPolicies();
-            fetchMyRequests();
-            if (isAdminOrHr) {
-                fetchAllRequests();
-            }
-            fetchPolicies();
             fetchHolidays();
             fetchMyRequests();
+
             if (isAdminOrHr) {
                 fetchAllRequests();
             }
+
+            // Realtime Leaves
+            const channel = supabase.channel('leaves_realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'leave_requests' },
+                    async (payload: any) => {
+                        const rec = payload.new as any;
+
+                        if (payload.eventType === 'INSERT') {
+                            if (rec.user_id === user.uid) {
+                                setMyRequests(prev => [rec, ...prev]);
+                            }
+                            if (isAdminOrHr) {
+                                // Need to fetch user details to display properly
+                                const { data: u } = await supabase.from('users').select('name, email, department').eq('id', rec.user_id).single();
+                                setAllRequests(prev => [{ ...rec, user: u }, ...prev]);
+                            }
+                        } else if (payload.eventType === 'UPDATE') {
+                            setMyRequests(prev => prev.map(r => r.id === rec.id ? { ...r, ...rec } : r));
+                            setAllRequests(prev => prev.map(r => r.id === rec.id ? { ...r, status: rec.status, handled_by: rec.handled_by } : r));
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
         }
     }, [user, profile]);
 

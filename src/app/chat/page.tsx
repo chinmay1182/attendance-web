@@ -29,13 +29,18 @@ export default function ChatPage() {
         if (user) fetchUsers();
     }, [user]);
 
+    // Presence State
+    const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+    const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+
     useEffect(() => {
         if (user && activeUser) {
             fetchMessages();
-            // Optional: Set up realtime subscription here
-            const channel = supabase
-                .channel('messages')
+
+            // Message Subscription
+            const channel = supabase.channel('chat_room')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    // ... (existing message logic)
                     const newMsg = payload.new as any;
                     if (
                         (newMsg.sender_id === user.uid && newMsg.receiver_id === activeUser.id) ||
@@ -49,11 +54,47 @@ export default function ChatPage() {
                         }]);
                     }
                 })
+                .on('presence', { event: 'sync' }, () => {
+                    const state = channel.presenceState();
+                    const userIds = new Set<string>();
+                    // Map presence state to user IDs
+                    for (const id in state) {
+                        userIds.add(id); // keys are user_ids usually if we set key
+                    }
+                    // Actually presence state keys are random UUIDs unless we specify key. 
+                    // We typically track via mapped user_id from presence payload.
+                })
+                .on('broadcast', { event: 'typing' }, (payload) => {
+                    if (payload.payload.user_id === activeUser.id) {
+                        setTypingUsers(prev => {
+                            const next = new Set(prev);
+                            next.add(activeUser.id);
+                            return next;
+                        });
+                        // Clear typing after 3s
+                        setTimeout(() => {
+                            setTypingUsers(prev => {
+                                const next = new Set(prev);
+                                next.delete(activeUser.id);
+                                return next;
+                            });
+                        }, 3000);
+                    }
+                })
                 .subscribe();
 
             return () => { supabase.removeChannel(channel); };
         }
     }, [user, activeUser]);
+
+    // Typing Emitter
+    const handleTyping = async () => {
+        await supabase.channel('chat_room').send({
+            type: 'broadcast',
+            event: 'typing',
+            payload: { user_id: user?.uid }
+        });
+    };
 
     useEffect(() => {
         scrollToBottom();
@@ -150,6 +191,9 @@ export default function ChatPage() {
                         <>
                             <div className={styles.chatHeader}>
                                 {activeUser.name}
+                                <div style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>
+                                    {typingUsers.has(activeUser.id) ? 'Typing...' : 'Online'}
+                                </div>
                             </div>
                             <div className={styles.messagesContainer} ref={scrollRef}>
                                 {messages.map(msg => (
@@ -167,7 +211,10 @@ export default function ChatPage() {
                                     placeholder="Type a message..."
                                     className={styles.messageInput}
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) => {
+                                        setInput(e.target.value);
+                                        handleTyping();
+                                    }}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                 />
                                 <button className={styles.sendBtn} onClick={handleSend}>➤</button>
