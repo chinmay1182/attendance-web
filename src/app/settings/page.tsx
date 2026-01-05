@@ -21,19 +21,35 @@ export default function SettingsPage() {
 
     useEffect(() => {
         if (profile) {
-            setName(profile.name || '');
-            setPhone((profile as any).phone || '');
-            setBio((profile as any).bio || '');
-            setPhotoURL(profile.photoURL || '');
-            // Load prefs
-            if ((profile as any).settings) {
-                const s = (profile as any).settings;
-                setEmailNotif(s.email_notifications ?? true);
-                setDarkMode(s.dark_mode ?? false);
-                setLanguage(s.language || 'en');
-            }
+            updateLocalState(profile);
+
+            // Realtime Sync
+            const channel = supabase.channel(`settings_profile_${user?.uid}`)
+                .on(
+                    'postgres_changes',
+                    { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user?.uid}` },
+                    (payload) => {
+                        updateLocalState(payload.new);
+                        toast.success("Profile updated from another session");
+                    }
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
         }
-    }, [profile]);
+    }, [profile, user]);
+
+    const updateLocalState = (data: any) => {
+        setName(data.name || '');
+        setPhone(data.phone || '');
+        setBio(data.bio || '');
+        setPhotoURL(data.photoURL || '');
+        if (data.settings) {
+            setEmailNotif(data.settings.email_notifications ?? true);
+            setDarkMode(data.settings.dark_mode ?? false);
+            setLanguage(data.settings.language || 'en');
+        }
+    };
 
     const [emailNotif, setEmailNotif] = useState(true);
     const [darkMode, setDarkMode] = useState(false);

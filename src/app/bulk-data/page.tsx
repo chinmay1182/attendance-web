@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../../components/Navbar';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabaseClient';
@@ -8,6 +8,25 @@ import styles from './bulk-data.module.css';
 
 export default function BulkDataPage() {
     const [loading, setLoading] = useState(false);
+    const [stats, setStats] = useState({ users: 0, logs: 0 });
+
+    useEffect(() => {
+        fetchStats();
+
+        // Realtime stats
+        const channel = supabase.channel('bulk_data_stats')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchStats())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, () => fetchStats())
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
+    const fetchStats = async () => {
+        const { count: userCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
+        const { count: logCount } = await supabase.from('attendance').select('*', { count: 'exact', head: true });
+        setStats({ users: userCount || 0, logs: logCount || 0 });
+    };
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -91,7 +110,11 @@ export default function BulkDataPage() {
                     <div className={styles.card}>
                         <span className={styles.icon}>📥</span>
                         <h3 className={styles.cardTitle}>Import Employees</h3>
-                        <p className={styles.cardDesc}>Upload Excel/CSV file to bulk import employees. Columns: name, email, role, department.</p>
+                        <p className={styles.cardDesc}>
+                            Current Records: <strong>{stats.users} Users</strong>
+                            <br />
+                            Upload Excel/CSV file to bulk import employees. Columns: name, email, role, department.
+                        </p>
                         <input
                             type="file"
                             accept=".xlsx, .xls, .csv"
@@ -111,7 +134,11 @@ export default function BulkDataPage() {
                     <div className={styles.card}>
                         <span className={styles.icon}>📤</span>
                         <h3 className={styles.cardTitle}>Export All Data</h3>
-                        <p className={styles.cardDesc}>Download a comprehensive report of all attendance logs and user data.</p>
+                        <p className={styles.cardDesc}>
+                            Total Logs: <strong>{stats.logs}</strong>
+                            <br />
+                            Download a comprehensive report of all attendance logs and user data.
+                        </p>
                         <button
                             onClick={handleExport}
                             className={`${styles.actionBtn} ${styles.secondaryBtn}`}
