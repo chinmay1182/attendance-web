@@ -68,7 +68,7 @@ export const Navbar = () => {
                         <Link href="/team" style={getLinkStyle('/team')}>Team</Link>
                         <Link href="/stats" style={getLinkStyle('/stats')}>Stats</Link>
                         <Link href="/notices" style={getLinkStyle('/notices')}>Notices</Link>
-                        <Link href="/shifts" style={getLinkStyle('/shifts')}>Shifts</Link>
+                        <Link href="/sites" style={getLinkStyle('/sites')}>Sites</Link>
 
                         {/* HR Management Dropdown */}
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

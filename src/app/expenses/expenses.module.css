@@ -1,7 +1,13 @@
 .container {
     padding: 0;
-    max-width: 800px;
+    max-width: 1200px;
     margin: 40px auto 0;
+}
+
+
+.myClaimsContainer {
+    max-width: 700px;
+    margin: 0 auto;
 }
 
 .title {
@@ -134,10 +140,194 @@
     margin-bottom: 4px;
 }
 
+
+
+/* Form Elements */
+.select {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    width: 100%;
+}
+
+.textArea {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--glass-border);
+    background: white;
+    font-size: 1rem;
+    outline: none;
+    width: 100%;
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* Bulk Actions */
+.bulkActions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #f8fafc;
+    padding: 12px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--glass-border);
+}
+
+.tableCheckbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.closeBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 32px;
+    height: 32px;
+    background: #f1f5f9;
+    border-radius: 50%;
+    border: none;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.closeBtn:hover {
+    background: #e2e8f0;
+    color: var(--text-main);
+}
+
+.tabBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tabBtn:hover {
+    background: transparent;
+    color: var(--text-main);
+}
+
+.tabBtn.active {
+    background: rgba(var(--primary-hue), 80%, 60%, 0.1);
+    color: var(--primary);
+}
+
+/* Dashboard Grid */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.statCard {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    text-align: center;
+}
+
+.statValue {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 8px;
+}
+
+.statLabel {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.chartsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.chartCard {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    min-height: 400px;
+}
+
+.chartTitle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: var(--text-main);
+}
+
+/* Table */
+.tableContainer {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.table th {
+    background: rgba(0, 0, 0, 0.02);
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.table tr:hover {
+    background: rgba(0, 0, 0, 0.01);
+}
+
 .statusBadge {
     display: inline-block;
     padding: 4px 10px;
-    border-radius: var(--radius-sm);
+    border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
 }
@@ -155,4 +345,79 @@
 .statusRejected {
     background: #fee2e2;
     color: #dc2626;
+}
+
+/* Modal */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal {
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    width: 800px;
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Budget Bars */
+.budgetCard {
+    background: white;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-border);
+    margin-bottom: 30px;
+}
+
+.budgetRow {
+    margin-bottom: 20px;
+}
+
+.budgetRow:last-child {
+    margin-bottom: 0;
+}
+
+.budgetHeader {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.progressBarBG {
+    width: 100%;
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.progressBarFill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 99px;
+    transition: width 0.5s ease;
+}
+
+/* Payout Badge */
+.statusPaid {
+    background: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #0ea5e9;
 }

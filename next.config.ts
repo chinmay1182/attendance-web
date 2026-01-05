@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // @ts-expect-error - React Compiler is a valid option in Next.js 16+
+    reactCompiler: true,
+  },
   output: "standalone",
 
 };

@@ -1,6 +1,6 @@
 
-"use client";
-import React, { useState } from "react";
+import React from "react";
+import { FaqItem } from "../components/FaqItem";
 import Link from "next/link";
 import Image from "next/image";
 import styles from "./page.module.css";
@@ -226,15 +226,4 @@ function FeatureCard({ icon, title, desc }: { icon: string, title: string, desc:
   );
 }
 
-function FaqItem({ question, answer }: { question: string, answer: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  return (
-    <div className={styles.faqItem}>
-      <div className={styles.faqQuestion} onClick={() => setIsOpen(!isOpen)}>
-        <span>{question}</span>
-        <span>{isOpen ? '−' : '+'}</span>
-      </div>
-      {isOpen && <div className={styles.faqAnswer}>{answer}</div>}
-    </div>
-  );
-}
+
