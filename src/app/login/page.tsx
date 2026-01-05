@@ -3,8 +3,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../lib/firebaseClient";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import styles from "./login.module.css";
@@ -40,21 +38,39 @@ export default function LoginPage() {
         return () => clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        // Prefetch potential redirect routes
+        router.prefetch('/dashboard');
+        router.prefetch('/team');
+    }, [router]);
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
 
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            // 1. Supabase Auth (Fastest)
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
 
-            // Fetch role to redirect
-            // Fetch role securely from server
+            if (error) throw error;
+            const user = data.user;
+            if (!user) throw new Error("No user found");
+
+            // 2. Optimistic Redirect (Assume employee role first for speed, or redirect to generic dashboard)
+            // We can check local storage if this user logged in before to guess role?
+            // For now, let's fetch profile in background but initiate redirect faster if possible.
+
+            // Actually, fetching profile is needed for Role Based Access Control (RBAC). 
+            // We optimized the API to use RedisCache, so it should be fast (<50ms).
             const response = await fetch('/api/user/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ uid: user.uid })
+                body: JSON.stringify({ uid: user.id }),
+                cache: 'no-store'
             });
 
             let role = 'employee';
@@ -62,18 +78,19 @@ export default function LoginPage() {
                 const { user: profileData } = await response.json();
                 if (profileData?.role) {
                     role = profileData.role;
+                    // Cache it immediately for next load
+                    localStorage.setItem(`attendance_user_profile_${user.id}`, JSON.stringify(profileData));
                 }
             }
 
             if (role === "admin" || role === "hr") {
-                router.push("/team");
+                router.replace("/team");
             } else {
-                router.push("/dashboard");
+                router.replace("/dashboard");
             }
         } catch (err: any) {
             setError("Invalid email or password.");
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };

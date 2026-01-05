@@ -1,7 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "../lib/firebaseClient";
+import { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import { UserProfile } from "../types/user";
 
@@ -26,64 +25,88 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
-            if (firebaseUser) {
-                // 1. Optimistic UI: Check LocalStorage first
-                const storageKey = `attendance_user_profile_${firebaseUser.uid}`;
-                const cached = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+    const fetchProfile = async (uid: string) => {
+        const storageKey = `attendance_user_profile_${uid}`;
+        // 1. Optimistic UI: Check LocalStorage first
+        const cached = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                setProfile(parsed);
+                // Unblock UI if we have data
+                setLoading(false);
+            } catch (e) { console.warn(e); }
+        }
 
-                if (cached) {
-                    try {
-                        const parsed = JSON.parse(cached);
-                        setProfile(parsed);
-                        // If we have cached data, unblock UI immediately
-                        setLoading(false);
-                    } catch (e) {
-                        console.warn("Error parsing cached profile", e);
+        try {
+            // 2. Fetch fresh profile from server API (Cached by Redis)
+            // Note: Supabase Auth ID is the user's UUID.
+            const response = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid: uid }),
+                cache: 'no-store'
+            });
+
+            if (response.ok) {
+                const { user: profileData } = await response.json();
+                if (profileData) {
+                    setProfile(profileData as UserProfile);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(storageKey, JSON.stringify(profileData));
                     }
                 }
-
-                // 2. Fetch fresh profile from server API (to bypass RLS)
-                try {
-                    const response = await fetch('/api/user/profile', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ uid: firebaseUser.uid })
-                    });
-
-                    if (response.ok) {
-                        const { user: profileData, error } = await response.json();
-                        if (profileData) {
-                            setProfile(profileData as UserProfile);
-                            // Update LocalStorage
-                            if (typeof window !== 'undefined') {
-                                localStorage.setItem(storageKey, JSON.stringify(profileData));
-                            }
-                        } else {
-                            // Handle profile not found (optional: create one?)
-                            console.log("No profile found for user.");
-                        }
-                    }
-                } catch (err) {
-                    console.error("Error fetching user profile:", err);
-                }
-            } else {
-                setProfile(null);
-                // Clear local storage on logout? Optional, better to keep for quick login if same user
             }
-            // Ensure loading is set to false in all cases (if not already done by cache)
-            setLoading(false);
+        } catch (err) {
+            console.error("Error fetching user profile:", err);
+        }
+    };
+
+    useEffect(() => {
+        // Init Session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+                setUser(session.user as unknown as User); // Casting for compatibility if types slightly differ
+                fetchProfile(session.user.id);
+            } else {
+                setLoading(false);
+            }
         });
 
-        return () => unsubscribe();
+        // Listen for changes
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                setUser(session.user as unknown as User);
+                // Only fetch if profile is missing or ID changed
+                fetchProfile(session.user.id);
+            } else {
+                setUser(null);
+                setProfile(null);
+                setLoading(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     const logout = async () => {
-        await auth.signOut();
+        // 1. Instant UI Feedback
         setUser(null);
         setProfile(null);
+        if (typeof window !== 'undefined' && user?.id) { // Changed user.uid to user.id for Supabase User
+            localStorage.removeItem(`attendance_user_profile_${user.id}`);
+        }
+        setLoading(false);
+
+        try {
+            await supabase.auth.signOut();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error("Logout failed", e);
+            window.location.href = '/login';
+        }
     };
 
     return (

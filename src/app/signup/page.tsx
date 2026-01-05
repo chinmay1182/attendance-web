@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../../lib/firebaseClient";
 import { supabase } from "../../lib/supabaseClient";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
@@ -49,12 +47,22 @@ export default function SignupPage() {
         setLoading(true);
 
         try {
-            // 1. Create User in Firebase
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
+            // 1. Create User in Supabase Auth
+            const { data, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: name,
+                    },
+                },
+            });
 
-            // 2. Update Display Name
-            await updateProfile(user, { displayName: name });
+            if (authError) throw authError;
+            const user = data.user;
+            if (!user) throw new Error("Signup failed");
+
+            // 2. Create Profile in Public Table (Using our existing API)
 
             // 3. Create Profile in Supabase
             // 3. Create Profile in Supabase
@@ -64,7 +72,7 @@ export default function SignupPage() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    id: user.uid,
+                    id: user.id,
                     email: email,
                     name: name,
                     role: role,
