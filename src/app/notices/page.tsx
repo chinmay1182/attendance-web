@@ -56,37 +56,34 @@ export default function NoticesPage() {
     };
 
     const fetchNotices = async () => {
-        let query = supabase
-            .from('notices')
-            .select(`
-                *,
-                sender:users!sender_id(name)
-            `)
-            .order('created_at', { ascending: false });
+        try {
+            const res = await fetch('/api/notices', { cache: 'no-store' }); // Logic in API handles caching
+            const data = await res.json();
 
-        const { data, error } = await query;
+            if (data && profile) {
+                // Filter locally for complex logic OR we can rely on RLS if set up.
+                // Client-side filtering for now to ensure visibility rules
+                const myNotices = data.filter((n: any) => {
+                    if (isAdminOrHr && activeTab === 'manage') return true; // See all if managing (optional)
 
-        if (data && profile) {
-            // Filter locally for complex logic OR we can rely on RLS if set up.
-            // Client-side filtering for now to ensure visibility rules
-            const myNotices = data.filter((n: any) => {
-                if (isAdminOrHr && activeTab === 'manage') return true; // See all if managing (optional)
+                    // Normal Filter
+                    if (!n.audience || n.audience === 'all') return true;
+                    if (n.audience === 'role' && n.target_id === profile.role) return true;
+                    if (n.audience === 'user' && n.target_id === user?.uid) return true; // check if user.uid matches target_id used in storage (Firebase UID)
 
-                // Normal Filter
-                if (!n.audience || n.audience === 'all') return true;
-                if (n.audience === 'role' && n.target_id === profile.role) return true;
-                if (n.audience === 'user' && n.target_id === user?.uid) return true; // check if user.uid matches target_id used in storage (Firebase UID)
+                    // If I sent it, I should see it?
+                    if (n.sender_id === user?.uid) return true;
 
-                // If I sent it, I should see it?
-                if (n.sender_id === user?.uid) return true;
+                    return false;
+                }).map((n: any) => ({
+                    ...n,
+                    sender_name: n.sender?.name || 'Admin'
+                }));
 
-                return false;
-            }).map((n: any) => ({
-                ...n,
-                sender_name: n.sender?.name || 'Admin'
-            }));
-
-            setNotices(myNotices);
+                setNotices(myNotices);
+            }
+        } catch (error) {
+            console.error(error);
         }
     };
 

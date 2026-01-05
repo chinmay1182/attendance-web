@@ -23,8 +23,15 @@ export default function DocumentsPage() {
     }, []);
 
     const fetchDocuments = async () => {
-        const { data, error } = await supabase.from('documents').select('*');
-        if (data) setDocuments(data);
+        try {
+            const res = await fetch('/api/documents', { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                setDocuments(data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch documents", error);
+        }
     };
 
     useEffect(() => {

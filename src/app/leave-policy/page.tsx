@@ -88,23 +88,24 @@ export default function LeavesPage() {
     }, [user, profile]);
 
     const fetchHolidays = async () => {
-        const { data } = await supabase.from('public_holidays').select('*').order('date', { ascending: true });
-        if (data) setHolidays(data);
+        try {
+            const res = await fetch('/api/company/holidays', { cache: 'no-store' });
+            if (res.ok) setHolidays(await res.json());
+        } catch (e) { console.error(e); }
     };
 
     const fetchPolicies = async () => {
-        const { data } = await supabase.from('leave_policies').select('*').order('name');
-        if (data) setPolicies(data);
+        try {
+            const res = await fetch('/api/company/policies', { cache: 'no-store' });
+            if (res.ok) setPolicies(await res.json());
+        } catch (e) { console.error(e); }
     };
 
     const fetchMyRequests = async () => {
-        const { data } = await supabase
-            .from('leave_requests')
-            .select('*')
-            .eq('user_id', user?.uid)
-            .order('created_at', { ascending: false });
-        if (data) setMyRequests(data as any);
-        setLoading(false);
+        try {
+            const res = await fetch(`/api/leaves?uid=${user?.uid}`, { cache: 'no-store' });
+            if (res.ok) setMyRequests(await res.json());
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     };
 
     const fetchAllRequests = async () => {

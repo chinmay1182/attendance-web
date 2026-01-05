@@ -30,7 +30,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
             if (firebaseUser) {
-                // Fetch profile from server API (to bypass RLS)
+                // 1. Optimistic UI: Check LocalStorage first
+                const storageKey = `attendance_user_profile_${firebaseUser.uid}`;
+                const cached = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        setProfile(parsed);
+                        // If we have cached data, unblock UI immediately
+                        setLoading(false);
+                    } catch (e) {
+                        console.warn("Error parsing cached profile", e);
+                    }
+                }
+
+                // 2. Fetch fresh profile from server API (to bypass RLS)
                 try {
                     const response = await fetch('/api/user/profile', {
                         method: 'POST',
@@ -42,6 +57,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         const { user: profileData, error } = await response.json();
                         if (profileData) {
                             setProfile(profileData as UserProfile);
+                            // Update LocalStorage
+                            if (typeof window !== 'undefined') {
+                                localStorage.setItem(storageKey, JSON.stringify(profileData));
+                            }
                         } else {
                             // Handle profile not found (optional: create one?)
                             console.log("No profile found for user.");
@@ -52,7 +71,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             } else {
                 setProfile(null);
+                // Clear local storage on logout? Optional, better to keep for quick login if same user
             }
+            // Ensure loading is set to false in all cases (if not already done by cache)
             setLoading(false);
         });
 

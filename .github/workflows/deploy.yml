@@ -48,39 +48,20 @@ jobs:
               git clone git@github.com:chinmay1182/attendance-web.git .
             fi
 
-            # Build Docker Image
-            echo "Building Docker image..."
-            docker build -t $IMAGE_NAME .
+            # Build and Start with Docker Compose
+            echo "Starting Docker Compose..."
 
-            # Stop and remove old container
-            echo "Stopping old container..."
-            if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
-                docker stop $CONTAINER_NAME
-                docker rm $CONTAINER_NAME
-            elif [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
-                docker rm $CONTAINER_NAME
+            # Ensure .env exists (or created from secrets if you were using secrets manager, 
+            # but current script assumes file exists on server).
+            if [ ! -f .env ]; then
+              echo "Warning: .env file not found. App might fail."
             fi
 
-            # Run new container
-            # Maps Host Port (3001) to Container Port (3000)
-            echo "Starting new container on port $PORT..."
-            if [ -f .env ]; then
-              docker run -d \
-                --name $CONTAINER_NAME \
-                --restart always \
-                -p $PORT:3000 \
-                --env-file .env \
-                $IMAGE_NAME
-            else
-              echo "Warning: .env file not found. Starting without environment variables."
-              docker run -d \
-                --name $CONTAINER_NAME \
-                --restart always \
-                -p $PORT:3000 \
-                $IMAGE_NAME
-            fi
+            # Pull latest images (if using remote images) or force build
+            docker compose down --remove-orphans || true
+            docker compose up -d --build
 
-            # Cleanup
+            # Cleanup unused images
             echo "Cleaning up..."
             docker image prune -f
 

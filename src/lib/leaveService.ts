@@ -34,14 +34,19 @@ export const leaveService = {
     },
 
     async getMyLeaves(userId: string) {
-        const { data, error } = await supabase
-            .from('leaves')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        return data as LeaveRequest[];
+        try {
+            const res = await fetch(`/api/leaves?uid=${userId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error("Failed to fetch leaves");
+            const data = await res.json();
+            return data as LeaveRequest[];
+        } catch (error) {
+            console.error("Error fetching leaves:", error);
+            return [];
+        }
     },
 
     async getAllEnsurePendingLeaves() {

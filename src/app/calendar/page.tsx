@@ -25,16 +25,12 @@ export default function TeamCalendar() {
         const startOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString();
         const endOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).toISOString();
 
-        const [holidaysRes, leavesRes] = await Promise.all([
-            supabase.from('public_holidays').select('*').gte('date', startOfMonth).lte('date', endOfMonth),
-            supabase.from('leave_requests').select('*, users(name)').eq('status', 'approved').gte('start_date', startOfMonth).lte('start_date', endOfMonth)
-        ]);
-
-        const allEvents = [
-            ...(holidaysRes.data || []).map(h => ({ date: h.date, title: h.name, type: 'holiday' })),
-            ...(leavesRes.data || []).map(l => ({ date: l.start_date, title: `${l.users?.name} - ${l.type}`, type: 'leave' }))
-        ];
-        setEvents(allEvents);
+        try {
+            const res = await fetch(`/api/calendar?start=${startOfMonth}&end=${endOfMonth}`, { cache: 'no-store' });
+            if (res.ok) {
+                setEvents(await res.json());
+            }
+        } catch (e) { console.error(e); }
     };
 
     const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();

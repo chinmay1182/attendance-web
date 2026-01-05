@@ -13,31 +13,52 @@ export interface AttendanceRecord {
 
 export const attendanceService = {
     async getTodayAttendance(userId: string) {
-        const today = new Date().toISOString().split('T')[0];
-
-        const { data, error } = await supabase
-            .from('attendance')
-            .select('*')
-            .eq('user_id', userId)
-            .eq('date', today)
-            .single();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "Row not found"
-            console.error('Error fetching attendance:', error);
+        try {
+            const res = await fetch(`/api/attendance/today?uid=${userId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store' // Next.js: ensure we don't cache locally in the fetch client overly aggressively if logic depends on it
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            return data as AttendanceRecord | null;
+        } catch (err) {
+            console.error('Error fetching attendance via API:', err);
             return null;
         }
-        return data as AttendanceRecord | null;
     },
 
     async checkGeofence(location?: { lat: number, lng: number }) {
-        if (!location) return true; // If no location provided (or device disabled), skip or fail? Policy depends. For now allow but warn.
+        if (!location) return true;
 
-        const { data } = await supabase.from('settings').select('value').eq('key', 'general').single();
-        if (!data || !data.value || !data.value.office_lat) return true; // No geofence set
+        let officeLat, officeLng, radius;
 
-        const officeLat = data.value.office_lat;
-        const officeLng = data.value.office_lng;
-        const radius = data.value.radius_meters || 100;
+        try {
+            // Use cached API
+            const res = await fetch('/api/sites/settings', { cache: 'no-store' });
+            if (res.ok) {
+                const { value } = await res.json();
+                if (value) {
+                    officeLat = value.office_lat;
+                    officeLng = value.office_lng;
+                    radius = value.radius_meters || 100;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch geofence settings via API", e);
+            // Fallback to allowing or maybe direct DB call if critical? 
+            // For safety/availability, we might default to 'allow' if system is down, 
+            // OR strictly perform a direct DB lookup as backup.
+            // Let's do a direct DB lookup as backup.
+            const { data } = await supabase.from('settings').select('value').eq('key', 'general').single();
+            if (data && data.value) {
+                officeLat = data.value.office_lat;
+                officeLng = data.value.office_lng;
+                radius = data.value.radius_meters || 100;
+            }
+        }
+
+        if (!officeLat) return true; // No geofence set
 
         // Haversine formula
         const R = 6371e3; // metres

@@ -1,17 +1,25 @@
 "use client";
+
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
-import { ClockWidget } from '../../components/ClockWidget';
-import { LeaveWidget } from '../../components/LeaveWidget';
 import { Navbar } from '../../components/Navbar';
-import { supabase } from '../../lib/supabaseClient';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
+// import { supabase } from '../../lib/supabaseClient'; // Removed direct usage
 import styles from './dashboard.module.css';
 
 import { Skeleton } from '../../components/Skeleton';
 
-// ... (existing imports, ClockWidget, LeaveWidget, Navbar, supabase)
+// Lazy Load Widgets
+const ClockWidget = dynamic(() => import('../../components/ClockWidget').then(mod => mod.ClockWidget), {
+    loading: () => <Skeleton height={280} borderRadius={24} />,
+    ssr: false // Widgets that rely on browser APIs like Geolocation
+});
+
+const LeaveWidget = dynamic(() => import('../../components/LeaveWidget').then(mod => mod.LeaveWidget), {
+    loading: () => <Skeleton height={280} borderRadius={24} />
+});
+
 
 export default function EmployeeDashboard() {
     const { user, profile, loading } = useAuth();
@@ -29,25 +37,42 @@ export default function EmployeeDashboard() {
     }, [user, loading, router]);
 
     const fetchData = async () => {
-        const { data: dData } = await supabase.from('documents').select('*').limit(3).order('created_at', { ascending: false });
-        if (dData && dData.length > 0) setDocs(dData);
-        else {
-            setDocs([
-                { id: 1, name: "Offer Letter.pdf", type: "General" },
-                { id: 2, name: "ID Card Front.jpg", type: "General" },
-                { id: 3, name: "Payslip_Jan_2024.pdf", type: "Payslip" }
-            ]);
-        }
+        if (!user) return;
+        try {
+            const res = await fetch(`/api/dashboard/stats?uid=${user.uid}`, { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.docs && data.docs.length > 0) setDocs(data.docs);
+                else setDefaultDocs();
 
-        const { data: sData } = await supabase.from('sites').select('*').limit(2);
-        if (sData && sData.length > 0) setSites(sData);
-        else {
-            setSites([
-                { id: '1', name: "Headquarters", latitude: 37.4220, longitude: -122.0841 },
-                { id: '2', name: "Remote Hub", latitude: 34.0522, longitude: -118.2437 }
-            ]);
+                if (data.sites && data.sites.length > 0) setSites(data.sites);
+                else setDefaultSites();
+            } else {
+                setDefaultDocs();
+                setDefaultSites();
+            }
+        } catch (e) {
+            console.error("Failed to fetch dashboard stats", e);
+            setDefaultDocs();
+            setDefaultSites();
         }
     };
+
+    const setDefaultDocs = () => {
+        setDocs([
+            { id: 1, name: "Offer Letter.pdf", type: "General" },
+            { id: 2, name: "ID Card Front.jpg", type: "General" },
+            { id: 3, name: "Payslip_Jan_2024.pdf", type: "Payslip" }
+        ]);
+    };
+
+    const setDefaultSites = () => {
+        setSites([
+            { id: '1', name: "Headquarters", latitude: 37.4220, longitude: -122.0841 },
+            { id: '2', name: "Remote Hub", latitude: 34.0522, longitude: -118.2437 }
+        ]);
+    };
+
 
     const getDocIcon = (name: string) => {
         if (name.endsWith('.pdf')) return <span className="material-symbols-outlined">picture_as_pdf</span>;
