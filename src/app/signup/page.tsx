@@ -87,7 +87,7 @@ export default function SignupPage() {
 
 
 
-            toast.success("Account created successfully!");
+            toast.success("Account created! Please check your email to confirm.", { duration: 6000 });
 
             // 4. Redirect
             if (role === "admin" || role === "hr") {

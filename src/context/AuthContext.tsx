@@ -5,7 +5,7 @@ import { supabase } from "../lib/supabaseClient";
 import { UserProfile } from "../types/user";
 
 interface AuthContextType {
-    user: User | null; // Firebase User
+    user: User | null; // Supabase User
     profile: UserProfile | null; // Supabase Profile
     loading: boolean;
     logout: () => Promise<void>;
@@ -79,8 +79,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } = supabase.auth.onAuthStateChange((_event, session) => {
             if (session?.user) {
                 setUser(session.user as unknown as User);
-                // Only fetch if profile is missing or ID changed
                 fetchProfile(session.user.id);
+                // Clean URL hash if present (e.g. after email confirmation)
+                if (window.location.hash && window.location.hash.includes('access_token')) {
+                    window.history.replaceState(null, '', window.location.pathname);
+                }
             } else {
                 setUser(null);
                 setProfile(null);
