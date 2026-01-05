@@ -57,6 +57,12 @@ jobs:
               echo "Warning: .env file not found. App might fail."
             fi
 
+            # Force cleanup old containers if they exist to prevent name conflicts
+            if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+                echo "Removing existing container: $CONTAINER_NAME"
+                docker rm -f $CONTAINER_NAME
+            fi
+
             # Pull latest images (if using remote images) or force build
             docker compose down --remove-orphans || true
             docker compose up -d --build
