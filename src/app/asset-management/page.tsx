@@ -21,21 +21,20 @@ export default function AssetManagementPage() {
 
     const fetchAssets = async () => {
         const { data, error } = await supabase.from('assets').select('*');
-
-        if (error || !data || data.length === 0) {
-            setAssets([
-                { id: '1', asset_id: "DT-001", name: "MacBook Pro M2", assigned_to: "Chinmay B.", status: "Active" },
-                { id: '2', asset_id: "MO-042", name: "Dell Monitor 27", assigned_to: "Chinmay B.", status: "Active" },
-                { id: '3', asset_id: "KE-101", name: "Mechanical Keyboard", assigned_to: "John D.", status: "Maintenance" }
-            ]);
-        } else {
-            // Map DB field asset_code to UI field asset_id
+        if (data) {
             setAssets(data.map((item: any) => ({
                 ...item,
-                asset_id: item.asset_code // DB uses asset_code
+                asset_id: item.asset_code
             })));
         }
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('assets_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'assets' }, () => fetchAssets())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     const getStatusClass = (status: string) => {
         switch (status.toLowerCase()) {

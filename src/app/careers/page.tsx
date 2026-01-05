@@ -22,6 +22,13 @@ export default function CareersPage() {
         setLoading(false);
     };
 
+    useEffect(() => {
+        const channel = supabase.channel('career_jobs_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => fetchJobs())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
     return (
         <div style={{ minHeight: '100vh', background: '#fff' }}>
             <nav style={{ padding: '20px 40px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

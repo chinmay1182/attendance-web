@@ -39,21 +39,19 @@ export default function PerformancePage() {
                 { event: '*', schema: 'public', table: 'performance_goals' },
                 (payload: any) => {
                     const rec = payload.new as any;
-                    // We need to re-map or update state smartly. 
-                    // Since the state is simple UI objects, we might reload or map manually
+
                     if (payload.eventType === 'UPDATE') {
-                        setGoals(prev => prev.map(g => {
-                            // Assuming we can match by some ID or simple heuristics if ID missing in UI type
-                            // For safety, let's just re-fetch for this module to keep data consistent
-                            return g;
-                        }));
-                        fetchGoals(); // Simplest strategy for this view
+                        // Re-fetch to ensure data consistency
+                        fetchGoals();
                         import('react-hot-toast').then(({ default: toast }) => { toast('📈 Goal Progress Updated!'); });
+                    } else if (payload.eventType === 'INSERT') {
+                        // Handle new goal
+                        setGoals(prev => [...prev, { goal: rec.title || rec.goal, progress: rec.progress || 0 }]);
+                        import('react-hot-toast').then(({ default: toast }) => { toast('✨ New Goal Assigned!'); });
                     }
                 }
             )
             .subscribe();
-
         return () => { supabase.removeChannel(channel); };
     }, []);
 

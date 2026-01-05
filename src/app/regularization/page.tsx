@@ -1,6 +1,6 @@
 
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
 import { Button } from '../../components/Button';
@@ -18,6 +18,33 @@ export default function RegularizationPage() {
     const [reason, setReason] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const [requests, setRequests] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (user) {
+            fetchRequests();
+
+            const channel = supabase.channel('regularization_realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'regularization_requests', filter: `user_id=eq.${user.uid}` },
+                    () => fetchRequests()
+                )
+                .subscribe();
+
+            return () => { supabase.removeChannel(channel); };
+        }
+    }, [user]);
+
+    const fetchRequests = async () => {
+        const { data } = await supabase
+            .from('regularization_requests')
+            .select('*')
+            .eq('user_id', user?.uid)
+            .order('created_at', { ascending: false });
+        if (data) setRequests(data);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
@@ -32,7 +59,8 @@ export default function RegularizationPage() {
             date,
             clock_in: clockIn,
             clock_out: clockOut,
-            reason
+            reason,
+            status: 'Pending'
         }]);
 
         setLoading(false);
@@ -62,6 +90,24 @@ export default function RegularizationPage() {
 
                         <Button type="submit" isLoading={loading}>Submit Request</Button>
                     </form>
+                </div>
+
+                <div className={styles.card} style={{ marginTop: '24px' }}>
+                    <h3 className={styles.subtitle} style={{ marginBottom: '16px' }}>My Requests</h3>
+                    {requests.length === 0 && <p style={{ color: '#64748b' }}>No requests found.</p>}
+                    {requests.map(req => (
+                        <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid #eee' }}>
+                            <div>
+                                <div style={{ fontWeight: 600 }}>{req.date}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{req.reason}</div>
+                            </div>
+                            <span style={{
+                                padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem',
+                                background: req.status === 'Approved' ? '#dcfce7' : req.status === 'Rejected' ? '#fee2e2' : '#f1f5f9',
+                                color: req.status === 'Approved' ? '#16a34a' : req.status === 'Rejected' ? '#ef4444' : '#64748b'
+                            }}>{req.status || 'Pending'}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </>

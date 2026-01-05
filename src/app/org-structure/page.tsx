@@ -25,21 +25,16 @@ export default function OrgStructurePage() {
             .select('*')
             .order('name', { ascending: true });
 
-        if (error) {
-            console.error('Error fetching departments:', error);
-            // Fallback to static data if table doesn't exist yet/fails
-            setDepartments([
-                { id: '1', name: 'Engineering' },
-                { id: '2', name: 'HR & Admin' },
-                { id: '3', name: 'Sales & Marketing' },
-                { id: '4', name: 'Product' },
-                { id: '5', name: 'Finance' }
-            ]);
-        } else {
-            setDepartments(data || []);
-        }
+        if (data) setDepartments(data);
         setLoading(false);
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('org_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'departments' }, () => fetchDepartments())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     const handleAddDepartment = async () => {
         const name = prompt("Enter new department name:");

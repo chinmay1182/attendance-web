@@ -25,7 +25,7 @@ export default function TeamPage() {
         fetchUsers();
         fetchOnlineStatus();
 
-        // Realtime Online Status
+        // Realtime Online Status AND User List Changes
         const channel = supabase.channel('team_presence')
             .on(
                 'postgres_changes',
@@ -46,6 +46,7 @@ export default function TeamPage() {
                     }
                 }
             )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchUsers())
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };

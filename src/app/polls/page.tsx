@@ -91,6 +91,11 @@ export default function PollsPage() {
                     });
                 }
             )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'polls' },
+                () => fetchPolls()
+            )
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };

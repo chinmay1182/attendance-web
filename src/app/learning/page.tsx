@@ -21,21 +21,20 @@ export default function LearningPage() {
 
     const fetchCourses = async () => {
         const { data, error } = await supabase.from('courses').select('*');
-
-        if (error || !data || data.length === 0) {
-            setCourses([
-                { id: '1', title: "Advanced React Patterns", category: "Technical", description: "Master advanced concepts like HOCs, Render Props, and Hooks." },
-                { id: '2', title: "Effective Communication", category: "Soft Skills", description: "Improve your workplace communication and leadership skills." },
-                { id: '3', title: "Project Management 101", category: "Management", description: "Learn the basics of agile and scrum methodologies." }
-            ]);
-        } else {
-            // Map DB field thumbnail_url to UI field image_url
+        if (data) {
             setCourses(data.map((item: any) => ({
                 ...item,
-                image_url: item.thumbnail_url // DB uses thumbnail_url
+                image_url: item.thumbnail_url
             })));
         }
     };
+
+    useEffect(() => {
+        const channel = supabase.channel('courses_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => fetchCourses())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
 
     return (
         <>

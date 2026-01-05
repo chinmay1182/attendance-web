@@ -73,6 +73,7 @@ export default function RecruitmentPage() {
                         }
                     }
                 )
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => fetchJobs())
                 .subscribe();
 
             return () => { supabase.removeChannel(channel); };

@@ -25,8 +25,34 @@ export default function SettingsPage() {
             setPhone((profile as any).phone || '');
             setBio((profile as any).bio || '');
             setPhotoURL(profile.photoURL || '');
+            // Load prefs
+            if ((profile as any).settings) {
+                const s = (profile as any).settings;
+                setEmailNotif(s.email_notifications ?? true);
+                setDarkMode(s.dark_mode ?? false);
+                setLanguage(s.language || 'en');
+            }
         }
     }, [profile]);
+
+    const [emailNotif, setEmailNotif] = useState(true);
+    const [darkMode, setDarkMode] = useState(false);
+    const [language, setLanguage] = useState('en');
+
+    const savePreference = async (key: string, value: any) => {
+        if (!user) return;
+        // Assume 'settings' is a JSONB column in users table
+        const newSettings = {
+            ...(profile as any)?.settings,
+            [key]: value
+        };
+
+        // Optimistic update
+        // In real app, we would update context too
+
+        await supabase.from('users').update({ settings: newSettings }).eq('id', user.uid);
+        toast.success("Preference Saved");
+    };
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,42 +109,63 @@ export default function SettingsPage() {
                     <div className={styles.card}>
                         <h2 className={styles.sectionTitle}>App Preferences</h2>
 
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Email Notifications</div>
-                                <div className={styles.settingDesc}>Receive email updates about attendance</div>
-                            </div>
-                            <input type="checkbox" defaultChecked style={{ accentColor: '#212121', width: 20, height: 20 }} />
+                        <div>
+                            <div className={styles.settingLabel}>Email Notifications</div>
+                            <div className={styles.settingDesc}>Receive email updates about attendance</div>
                         </div>
+                        <input
+                            type="checkbox"
+                            checked={emailNotif}
+                            onChange={e => {
+                                setEmailNotif(e.target.checked);
+                                savePreference('email_notifications', e.target.checked);
+                            }}
+                            style={{ accentColor: '#212121', width: 20, height: 20 }}
+                        />
+                    </div>
 
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Dark Mode</div>
-                                <div className={styles.settingDesc}>Toggle dark theme (Coming Soon)</div>
-                            </div>
-                            <input type="checkbox" disabled style={{ width: 20, height: 20 }} />
+                    <div className={styles.settingItem}>
+                        <div>
+                            <div className={styles.settingLabel}>Dark Mode</div>
+                            <div className={styles.settingDesc}>Toggle dark theme appearance</div>
                         </div>
+                        <input
+                            type="checkbox"
+                            checked={darkMode}
+                            onChange={e => {
+                                setDarkMode(e.target.checked);
+                                savePreference('dark_mode', e.target.checked);
+                            }}
+                            style={{ width: 20, height: 20, accentColor: '#212121' }}
+                        />
+                    </div>
 
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Language</div>
-                                <div className={styles.settingDesc}>Select your preferred language</div>
-                            </div>
-                            <select style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                <option>English</option>
-                                <option>Spanish</option>
-                                <option>French</option>
-                            </select>
+                    <div className={styles.settingItem}>
+                        <div>
+                            <div className={styles.settingLabel}>Language</div>
+                            <div className={styles.settingDesc}>Select your preferred language</div>
                         </div>
+                        <select
+                            value={language}
+                            onChange={e => {
+                                setLanguage(e.target.value);
+                                savePreference('language', e.target.value);
+                            }}
+                            style={{ padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                        >
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                        </select>
+                    </div>
 
-                        <h2 className={styles.sectionTitle} style={{ marginTop: '40px' }}>Security</h2>
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Password</div>
-                                <div className={styles.settingDesc}>Last changed 3 months ago</div>
-                            </div>
-                            <Button variant="secondary" onClick={() => alert("Password change flow")}>Change</Button>
+                    <h2 className={styles.sectionTitle} style={{ marginTop: '40px' }}>Security</h2>
+                    <div className={styles.settingItem}>
+                        <div>
+                            <div className={styles.settingLabel}>Password</div>
+                            <div className={styles.settingDesc}>Last changed 3 months ago</div>
                         </div>
+                        <Button variant="secondary" onClick={() => alert("Password change flow")}>Change</Button>
                     </div>
                 </div>
             </div>

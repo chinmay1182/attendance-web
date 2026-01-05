@@ -32,6 +32,13 @@ export default function AutomationRulesPage() {
         }
     };
 
+    useEffect(() => {
+        const channel = supabase.channel('rules_realtime')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'automation_rules' }, () => fetchRules())
+            .subscribe();
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
     return (
         <>
             <Navbar />

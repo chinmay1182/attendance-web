@@ -85,8 +85,26 @@ export default function SitesPage() {
             fetchSites();
             fetchUsers();
             fetchAssignments();
+
+            const channel = supabase.channel('sites_admin_realtime')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'sites' }, () => fetchSites())
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'site_assignments' }, () => fetchAssignments())
+                .subscribe();
+            return () => { supabase.removeChannel(channel); };
         } else if (user) {
             fetchMyAssignment();
+
+            const channel = supabase.channel('sites_user_realtime')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'site_assignments', filter: `user_id=eq.${user.uid}` },
+                    () => {
+                        fetchMyAssignment();
+                        import('react-hot-toast').then(({ default: toast }) => { toast("Site Assignment Updated"); });
+                    }
+                )
+                .subscribe();
+            return () => { supabase.removeChannel(channel); };
         }
     }, [user, profile]);
 
