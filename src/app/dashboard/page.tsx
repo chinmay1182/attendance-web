@@ -9,8 +9,13 @@ import { supabase } from '../../lib/supabaseClient';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import styles from './dashboard.module.css';
 
+import { Skeleton } from '../../components/Skeleton';
+
+// ... (existing imports, ClockWidget, LeaveWidget, Navbar, supabase)
+
 export default function EmployeeDashboard() {
     const { user, profile, loading } = useAuth();
+    // ... (rest of hook logic)
     const router = useRouter();
     const [docs, setDocs] = useState<any[]>([]);
     const [sites, setSites] = useState<any[]>([]);
@@ -24,7 +29,6 @@ export default function EmployeeDashboard() {
     }, [user, loading, router]);
 
     const fetchData = async () => {
-        // Fetch last 3 docs
         const { data: dData } = await supabase.from('documents').select('*').limit(3).order('created_at', { ascending: false });
         if (dData && dData.length > 0) setDocs(dData);
         else {
@@ -35,7 +39,6 @@ export default function EmployeeDashboard() {
             ]);
         }
 
-        // Fetch top 2 sites
         const { data: sData } = await supabase.from('sites').select('*').limit(2);
         if (sData && sData.length > 0) setSites(sData);
         else {
@@ -52,10 +55,42 @@ export default function EmployeeDashboard() {
         return <span className="material-symbols-outlined">description</span>;
     };
 
-    if (loading) return <LoadingSpinner fullScreen />;
+    if (loading) return (
+        <>
+            <Navbar />
+            <div className={styles.dashboardContainer}>
+                <header className={styles.header}>
+                    <div className={styles.welcomeText}>
+                        <Skeleton width={250} height={40} style={{ marginBottom: 8 }} />
+                        <Skeleton width={180} height={20} />
+                    </div>
+                </header>
+
+                <main className={styles.grid}>
+                    {/* Skeleton for Clock Widget */}
+                    <div style={{ minWidth: 0 }}>
+                        <Skeleton height={280} borderRadius={24} />
+                    </div>
+
+                    {/* Skeleton for Leave Widget */}
+                    <div style={{ minWidth: 0 }}>
+                        <Skeleton height={280} borderRadius={24} />
+                    </div>
+
+                    {/* Skeleton for Side Widgets */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
+                        <Skeleton height={150} borderRadius={24} />
+                        <Skeleton height={150} borderRadius={24} />
+                    </div>
+                </main>
+            </div>
+        </>
+    );
+
     if (!user) return null;
 
     return (
+        // ... (Original Return Statement)
         <>
             <Navbar />
             <div className={styles.dashboardContainer}>

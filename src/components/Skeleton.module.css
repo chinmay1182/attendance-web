@@ -1,0 +1,23 @@
+.skeleton {
+    background: #e2e8f0;
+    border-radius: 4px;
+    animation: shimmer 1.5s infinite linear;
+    background: linear-gradient(to right, #e2e8f0 4%, #f1f5f9 25%, #e2e8f0 36%);
+    background-size: 1000px 100%;
+}
+
+/* Dark mode adjustment if class exists on body or a parent */
+:global(body.dark-mode) .skeleton {
+    background: #334155;
+    background: linear-gradient(to right, #334155 4%, #475569 25%, #334155 36%);
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+
+    100% {
+        background-position: 1000px 0;
+    }
+}

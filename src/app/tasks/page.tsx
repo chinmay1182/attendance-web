@@ -16,12 +16,17 @@ import styles from './tasks.module.css';
 
 import toast from 'react-hot-toast';
 
+import { Skeleton } from '../../components/Skeleton';
+
+// ... (keep existing imports and types)
+
 export default function TasksPage() {
     const { user } = useAuth();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [title, setTitle] = useState('');
     const [hours, setHours] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
 
     useEffect(() => {
         if (!user) return;
@@ -36,7 +41,6 @@ export default function TasksPage() {
                 { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${user.uid}` },
                 (payload: any) => {
                     const task = payload.new as any;
-
                     if (payload.eventType === 'INSERT') {
                         setTasks(prev => [task, ...prev]);
                         import('react-hot-toast').then(({ default: toast }) => {
@@ -55,15 +59,18 @@ export default function TasksPage() {
     }, [user]);
 
     const fetchTasks = async () => {
+        setFetching(true);
         const { data, error } = await supabase
             .from('tasks')
             .select('*')
             .eq('user_id', user?.uid)
             .order('created_at', { ascending: false });
         if (data) setTasks(data);
+        setFetching(false);
     };
 
     const handleAdd = async () => {
+        // ... (keep existing handleAdd logic)
         if (!title || !hours) return toast.error("Please enter details");
         setLoading(true);
 
@@ -83,7 +90,6 @@ export default function TasksPage() {
         } else {
             setTitle('');
             setHours('');
-            // fetchTasks(); // Handled by realtime now!
             toast.success("Task added successfully");
         }
         setLoading(false);
@@ -121,16 +127,26 @@ export default function TasksPage() {
                 </div>
 
                 <div className={styles.taskList}>
-                    {tasks.length === 0 && <p className={styles.emptyState}>No tasks logged for today.</p>}
-                    {tasks.map((task) => (
-                        <div key={task.id} className={styles.taskCard}>
-                            <div>
-                                <h4 className={styles.taskTitle}>{task.title}</h4>
-                                <p className={styles.taskMeta}>{task.description} • {task.date}</p>
-                            </div>
-                            <span className={styles.taskHours}>{task.hours} Hrs</span>
-                        </div>
-                    ))}
+                    {fetching ? (
+                        <>
+                            <Skeleton height={80} borderRadius={12} style={{ marginBottom: 12 }} />
+                            <Skeleton height={80} borderRadius={12} style={{ marginBottom: 12 }} />
+                            <Skeleton height={80} borderRadius={12} style={{ marginBottom: 12 }} />
+                        </>
+                    ) : (
+                        <>
+                            {tasks.length === 0 && <p className={styles.emptyState}>No tasks logged for today.</p>}
+                            {tasks.map((task) => (
+                                <div key={task.id} className={styles.taskCard}>
+                                    <div>
+                                        <h4 className={styles.taskTitle}>{task.title}</h4>
+                                        <p className={styles.taskMeta}>{task.description} • {task.date}</p>
+                                    </div>
+                                    <span className={styles.taskHours}>{task.hours} Hrs</span>
+                                </div>
+                            ))}
+                        </>
+                    )}
                 </div>
             </div>
         </>

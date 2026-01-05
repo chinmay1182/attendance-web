@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { Skeleton } from '../../components/Skeleton';
 import Image from 'next/image';
 import { UserProfile } from '../../types/user';
 import toast from 'react-hot-toast';
@@ -179,7 +180,21 @@ export default function TeamPage() {
                 </div>
 
                 {loading ? (
-                    <LoadingSpinner />
+                    <div className={styles.grid}>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                            <div key={i} className={styles.card}>
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                                    <Skeleton width={80} height={80} borderRadius="50%" />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                    <Skeleton width="60%" height={24} />
+                                    <Skeleton width="40%" height={16} />
+                                </div>
+                                <div className={styles.divider} style={{ margin: '16px 0' }}></div>
+                                <Skeleton width="80%" height={32} style={{ margin: '16px auto 0' }} />
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <div className={styles.grid}>
                         {filteredUsers.map((user) => (

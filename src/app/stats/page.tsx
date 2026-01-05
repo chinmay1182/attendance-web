@@ -4,6 +4,7 @@ import { Navbar } from '../../components/Navbar';
 import styles from './stats.module.css';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabaseClient';
+import { Skeleton } from '../../components/Skeleton';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 import {
@@ -276,7 +277,41 @@ export default function StatsPage() {
         setEmployeeModalOpen(true);
     };
 
-    if (loading) return <LoadingSpinner fullScreen />;
+    if (loading) return (
+        <>
+            <Navbar />
+            <div className={styles.container}>
+                {/* Header Skeleton */}
+                <div style={{ marginBottom: 32 }}>
+                    <Skeleton width={300} height={40} style={{ marginBottom: 8 }} />
+                    <Skeleton width={150} height={20} />
+                </div>
+
+                {/* KPI/Stats Cards Skeleton */}
+                <div className={styles.grid}>
+                    {[1, 2, 3, 4].map(i => (
+                        <Skeleton key={i} height={120} borderRadius={16} />
+                    ))}
+                </div>
+
+                {/* Charts Area Skeleton */}
+                <div className={styles.chartsGrid} style={{ marginTop: 32 }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <Skeleton height={340} borderRadius={16} />
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <Skeleton height={340} borderRadius={16} />
+                    </div>
+                    <div>
+                        <Skeleton height={300} borderRadius={16} />
+                    </div>
+                    <div>
+                        <Skeleton height={300} borderRadius={16} />
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 
     return (
         <>

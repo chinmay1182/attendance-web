@@ -12,6 +12,7 @@ import {
     PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import * as XLSX from 'xlsx'; // Added for export functionality
+import { Skeleton } from '../../components/Skeleton';
 
 type Expense = {
     id: string;
@@ -359,7 +360,34 @@ export default function ExpensesPage() {
 
     const COLORS = ['#f59e0b', '#10b981', '#ef4444'];
 
-    if (authLoading) return <LoadingSpinner fullScreen />;
+    if (authLoading) return (
+        <>
+            <Navbar />
+            <div className={styles.container}>
+                {/* Header Skeleton */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <Skeleton width={250} height={40} />
+                    <Skeleton width={200} height={40} borderRadius={8} />
+                </div>
+
+                {/* KPI Skeletons */}
+                <div className={styles.statsGrid}>
+                    <Skeleton height={100} borderRadius={16} />
+                    <Skeleton height={100} borderRadius={16} />
+                    <Skeleton height={100} borderRadius={16} />
+                </div>
+
+                {/* Charts Area Skeleton */}
+                <div className={styles.chartsGrid} style={{ marginTop: 24 }}>
+                    <Skeleton height={300} borderRadius={16} />
+                    <Skeleton height={300} borderRadius={16} />
+                    <div style={{ gridColumn: 'span 2' }}>
+                        <Skeleton height={300} borderRadius={16} />
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 
     return (
         <>
