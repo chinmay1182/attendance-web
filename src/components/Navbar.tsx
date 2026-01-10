@@ -19,16 +19,22 @@ export const Navbar = () => {
     const [isHrDrpOpen, setIsHrDrpOpen] = useState(false);
 
     const getLinkStyle = (path: string) => {
-        const isActive = pathname === path;
+        const isActive = pathname === path || (path !== '/dashboard' && pathname.startsWith(path));
         return {
             color: isActive ? 'var(--primary)' : 'var(--text-muted)',
-            fontWeight: 600,
+            fontWeight: isActive ? 600 : 500,
             textDecoration: 'none',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            background: isActive ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+            padding: '12px 16px',
+            borderRadius: '12px',
+            background: isActive ? 'rgba(79, 70, 229, 0.08)' : 'transparent',
             transition: 'all 0.2s',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            width: '100%',
+            fontSize: '0.95rem',
+            marginBottom: '2px'
         } as React.CSSProperties;
     };
 
@@ -46,7 +52,7 @@ export const Navbar = () => {
                 const newNotice = payload.new as any;
                 let relevant = newNotice.audience === 'all';
                 if (newNotice.audience === 'role' && newNotice.target_id === profile.role) relevant = true;
-                if (newNotice.audience === 'user' && newNotice.target_id === user.uid) relevant = true;
+                if (newNotice.audience === 'user' && newNotice.target_id === user.id) relevant = true;
 
                 if (relevant) {
                     import('react-hot-toast').then(({ default: toast }) => {
@@ -61,7 +67,7 @@ export const Navbar = () => {
                         toast('📝 New Leave Request Submitted', { icon: 'exclamation' });
                     });
                 }
-                if (!isManagement && payload.eventType === 'UPDATE' && record.user_id === user.uid) {
+                if (!isManagement && payload.eventType === 'UPDATE' && record.user_id === user.id) {
                     import('react-hot-toast').then(({ default: toast }) => {
                         toast(`YOUR Leave Request was ${record.status.toUpperCase()}`, {
                             icon: record.status === 'approved' ? '✅' : '❌'
@@ -71,7 +77,7 @@ export const Navbar = () => {
             })
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload) => {
                 const task = payload.new as any;
-                if (task.user_id === user.uid) {
+                if (task.user_id === user.id) {
                     import('react-hot-toast').then(({ default: toast }) => {
                         toast('📌 New Task Assigned/Logged: ' + task.title);
                     });
@@ -83,95 +89,135 @@ export const Navbar = () => {
     }, [user, profile, isManagement]);
 
     return (
-        <nav style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '8px 40px',
+        <nav className="sidebar-nav" style={{
             background: 'var(--bg-card)',
             backdropFilter: 'blur(12px)',
-            borderBottom: '1px solid var(--glass-border)',
-            position: 'sticky',
-            top: 0,
             zIndex: 100,
-            width: '100%'
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            transition: 'all 0.3s ease'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-                <Image src="/myaccount.svg" alt="Attendance Pro" width={180} height={30} priority style={{ objectFit: 'contain' }} />
+            {/* Logo Section */}
+            <div style={{ paddingBottom: '24px', width: '100%' }}>
+                <Image src="/myaccount.svg" alt="Attendance Pro" width={180} height={40} priority style={{ objectFit: 'contain', alignSelf: 'flex-start' }} />
             </div>
 
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {/* Navigation Links - Scrollable Area */}
+            <div style={{
+                flex: 1,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                overflowY: 'auto',
+                paddingRight: '8px' // Space for scrollbar
+            }}>
                 {loading ? (
-                    /* Shimmer Loading State for Tabs */
-                    <div style={{ display: 'flex', gap: '12px', marginRight: '24px' }}>
-                        <Skeleton width={80} height={36} borderRadius={8} />
-                        <Skeleton width={80} height={36} borderRadius={8} />
-                        <Skeleton width={80} height={36} borderRadius={8} />
-                        <Skeleton width={80} height={36} borderRadius={8} />
-                        <Skeleton width={80} height={36} borderRadius={8} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <Skeleton width="100%" height={48} borderRadius={12} />
+                        <Skeleton width="100%" height={48} borderRadius={12} />
+                        <Skeleton width="100%" height={48} borderRadius={12} />
+                        <Skeleton width="100%" height={48} borderRadius={12} />
                     </div>
                 ) : (
-                    /* Actual Nav Links */
                     <>
-                        {/* Employee Tabs */}
+                        {/* Employee Menu */}
                         {!isManagement && (
                             <>
-                                <Link href="/dashboard" style={getLinkStyle('/dashboard')}>Home</Link>
-                                <Link href="/calendar" style={getLinkStyle('/calendar')}>Calendar</Link>
-                                <Link href="/regularization" style={getLinkStyle('/regularization')}>Regularize</Link>
-                                <Link href="/documents" style={getLinkStyle('/documents')}>My Documents</Link>
-                                <Link href="/sites" style={getLinkStyle('/sites')}>My Sites</Link>
-                                <Link href="/company" style={getLinkStyle('/company')}>Company</Link>
+                                <Link href="/dashboard" style={getLinkStyle('/dashboard')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>dashboard</span>
+                                    Dashboard
+                                </Link>
+                                <Link href="/calendar" style={getLinkStyle('/calendar')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>calendar_month</span>
+                                    Calendar
+                                </Link>
+                                <Link href="/regularization" style={getLinkStyle('/regularization')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>update</span>
+                                    Regularize
+                                </Link>
+                                <Link href="/documents" style={getLinkStyle('/documents')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>folder</span>
+                                    Documents
+                                </Link>
+                                <Link href="/sites" style={getLinkStyle('/sites')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>location_on</span>
+                                    My Sites
+                                </Link>
+                                <Link href="/company" style={getLinkStyle('/company')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>business</span>
+                                    Company
+                                </Link>
                             </>
                         )}
 
-                        {/* Management & HR Tabs */}
+                        {/* Management & HR Menu */}
                         {isManagement && (
                             <>
-                                <Link href="/team" style={getLinkStyle('/team')}>Team</Link>
-                                <Link href="/stats" style={getLinkStyle('/stats')}>Stats</Link>
-                                <Link href="/notices" style={getLinkStyle('/notices')}>Notices</Link>
-                                <Link href="/sites" style={getLinkStyle('/sites')}>Sites</Link>
+                                <div style={{
+                                    textTransform: 'uppercase',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: 'var(--text-muted)',
+                                    marginTop: '16px',
+                                    marginBottom: '8px',
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    Management
+                                </div>
+                                <Link href="/team" style={getLinkStyle('/team')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>group</span>
+                                    Team
+                                </Link>
+                                <Link href="/stats" style={getLinkStyle('/stats')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>bar_chart</span>
+                                    Stats
+                                </Link>
+                                <Link href="/notices" style={getLinkStyle('/notices')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>campaign</span>
+                                    Notices
+                                </Link>
+                                <Link href="/sites" style={getLinkStyle('/sites')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>map</span>
+                                    Sites
+                                </Link>
 
-                                {/* HR Management Dropdown */}
-                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                {/* HR Dropdown - Converted to Expandable List */}
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
                                     <button
                                         onClick={() => setIsHrDrpOpen(!isHrDrpOpen)}
                                         style={{
-                                            color: 'var(--text-muted)',
-                                            fontWeight: 600,
-                                            padding: '8px 16px',
-                                            borderRadius: '8px',
-                                            border: 'none',
-                                            background: 'transparent',
+                                            ...getLinkStyle('hr-group'),
+                                            justifyContent: 'space-between',
                                             cursor: 'pointer',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            width: '100%',
                                             display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '4px',
-                                            fontSize: '1rem',
-                                            whiteSpace: 'nowrap'
+                                            textAlign: 'left'
                                         }}
                                     >
-                                        HR Management
-                                        <span className="material-symbols-outlined">keyboard_arrow_down</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>badge</span>
+                                            HR Management
+                                        </div>
+                                        <span className="material-symbols-outlined" style={{
+                                            transform: isHrDrpOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            transition: 'transform 0.2s'
+                                        }}>keyboard_arrow_down</span>
                                     </button>
 
+                                    {/* Expandable Content */}
                                     {isHrDrpOpen && (
                                         <div style={{
-                                            position: 'absolute',
-                                            top: '120%',
-                                            left: 0,
-                                            background: 'var(--bg-card)',
-                                            backdropFilter: 'blur(12px)',
-                                            border: '1px solid var(--glass-border)',
-                                            borderRadius: '12px',
-                                            padding: '8px',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: '4px',
-                                            minWidth: '180px',
-                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                            zIndex: 1000
+                                            paddingLeft: '16px',
+                                            borderLeft: '2px solid var(--glass-border)',
+                                            marginLeft: '12px',
+                                            marginTop: '4px'
                                         }}>
                                             <Link href="/recruitment" style={getLinkStyle('/recruitment')}>Hiring</Link>
                                             <Link href="/payroll" style={getLinkStyle('/payroll')}>Payroll</Link>
@@ -181,84 +227,142 @@ export const Navbar = () => {
                                     )}
                                 </div>
 
-                                <Link href="/performance" style={getLinkStyle('/performance')}>Performance</Link>
-                                <Link href="/rewards" style={getLinkStyle('/rewards')}>Rewards</Link>
-                                <Link href="/help" style={getLinkStyle('/help')}>Help</Link>
+                                <Link href="/performance" style={getLinkStyle('/performance')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>psychology</span>
+                                    Performance
+                                </Link>
+                                <Link href="/rewards" style={getLinkStyle('/rewards')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>emoji_events</span>
+                                    Rewards
+                                </Link>
                             </>
                         )}
 
-                        {/* System Admin */}
+                        {/* Admin Menu */}
                         {profile?.role === 'admin' && (
                             <>
-                                <Link href="/org-structure" style={getLinkStyle('/org-structure')}>Org</Link>
-                                <Link href="/audit-logs" style={getLinkStyle('/audit-logs')}>Logs</Link>
+                                <div style={{
+                                    textTransform: 'uppercase',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: 'var(--text-muted)',
+                                    marginTop: '16px',
+                                    marginBottom: '8px',
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    System
+                                </div>
+                                <Link href="/org-structure" style={getLinkStyle('/org-structure')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>account_tree</span>
+                                    Organization
+                                </Link>
+                                <Link href="/audit-logs" style={getLinkStyle('/audit-logs')}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>history</span>
+                                    Audit Logs
+                                </Link>
                             </>
                         )}
 
-                        {/* Expenses */}
-                        {profile?.role !== 'admin' && (
-                            <Link href="/expenses" style={getLinkStyle('/expenses')}>Expenses</Link>
-                        )}
+                        <div style={{ height: '1px', background: 'var(--glass-border)', margin: '16px 0' }}></div>
+
+                        <Link href="/help" style={getLinkStyle('/help')}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>help</span>
+                            Help & Support
+                        </Link>
                     </>
                 )}
+            </div>
 
-                <div style={{ width: 1, height: 24, background: 'var(--glass-border)', margin: '0 8px' }}></div>
-
-                {/* Icons Section - Always Visible */}
-                <Link href="/chat" style={{ color: 'var(--text-muted)', padding: '8px', display: 'flex', alignItems: 'center' }}>
-                    <span className="material-symbols-outlined">chat</span>
-                </Link>
-
-                <Link href="/settings" style={{ color: 'var(--text-muted)', padding: '8px', display: 'flex', alignItems: 'center' }}>
-                    <span className="material-symbols-outlined">build</span>
-                </Link>
-
-                <button
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text-muted)',
-                        padding: '8px',
+            {/* Bottom Actions */}
+            <div style={{
+                marginTop: 'auto',
+                paddingTop: '20px',
+                borderTop: '1px solid var(--glass-border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                width: '100%'
+            }}>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'space-between' }}>
+                    <Link href="/chat" style={{
+                        flex: 1,
                         display: 'flex',
-                        alignItems: 'center'
-                    }}
-                >
-                    <span className="material-symbols-outlined">notification_multiple</span>
-                </button>
-
-                <button
-                    onClick={toggleTheme}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: 'var(--text-muted)',
-                        padding: '8px',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '12px',
+                        background: 'rgba(255,255,255,0.5)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)'
+                    }}>
+                        <span className="material-symbols-outlined">chat</span>
+                    </Link>
+                    <Link href="/settings" style={{
+                        flex: 1,
                         display: 'flex',
-                        alignItems: 'center'
-                    }}
-                >
-                    <span className="material-symbols-outlined">
-                        {theme === 'light' ? 'light_mode' : 'moon_stars'}
-                    </span>
-                </button>
-
-                <button
-                    onClick={logout}
-                    style={{
-                        background: 'none',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '12px',
+                        background: 'rgba(255,255,255,0.5)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)'
+                    }}>
+                        <span className="material-symbols-outlined">settings</span>
+                    </Link>
+                    <button onClick={toggleTheme} style={{
+                        flex: 1,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        padding: '12px',
+                        background: 'rgba(255,255,255,0.5)',
+                        borderRadius: '12px',
+                        color: 'var(--text-main)',
                         border: 'none',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        fontWeight: 600,
-                        padding: '8px 12px',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    Logout
-                </button>
+                        cursor: 'pointer'
+                    }}>
+                        <span className="material-symbols-outlined">
+                            {theme === 'light' ? 'light_mode' : 'moon_stars'}
+                        </span>
+                    </button>
+                </div>
+
+                {/* User Profile / Logout */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: 'rgba(255,255,255,0.5)',
+                    borderRadius: '16px',
+                    gap: '12px'
+                }}>
+                    <div style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700
+                    }}>
+                        {profile?.name?.charAt(0) || 'U'}
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {profile?.name || 'User'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {profile?.role || 'Employee'}
+                        </div>
+                    </div>
+                    <button onClick={logout} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                        <span className="material-symbols-outlined">logout</span>
+                    </button>
+                </div>
             </div>
         </nav>
     )
 }
+
+
