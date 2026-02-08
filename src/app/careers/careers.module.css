@@ -2,8 +2,8 @@
 .container {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 40px 20px;
-    font-family: 'Inter', sans-serif;
+    padding: 40px 24px;
+    /* font-family: inherit; - Inherited from Upgrade */
 }
 
 .header {
@@ -12,16 +12,17 @@
 }
 
 .title {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #111;
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--text-main);
     margin: 0 0 16px 0;
-    letter-spacing: -1px;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
 }
 
 .subtitle {
-    font-size: 1.2rem;
-    color: #666;
+    font-size: 1.25rem;
+    color: var(--text-muted);
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.6;
@@ -34,76 +35,88 @@
 }
 
 .jobCard {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
     padding: 32px;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     display: flex;
     justify-content: space-between;
     align-items: center;
     text-decoration: none;
     color: inherit;
+    box-shadow: var(--glass-shadow);
 }
 
 .jobCard:hover {
-    border-color: #2563eb;
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -8px rgba(37, 99, 235, 0.15);
+    border-color: var(--primary);
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 20px 40px -12px rgba(var(--primary-hue), 80%, 60%, 0.15);
 }
 
 .jobTitle {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #111;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text-main);
     margin: 0 0 8px 0;
 }
 
 .jobMeta {
     display: flex;
-    gap: 16px;
-    color: #6b7280;
+    flex-wrap: wrap;
+    gap: 12px;
+    color: var(--text-muted);
     font-size: 0.95rem;
     font-weight: 500;
+    align-items: center;
 }
 
 .applyBtn {
     padding: 12px 24px;
-    background: #111;
+    background: var(--text-main);
     color: white;
     border-radius: 99px;
     font-weight: 600;
     text-decoration: none;
+    transition: all 0.2s;
+}
+
+.applyBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Job Detail & Form */
 .detailCard {
-    background: white;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
     border-radius: 24px;
-    border: 1px solid #e5e7eb;
-    padding: 40px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--glass-border);
+    padding: 48px;
+    box-shadow: var(--glass-shadow);
     margin-bottom: 40px;
 }
 
 .sectionTitle {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 32px 0 16px 0;
-    color: #111;
+    font-size: 1.3rem;
+    font-weight: 500;
+    margin: 40px 0 20px 0;
+    color: var(--text-main);
 }
 
 .description {
-    color: #4b5563;
-    line-height: 1.7;
+    color: var(--text-muted);
+    line-height: 1.8;
     white-space: pre-wrap;
+    font-size: 1.05rem;
 }
 
 .formCard {
-    background: #f9fafb;
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 24px;
-    padding: 40px;
-    border: 1px solid #e5e7eb;
+    padding: 48px;
+    border: 1px solid var(--glass-border);
 }
 
 .inputGroup {
@@ -114,49 +127,70 @@
     display: block;
     font-weight: 600;
     margin-bottom: 8px;
-    color: #374151;
+    color: var(--text-main);
+    font-size: 0.95rem;
 }
 
 .input,
-.textarea {
+.textarea,
+.select {
     width: 100%;
-    padding: 14px;
-    border: 1px solid #d1d5db;
+    padding: 16px;
+    border: 1px solid var(--glass-border);
     border-radius: 12px;
     font-size: 1rem;
     background: white;
-    transition: border-color 0.2s;
+    transition: all 0.2s;
+    color: var(--text-main);
+    font-family: inherit;
 }
 
 .input:focus,
-.textarea:focus {
+.textarea:focus,
+.select:focus {
     outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--primary-light);
 }
 
 .submitBtn {
     width: 100%;
-    padding: 16px;
-    background: #2563eb;
+    padding: 18px;
+    background: var(--primary);
     color: white;
     border: none;
     border-radius: 12px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    margin-top: 12px;
 }
 
 .submitBtn:hover {
-    background: #1d4ed8;
+    background: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px -4px rgba(var(--primary-hue), 80%, 60%, 0.3);
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }
 
 .fileInput {
     background: white;
-    padding: 12px;
-    border: 1px dashed #9ca3af;
-    border-radius: 12px;
+    padding: 24px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 16px;
     width: 100%;
     cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.fileInput:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
 }

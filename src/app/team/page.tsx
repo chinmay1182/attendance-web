@@ -20,6 +20,7 @@ type Employee = {
     bio?: string; // Notes
     id_proof?: string;
     address?: string;
+    salary?: number;
 };
 
 type Department = { id: string, name: string };
@@ -52,7 +53,8 @@ export default function TeamPage() {
         phone: '',
         bio: '',
         idProof: '',
-        address: ''
+        address: '',
+        salary: ''
     });
 
     const canManage = profile?.role === 'admin' || profile?.role === 'hr';
@@ -184,6 +186,7 @@ export default function TeamPage() {
             Role: emp.role,
             Department: emp.department || '-',
             Phone: emp.phone || '-',
+            Salary: emp.salary ? `₹${emp.salary.toLocaleString()}` : '-',
             Site: emp.site_assignments && emp.site_assignments.length > 0 ? emp.site_assignments[0].site.name : '-',
             Joined: new Date(emp.created_at).toLocaleDateString(),
             Address: emp.address || '-',
@@ -215,7 +218,8 @@ export default function TeamPage() {
                     phone: formData.phone,
                     bio: formData.bio,
                     id_proof: formData.idProof,
-                    address: formData.address
+                    address: formData.address,
+                    salary: formData.salary ? parseFloat(formData.salary) : null
                 };
 
                 if (formData.joiningDate) {
@@ -266,7 +270,8 @@ export default function TeamPage() {
                     phone: formData.phone,
                     bio: formData.bio,
                     id_proof: formData.idProof,
-                    address: formData.address
+                    address: formData.address,
+                    salary: formData.salary ? parseFloat(formData.salary) : null
                 };
                 if (formData.joiningDate) {
                     updates.created_at = new Date(formData.joiningDate).toISOString();
@@ -340,7 +345,8 @@ export default function TeamPage() {
             phone: emp.phone || '',
             bio: emp.bio || '',
             idProof: emp.id_proof || '',
-            address: emp.address || ''
+            address: emp.address || '',
+            salary: emp.salary ? emp.salary.toString() : ''
         });
         setIsEditing(true);
         setIsModalOpen(true);
@@ -360,7 +366,8 @@ export default function TeamPage() {
             phone: '',
             bio: '',
             idProof: '',
-            address: ''
+            address: '',
+            salary: ''
         });
     };
 
@@ -385,6 +392,7 @@ export default function TeamPage() {
                                 <th>Role</th>
                                 <th>Department</th>
                                 <th>Phone</th>
+                                <th>Salary</th>
                                 <th>Site</th>
                                 <th>Joined Date</th>
                                 {canManage && <th>Actions</th>}
@@ -392,11 +400,11 @@ export default function TeamPage() {
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
+                                <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
                             ) : (
                                 <>
                                     {employees.length === 0 && (
-                                        <tr><td colSpan={7} style={{ textAlign: 'center', padding: '24px' }}>No employees found.</td></tr>
+                                        <tr><td colSpan={8} style={{ textAlign: 'center', padding: '24px' }}>No employees found.</td></tr>
                                     )}
                                     {employees.map(emp => (
                                         <tr key={emp.id}>
@@ -422,6 +430,11 @@ export default function TeamPage() {
                                             </td>
                                             <td>{emp.department || '-'}</td>
                                             <td>{emp.phone || '-'}</td>
+                                            <td>
+                                                {emp.salary ? (
+                                                    <span style={{ fontWeight: 600, color: '#16a34a' }}>₹{emp.salary.toLocaleString()}</span>
+                                                ) : '-'}
+                                            </td>
                                             <td>
                                                 {emp.site_assignments && emp.site_assignments.length > 0
                                                     ? emp.site_assignments[0].site.name
@@ -621,6 +634,20 @@ export default function TeamPage() {
                                         <option key={dept.id} value={dept.name}>{dept.name}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            {/* Salary */}
+                            <div>
+                                <label className={styles.label}>Monthly Salary (₹)</label>
+                                <input
+                                    type="number"
+                                    className={styles.input}
+                                    value={formData.salary}
+                                    onChange={e => setFormData({ ...formData, salary: e.target.value })}
+                                    placeholder="e.g. 50000"
+                                    min="0"
+                                    step="1000"
+                                />
                             </div>
 
                             {/* Site */}

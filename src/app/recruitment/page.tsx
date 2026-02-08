@@ -109,7 +109,7 @@ export default function RecruitmentPage() {
         const { error } = await supabase.from('jobs').insert({
             ...newJob,
             status: 'open',
-            created_by: user?.uid
+            created_by: user?.id
         });
 
         if (error) {
@@ -146,7 +146,7 @@ export default function RecruitmentPage() {
         if (!newNote || !selectedCandidate) return;
         const { error } = await supabase.from('candidate_notes').insert({
             application_id: selectedCandidate.id,
-            author_id: user?.uid,
+            author_id: user?.id,
             content: newNote
         });
         if (error) {
@@ -196,7 +196,21 @@ export default function RecruitmentPage() {
                         {jobs.map(job => (
                             <div key={job.id} className={styles.jobCard}>
                                 <div className={styles.jobInfo}>
-                                    <h3>{job.title} <span className={`${styles.statusBadge} ${styles['status' + job.status]}`}>{job.status}</span></h3>
+                                    <h3>
+                                        {job.title}
+                                        <span className={`${styles.statusBadge} ${styles['status' + job.status]}`}>{job.status}</span>
+                                        {job.status === 'open' && (
+                                            <a
+                                                href={`/careers/${job.id}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className={styles.liveLink}
+                                                style={{ fontSize: '0.75rem', marginLeft: '12px', color: '#2563eb', textDecoration: 'none', fontWeight: 500, border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '12px', background: '#eff6ff' }}
+                                            >
+                                                Live on Careers Page ↗
+                                            </a>
+                                        )}
+                                    </h3>
                                     <div className={styles.jobMeta}>
                                         <span>{job.department}</span>
                                         <span>•</span>

@@ -21,6 +21,10 @@ const LeaveWidget = dynamic(() => import('../../components/LeaveWidget').then(mo
     loading: () => <Skeleton height={280} borderRadius={24} />
 });
 
+const RemindersWidget = dynamic(() => import('../../components/RemindersWidget').then(mod => mod.RemindersWidget), {
+    loading: () => <Skeleton height={400} borderRadius={24} />
+});
+
 
 export default function EmployeeDashboard() {
     const { user, profile, loading } = useAuth();
@@ -234,6 +238,11 @@ export default function EmployeeDashboard() {
                                         Manage Shifts
                                     </button>
                                 </div>
+                            </div>
+
+                            {/* Reminders Widget */}
+                            <div style={{ minWidth: 0, gridColumn: '1 / -1' }}>
+                                <RemindersWidget />
                             </div>
                         </>
                     ) : (

@@ -34,6 +34,7 @@ export default function LocationTrackingPage() {
     const { user, profile, loading } = useAuth();
     const router = useRouter();
     const [locations, setLocations] = useState<UserLocation[]>([]);
+    const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
     const [exportStartDate, setExportStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -47,66 +48,62 @@ export default function LocationTrackingPage() {
         if (profile?.role === 'admin' || profile?.role === 'hr') {
             fetchLocations(); // Initial fetch
 
-            // Subscribe to realtime location updates
-            const locationChannel = supabase.channel('tracking_channel')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'user_locations' }, (payload) => {
-                    fetchLocations(); // Refetch to get joined data
-                })
-                .subscribe();
-
             // Subscribe to realtime attendance updates (for clock-in/out)
             const attendanceChannel = supabase.channel('attendance_tracking_channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload) => {
+                    console.log('Attendance update received:', payload);
                     fetchLocations(); // Refetch to update punch times and photos
                 })
                 .subscribe();
 
             return () => {
-                supabase.removeChannel(locationChannel);
                 supabase.removeChannel(attendanceChannel);
             };
         }
     }, [profile]);
 
     const fetchLocations = async () => {
-        // Fetch locations and users
-        const { data: locationData, error } = await supabase
-            .from('user_locations')
-            .select(`
-                user_id, latitude, longitude, updated_at,
-                user:users(name, photo_url)
-            `);
-
-        if (locationData) {
-            // Fetch today's attendance for these users
+        try {
+            // Fetch today's attendance with user details
             const today = new Date().toISOString().split('T')[0];
-            const { data: attendanceData } = await supabase
+            const { data: attendanceData, error } = await supabase
                 .from('attendance')
-                .select('user_id, clock_in, clock_out, photo_in, photo_out')
+                .select(`
+                    *,
+                    user:users(name, photo_url, email)
+                `)
                 .eq('date', today)
-                .in('user_id', locationData.map((l: any) => l.user_id));
+                .order('clock_in', { ascending: false });
 
-            // Map Supabase response to UserLocation type safely with joined attendance
-            const formattedData = locationData.map((item: any) => {
-                const att = attendanceData?.find((a: any) => a.user_id === item.user_id);
-                return {
-                    user_id: item.user_id,
-                    latitude: item.latitude,
-                    longitude: item.longitude,
-                    updated_at: item.updated_at,
+            if (error) {
+                console.error('Error fetching attendance:', error);
+                return;
+            }
+
+            if (attendanceData) {
+                // Map attendance data to UserLocation format
+                const formattedData = attendanceData.map((att: any) => ({
+                    user_id: att.user_id,
+                    latitude: att.location_in?.lat || 0,
+                    longitude: att.location_in?.lng || 0,
+                    updated_at: att.clock_out || att.clock_in,
                     user: {
-                        name: item.user?.name,
-                        photoURL: item.user?.photo_url
+                        name: att.user?.name,
+                        photoURL: att.user?.photo_url
                     },
-                    attendance: att ? {
+                    attendance: {
                         punch_in: att.clock_in,
                         punch_out: att.clock_out,
                         punch_in_photo: att.photo_in,
                         punch_out_photo: att.photo_out
-                    } : undefined
-                };
-            });
-            setLocations(formattedData);
+                    }
+                }));
+
+                console.log('Formatted locations:', formattedData);
+                setLocations(formattedData);
+            }
+        } catch (err) {
+            console.error('fetchLocations error:', err);
         }
     };
 
@@ -165,14 +162,18 @@ export default function LocationTrackingPage() {
             <div className={styles.container}>
                 <h1 className={styles.title}>Live Employee Tracking</h1>
 
+
                 <div className={styles.mapContainer}>
                     <Map
-                        markers={locations.map(loc => ({
-                            id: loc.user_id,
-                            lat: loc.latitude,
-                            lng: loc.longitude,
-                            title: loc.user?.name || 'Unknown User'
-                        }))}
+                        markers={locations
+                            .filter(loc => loc.latitude !== 0 && loc.longitude !== 0)
+                            .map(loc => ({
+                                id: loc.user_id,
+                                lat: loc.latitude,
+                                lng: loc.longitude,
+                                title: loc.user?.name || 'Unknown User',
+                                isSelected: loc.user_id === selectedEmployee
+                            }))}
                     />
                 </div>
 
@@ -243,7 +244,14 @@ export default function LocationTrackingPage() {
                                 </tr>
                             )}
                             {locations.map(loc => (
-                                <tr key={loc.user_id}>
+                                <tr
+                                    key={loc.user_id}
+                                    onClick={() => setSelectedEmployee(loc.user_id)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        backgroundColor: selectedEmployee === loc.user_id ? 'rgba(59, 130, 246, 0.1)' : 'transparent'
+                                    }}
+                                >
                                     <td>
                                         <div className={styles.employeeCell}>
                                             <div className={styles.avatar}>
@@ -260,7 +268,11 @@ export default function LocationTrackingPage() {
                                         </div>
                                     </td>
                                     <td>
-                                        <span className={`${styles.statusBadge} ${styles.in}`}>Active</span>
+                                        {loc.attendance?.punch_out ? (
+                                            <span className={`${styles.statusBadge} ${styles.out}`}>Clocked Out</span>
+                                        ) : (
+                                            <span className={`${styles.statusBadge} ${styles.in}`}>Clocked In</span>
+                                        )}
                                     </td>
                                     <td>
                                         {loc.latitude.toFixed(4)}, {loc.longitude.toFixed(4)}
@@ -277,6 +289,8 @@ export default function LocationTrackingPage() {
                                                             className={styles.punchImage}
                                                             alt="In"
                                                             title="Punch In Photo"
+                                                            crossOrigin="anonymous"
+                                                            referrerPolicy="no-referrer"
                                                         />
                                                     </div>
                                                 )}
@@ -294,6 +308,8 @@ export default function LocationTrackingPage() {
                                                             className={styles.punchImage}
                                                             alt="Out"
                                                             title="Punch Out Photo"
+                                                            crossOrigin="anonymous"
+                                                            referrerPolicy="no-referrer"
                                                         />
                                                     </div>
                                                 )}

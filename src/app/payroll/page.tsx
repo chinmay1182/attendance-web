@@ -66,6 +66,36 @@ export default function PayrollPage() {
                     import('react-hot-toast').then(({ default: toast }) => { toast.success('New Payroll Run Completed'); });
                 }
             )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'payroll_runs' },
+                (payload: any) => {
+                    const updatedRun = payload.new as PayrollRun;
+                    setRuns(prev => {
+                        const updated = prev.map(run => run.id === updatedRun.id ? updatedRun : run);
+                        updateStats(updated);
+                        return updated;
+                    });
+                    import('react-hot-toast').then(({ default: toast }) => { toast.success('Payroll Run Updated'); });
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'DELETE', schema: 'public', table: 'payroll_runs' },
+                (payload: any) => {
+                    const deletedId = payload.old.id;
+                    setRuns(prev => {
+                        const updated = prev.filter(run => run.id !== deletedId);
+                        if (updated.length > 0) {
+                            updateStats(updated);
+                        } else {
+                            setStats({ totalCost: 0, employeesProcessed: 0, pendingReviews: 0, taxDeductions: 0 });
+                        }
+                        return updated;
+                    });
+                    import('react-hot-toast').then(({ default: toast }) => { toast.success('Payroll Run Deleted'); });
+                }
+            )
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
@@ -73,25 +103,60 @@ export default function PayrollPage() {
 
     const handleRunPayroll = async () => {
         setLoading(true);
-        // Simulate calculation
-        const simulatedCost = Math.floor(Math.random() * 50000) + 100000;
-        const simulatedCount = Math.floor(Math.random() * 20) + 130;
+        try {
+            // Get actual employee count from database
+            const { count: employeeCount, error: countError } = await supabase
+                .from('users')
+                .select('*', { count: 'exact', head: true });
 
-        const { error } = await supabase.from('payroll_runs').insert([{
-            total_cost: simulatedCost,
-            employees_count: simulatedCount,
-            status: 'Completed',
-            created_at: new Date().toISOString()
-        }]);
+            if (countError) throw countError;
 
-        if (error) {
-            console.error(error);
-            toast.error("Failed to run payroll");
-        } else {
-            toast.success("Payroll run successfully!");
+            // Get employees with salary to calculate total cost
+            const { data: employeesWithSalary, error: salaryError } = await supabase
+                .from('users')
+                .select('salary')
+                .not('salary', 'is', null);
+
+            if (salaryError) throw salaryError;
+
+            // Calculate total cost from actual salaries
+            const totalCost = employeesWithSalary?.reduce((sum, emp) => sum + (emp.salary || 0), 0) || 0;
+            const actualEmployeeCount = employeeCount || 0;
+
+            const { error } = await supabase.from('payroll_runs').insert([{
+                total_cost: totalCost,
+                employees_count: actualEmployeeCount,
+                status: 'Completed',
+                created_at: new Date().toISOString()
+            }]);
+
+            if (error) throw error;
+
+            toast.success(`Payroll run successfully for ${actualEmployeeCount} employees!`);
             fetchPayrollData();
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "Failed to run payroll");
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
+    };
+
+    const handleDeleteRun = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this payroll run?')) return;
+
+        try {
+            const { error } = await supabase
+                .from('payroll_runs')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            // Toast will be shown by realtime subscription
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || 'Failed to delete payroll run');
+        }
     };
 
     return (
@@ -136,15 +201,48 @@ export default function PayrollPage() {
                                         <th style={{ padding: '12px', color: 'var(--text-muted)' }}>Employees</th>
                                         <th style={{ padding: '12px', color: 'var(--text-muted)' }}>Cost</th>
                                         <th style={{ padding: '12px', color: 'var(--text-muted)' }}>Status</th>
+                                        <th style={{ padding: '12px', color: 'var(--text-muted)' }}>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {runs.map(run => (
                                         <tr key={run.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                                            <td style={{ padding: '12px', color: 'var(--text-main)' }}>{new Date(run.created_at).toLocaleDateString()}</td>
+                                            <td style={{ padding: '12px', color: 'var(--text-main)' }}>
+                                                {new Date(run.created_at).toLocaleDateString()} {new Date(run.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </td>
                                             <td style={{ padding: '12px', color: 'var(--text-main)' }}>{run.employees_count}</td>
                                             <td style={{ padding: '12px', color: 'var(--text-main)' }}>₹{run.total_cost.toLocaleString()}</td>
                                             <td style={{ padding: '12px', color: '#16a34a', fontWeight: 'bold' }}>{run.status}</td>
+                                            <td style={{ padding: '12px' }}>
+                                                <button
+                                                    onClick={() => handleDeleteRun(run.id)}
+                                                    style={{
+                                                        padding: '6px 12px',
+                                                        background: '#fee2e2',
+                                                        color: '#dc2626',
+                                                        border: '1px solid #fecaca',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.85rem',
+                                                        fontWeight: 600,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => {
+                                                        e.currentTarget.style.background = '#fecaca';
+                                                        e.currentTarget.style.borderColor = '#fca5a5';
+                                                    }}
+                                                    onMouseOut={(e) => {
+                                                        e.currentTarget.style.background = '#fee2e2';
+                                                        e.currentTarget.style.borderColor = '#fecaca';
+                                                    }}
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                                                    Delete
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
