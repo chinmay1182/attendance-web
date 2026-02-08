@@ -128,8 +128,6 @@ export const ClockWidget = () => {
                     }
                 } else {
                     // Standard Day Shift
-                    // If buffer crosses midnight backwards (e.g. 1AM start, buffer 11PM previous day), this simple logic fails
-                    // But for standard day shifts (e.g. 9AM), buffer is 7AM same day.
                     if (now < earlyBuffer) {
                         alert(`You are too early! Shift starts at ${profile.shift_start}`);
                         return;
@@ -149,8 +147,19 @@ export const ClockWidget = () => {
             }
 
             setLoading(true);
+
+            // Capture photo
+            const photoBlob = await attendanceService.capturePhoto();
+            if (!photoBlob) {
+                const proceed = confirm('Camera access failed. Continue without photo?');
+                if (!proceed) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const loc = await getGeoLocation();
-            await attendanceService.clockIn(user.id, loc, status);
+            await attendanceService.clockIn(user.id, loc, status, photoBlob);
             await fetchAttendance();
         } catch (err) {
             console.error(err);
@@ -164,8 +173,19 @@ export const ClockWidget = () => {
         try {
             if (!record) return;
             setLoading(true);
+
+            // Capture photo
+            const photoBlob = await attendanceService.capturePhoto();
+            if (!photoBlob) {
+                const proceed = confirm('Camera access failed. Continue without photo?');
+                if (!proceed) {
+                    setLoading(false);
+                    return;
+                }
+            }
+
             const loc = await getGeoLocation();
-            await attendanceService.clockOut(record.id, loc);
+            await attendanceService.clockOut(record.id, loc, photoBlob);
             await fetchAttendance();
             setDuration(0);
         } catch (err) {

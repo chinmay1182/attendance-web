@@ -7,8 +7,12 @@ export interface AttendanceRecord {
     date: string;
     clock_in: string | null;
     clock_out: string | null;
-    status: 'present' | 'absent' | 'half-day';
+    status: 'present' | 'absent' | 'half-day' | 'late';
     total_hours: number;
+    photo_in?: string | null;
+    photo_out?: string | null;
+    location_in?: { lat: number, lng: number } | null;
+    location_out?: { lat: number, lng: number } | null;
 }
 
 export const attendanceService = {
@@ -17,7 +21,7 @@ export const attendanceService = {
             const res = await fetch(`/api/attendance/today?uid=${userId}`, {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json' },
-                cache: 'no-store' // Next.js: ensure we don't cache locally in the fetch client overly aggressively if logic depends on it
+                cache: 'no-store'
             });
             if (!res.ok) return null;
             const data = await res.json();
@@ -34,7 +38,6 @@ export const attendanceService = {
         let officeLat, officeLng, radius;
 
         try {
-            // Use cached API
             const res = await fetch('/api/sites/settings', { cache: 'no-store' });
             if (res.ok) {
                 const { value } = await res.json();
@@ -46,10 +49,6 @@ export const attendanceService = {
             }
         } catch (e) {
             console.error("Failed to fetch geofence settings via API", e);
-            // Fallback to allowing or maybe direct DB call if critical? 
-            // For safety/availability, we might default to 'allow' if system is down, 
-            // OR strictly perform a direct DB lookup as backup.
-            // Let's do a direct DB lookup as backup.
             const { data } = await supabase.from('settings').select('value').eq('key', 'general').single();
             if (data && data.value) {
                 officeLat = data.value.office_lat;
@@ -58,10 +57,10 @@ export const attendanceService = {
             }
         }
 
-        if (!officeLat) return true; // No geofence set
+        if (!officeLat) return true;
 
         // Haversine formula
-        const R = 6371e3; // metres
+        const R = 6371e3;
         const φ1 = location.lat * Math.PI / 180;
         const φ2 = officeLat * Math.PI / 180;
         const Δφ = (officeLat - location.lat) * Math.PI / 180;
@@ -71,7 +70,7 @@ export const attendanceService = {
             Math.cos(φ1) * Math.cos(φ2) *
             Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const d = R * c; // in metres
+        const d = R * c;
 
         if (d > radius) {
             throw new Error(`You are ${Math.round(d)}m away from office. Must be within ${radius}m.`);
@@ -79,11 +78,79 @@ export const attendanceService = {
         return true;
     },
 
-    async clockIn(userId: string, location?: { lat: number, lng: number }, status: 'present' | 'late' | 'absent' = 'present') {
-        // await this.checkGeofence(location); // Geofence check can be optional based on config, but kept for now.
+    async capturePhoto(): Promise<Blob | null> {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            const canvas = document.createElement('canvas');
 
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+
+                    // Wait for video to be ready
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        // Capture frame after a short delay
+                        setTimeout(() => {
+                            const ctx = canvas.getContext('2d');
+                            if (ctx) {
+                                ctx.drawImage(video, 0, 0);
+                                canvas.toBlob((blob) => {
+                                    // Stop camera
+                                    stream.getTracks().forEach(track => track.stop());
+                                    resolve(blob);
+                                }, 'image/jpeg', 0.8);
+                            } else {
+                                stream.getTracks().forEach(track => track.stop());
+                                resolve(null);
+                            }
+                        }, 500);
+                    };
+                })
+                .catch(err => {
+                    console.error('Camera access denied:', err);
+                    resolve(null);
+                });
+        });
+    },
+
+    async uploadPhoto(userId: string, photo: Blob, type: 'in' | 'out'): Promise<string | null> {
+        try {
+            const timestamp = new Date().getTime();
+            const fileName = `${userId}/${type}_${timestamp}.jpg`;
+
+            const { data, error } = await supabase.storage
+                .from('attendance-photos')
+                .upload(fileName, photo, {
+                    contentType: 'image/jpeg',
+                    upsert: false
+                });
+
+            if (error) {
+                console.error('Photo upload error:', error);
+                return null;
+            }
+
+            return data.path;
+        } catch (err) {
+            console.error('Upload failed:', err);
+            return null;
+        }
+    },
+
+    async clockIn(userId: string, location?: { lat: number, lng: number }, status: 'present' | 'late' | 'absent' = 'present', photoBlob?: Blob | null) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
+
+        let photoPath: string | null = null;
+
+        // Upload photo if provided
+        if (photoBlob) {
+            photoPath = await this.uploadPhoto(userId, photoBlob, 'in');
+        }
 
         const { data, error } = await supabase
             .from('attendance')
@@ -92,8 +159,9 @@ export const attendanceService = {
                     user_id: userId,
                     date: today,
                     clock_in: now,
-                    status: status, // Use the passed status
-                    location_in: location
+                    status: status,
+                    location_in: location,
+                    photo_in: photoPath
                 }
             ])
             .select()
@@ -103,20 +171,33 @@ export const attendanceService = {
         return data;
     },
 
-    async clockOut(attendanceId: string, location?: { lat: number, lng: number }) {
+    async clockOut(attendanceId: string, location?: { lat: number, lng: number }, photoBlob?: Blob | null) {
         await this.checkGeofence(location);
 
         const now = new Date().toISOString();
 
-        // We need to calculate total hours. 
-        // Ideally this is done in a database trigger or edge function, but we can do a rough calc here or let the backend handle it.
-        // For now, just update the clock_out time.
+        let photoPath: string | null = null;
+
+        // Upload photo if provided
+        if (photoBlob) {
+            // Get user_id from attendance record
+            const { data: record } = await supabase
+                .from('attendance')
+                .select('user_id')
+                .eq('id', attendanceId)
+                .single();
+
+            if (record) {
+                photoPath = await this.uploadPhoto(record.user_id, photoBlob, 'out');
+            }
+        }
 
         const { data, error } = await supabase
             .from('attendance')
             .update({
                 clock_out: now,
-                location_out: location
+                location_out: location,
+                photo_out: photoPath
             })
             .eq('id', attendanceId)
             .select()
@@ -124,5 +205,15 @@ export const attendanceService = {
 
         if (error) throw error;
         return data;
+    },
+
+    getPhotoUrl(path: string | null): string | null {
+        if (!path) return null;
+
+        const { data } = supabase.storage
+            .from('attendance-photos')
+            .getPublicUrl(path);
+
+        return data.publicUrl;
     }
 };
