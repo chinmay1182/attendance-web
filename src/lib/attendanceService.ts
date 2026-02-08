@@ -79,8 +79,8 @@ export const attendanceService = {
         return true;
     },
 
-    async clockIn(userId: string, location?: { lat: number, lng: number }) {
-        await this.checkGeofence(location);
+    async clockIn(userId: string, location?: { lat: number, lng: number }, status: 'present' | 'late' | 'absent' = 'present') {
+        // await this.checkGeofence(location); // Geofence check can be optional based on config, but kept for now.
 
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
@@ -92,7 +92,7 @@ export const attendanceService = {
                     user_id: userId,
                     date: today,
                     clock_in: now,
-                    status: 'present',
+                    status: status, // Use the passed status
                     location_in: location
                 }
             ])

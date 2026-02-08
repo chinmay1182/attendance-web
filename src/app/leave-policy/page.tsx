@@ -43,10 +43,15 @@ export default function LeavesPage() {
     const [allRequests, setAllRequests] = useState<LeaveRequest[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Apply Modal
+    // Apply Modal State
     const [isApplyOpen, setIsApplyOpen] = useState(false);
     const [newLeave, setNewLeave] = useState({ type: '', start: '', end: '', reason: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // Action Modal State
+    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+    const [actionData, setActionData] = useState<{ id: string, type: 'approved' | 'rejected' } | null>(null);
+    const [adminNote, setAdminNote] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -67,11 +72,10 @@ export default function LeavesPage() {
                         const rec = payload.new as any;
 
                         if (payload.eventType === 'INSERT') {
-                            if (rec.user_id === user.uid) {
+                            if (rec.user_id === user.id) {
                                 setMyRequests(prev => [rec, ...prev]);
                             }
                             if (isAdminOrHr) {
-                                // Need to fetch user details to display properly
                                 const { data: u } = await supabase.from('users').select('name, email, department').eq('id', rec.user_id).single();
                                 setAllRequests(prev => [{ ...rec, user: u }, ...prev]);
                             }
@@ -103,7 +107,7 @@ export default function LeavesPage() {
 
     const fetchMyRequests = async () => {
         try {
-            const res = await fetch(`/api/leaves?uid=${user?.uid}`, { cache: 'no-store' });
+            const res = await fetch(`/api/leaves?uid=${user?.id}`, { cache: 'no-store' });
             if (res.ok) setMyRequests(await res.json());
         } catch (e) { console.error(e); } finally { setLoading(false); }
     };
@@ -123,7 +127,7 @@ export default function LeavesPage() {
         }
         setSubmitting(true);
         const { error } = await supabase.from('leave_requests').insert({
-            user_id: user?.uid,
+            user_id: user?.id,
             leave_type: newLeave.type,
             start_date: newLeave.start,
             end_date: newLeave.end,
@@ -143,17 +147,35 @@ export default function LeavesPage() {
         setSubmitting(false);
     };
 
-    const handleStatusUpdate = async (id: string, newStatus: 'approved' | 'rejected') => {
+    const openActionModal = (id: string, type: 'approved' | 'rejected') => {
+        setActionData({ id, type });
+        setAdminNote('');
+        setIsActionModalOpen(true);
+    };
+
+    const confirmAction = async () => {
+        if (!actionData) return;
+
+        if (actionData.type === 'rejected' && !adminNote.trim()) {
+            toast.error("Please provide a reason for rejection.");
+            return;
+        }
+
         const { error } = await supabase
             .from('leave_requests')
-            .update({ status: newStatus, handled_by: user?.uid })
-            .eq('id', id);
+            .update({
+                status: actionData.type,
+                handled_by: user?.id,
+                admin_note: adminNote
+            })
+            .eq('id', actionData.id);
 
         if (error) {
             toast.error("Update failed");
         } else {
-            toast.success(`Request ${newStatus}`);
+            toast.success(`Request ${actionData.type}`);
             fetchAllRequests();
+            setIsActionModalOpen(false);
         }
     };
 
@@ -171,9 +193,11 @@ export default function LeavesPage() {
                         <p style={{ color: 'var(--text-muted)' }}>Manage employee leave requests and policies</p>
                     </div>
                     <div>
-                        <button onClick={() => setIsApplyOpen(true)} className={styles.primaryBtn} style={{ width: 'auto', padding: '10px 24px' }}>
-                            Apply Leave
-                        </button>
+                        {profile?.role !== 'admin' && (
+                            <button onClick={() => setIsApplyOpen(true)} className={styles.primaryBtn} style={{ width: 'auto', padding: '10px 24px' }}>
+                                Apply Leave
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -302,8 +326,8 @@ export default function LeavesPage() {
                                         <td>
                                             {req.status === 'pending' && (
                                                 <>
-                                                    <button onClick={() => handleStatusUpdate(req.id, 'approved')} className={`${styles.actionBtn} ${styles.approveBtn}`}>Approve</button>
-                                                    <button onClick={() => handleStatusUpdate(req.id, 'rejected')} className={`${styles.actionBtn} ${styles.rejectBtn}`}>Reject</button>
+                                                    <button onClick={() => openActionModal(req.id, 'approved')} className={`${styles.actionBtn} ${styles.approveBtn}`}>Approve</button>
+                                                    <button onClick={() => openActionModal(req.id, 'rejected')} className={`${styles.actionBtn} ${styles.rejectBtn}`}>Reject</button>
                                                 </>
                                             )}
                                         </td>
@@ -374,7 +398,39 @@ export default function LeavesPage() {
                     </div>
                 )}
 
-                {/* Apply Modal */}
+                {/* Action Modal */}
+                {isActionModalOpen && actionData && (
+                    <div className={styles.modalOverlay} onClick={() => setIsActionModalOpen(false)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <h2 style={{ marginTop: 0 }}>Confirm {actionData.type === 'approved' ? 'Approval' : 'Rejection'}</h2>
+                            <p>Are you sure you want to {actionData.type} this request?</p>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Admin Note (Optional)</label>
+                                <textarea
+                                    className={styles.textarea}
+                                    rows={3}
+                                    value={adminNote}
+                                    onChange={e => setAdminNote(e.target.value)}
+                                    placeholder={actionData.type === 'rejected' ? "Reason for rejection..." : "Add a note..."}
+                                />
+                            </div>
+
+                            <div className={styles.modalActions}>
+                                <button onClick={() => setIsActionModalOpen(false)} className={`${styles.modalBtn} ${styles.cancelBtn}`}>Cancel</button>
+                                <button
+                                    onClick={confirmAction}
+                                    className={`${styles.modalBtn} ${actionData.type === 'approved' ? styles.primaryBtn : styles.rejectBtn}`}
+                                    style={{ background: actionData.type === 'rejected' ? '#ef4444' : 'var(--primary)', color: 'white' }}
+                                >
+                                    Confirm {actionData.type === 'approved' ? 'Approve' : 'Reject'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Apply Leave Modal */}
                 {isApplyOpen && (
                     <div className={styles.modalOverlay} onClick={() => setIsApplyOpen(false)}>
                         <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -400,9 +456,12 @@ export default function LeavesPage() {
                                 <label className={styles.label}>Reason</label>
                                 <textarea className={styles.textarea} rows={3} value={newLeave.reason} onChange={e => setNewLeave({ ...newLeave, reason: e.target.value })} placeholder="Why are you taking leave?" />
                             </div>
-                            <button onClick={handleApplyLeave} className={styles.primaryBtn} disabled={submitting}>
-                                {submitting ? 'Submitting...' : 'Submit Request'}
-                            </button>
+                            <div className={styles.modalActions}>
+                                <button onClick={() => setIsApplyOpen(false)} className={`${styles.modalBtn} ${styles.cancelBtn}`}>Cancel</button>
+                                <button onClick={handleApplyLeave} className={`${styles.modalBtn} ${styles.primaryBtn}`} disabled={submitting}>
+                                    {submitting ? 'Submitting...' : 'Submit Request'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

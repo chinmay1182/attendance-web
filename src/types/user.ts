@@ -11,5 +11,6 @@ export interface UserProfile {
     shift_start?: string; // '09:00:00'
     shift_end?: string;
     department?: string;
+    company_id?: string;
     createdAt: string;
 }

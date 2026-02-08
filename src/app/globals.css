@@ -48,7 +48,7 @@ body {
   background-size: 500px, auto, auto;
   background-attachment: fixed, scroll, scroll;
   min-height: 100vh;
-  overflow-x: hidden;
+  letter-spacing: -0.5px;
 }
 
 a {
@@ -101,10 +101,10 @@ button {
     'opsz' 24;
 }
 
-/* Global Layout for 30/70 Split (Sidebar + Content) */
+/* Global Layout for Standard Sidebar (Fixed Width) */
 @media (min-width: 768px) {
   nav.sidebar-nav {
-    width: 30% !important;
+    width: 280px !important;
     height: 100vh !important;
     position: fixed !important;
     top: 0;
@@ -114,17 +114,21 @@ button {
     border-bottom: none !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    padding: 24px !important;
+    padding: 24px 16px !important;
+    /* Reduced side padding */
     justify-content: flex-start !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
   }
 
   /* Shift the content container that follows the nav */
   nav.sidebar-nav+div,
   nav.sidebar-nav+main,
   nav.sidebar-nav+section {
-    margin-left: 30% !important;
-    width: 70% !important;
-    max-width: 70% !important;
+    margin-left: 280px !important;
+    width: calc(100% - 280px) !important;
+    max-width: 100% !important;
+    padding: 32px !important;
   }
 }
 
@@ -145,5 +149,6 @@ button {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    padding: 16px !important;
   }
 }

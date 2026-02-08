@@ -270,6 +270,31 @@ export default function StatsPage() {
         XLSX.writeFile(wb, `Attendance_Report_${filterDate}_to_${filterEndDate}.xlsx`);
     };
 
+    const handlePersonalExport = async () => {
+        const XLSX = await import('xlsx');
+        const { data } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('user_id', user?.uid)
+            .order('date', { ascending: false });
+
+        if (data && data.length > 0) {
+            const dataToExport = data.map(row => ({
+                Date: row.date,
+                Status: row.status,
+                ClockIn: row.clock_in ? new Date(row.clock_in).toLocaleTimeString() : '-',
+                ClockOut: row.clock_out ? new Date(row.clock_out).toLocaleTimeString() : '-',
+                Hours: row.total_hours || 0
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataToExport);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "My Attendance");
+            XLSX.writeFile(wb, `My_Attendance_${new Date().toISOString().split('T')[0]}.xlsx`);
+        } else {
+            alert('No attendance data found to export.');
+        }
+    };
+
     const openEmployeeModal = (userId: string) => {
         // Find user and fetch specific stats
         const emp = employeesList.find(u => u.id === userId);
@@ -321,7 +346,16 @@ export default function StatsPage() {
                     {/* EMPLOYEE VIEW - Conditional Render */}
                     {profile?.role !== 'admin' && profile?.role !== 'hr' ? (
                         <>
-                            <h1 className={styles.title}>My Attendance Log</h1>
+                            <div className={styles.header}>
+                                <h1 className={styles.title}>My Attendance Log</h1>
+                                <button
+                                    onClick={() => handlePersonalExport()}
+                                    className={styles.btn}
+                                    style={{ fontSize: '0.9rem', padding: '6px 12px' }}
+                                >
+                                    Export Data
+                                </button>
+                            </div>
                             <div className={styles.grid}>
                                 <div className={styles.statCard}>
                                     <h2 className={styles.statValue}>{personalStats.present}</h2>

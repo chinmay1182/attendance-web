@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useEffect, useState } from 'react';
 import styles from './ClockWidget.module.css';
@@ -7,7 +6,7 @@ import { supabase } from '../lib/supabaseClient';
 import { attendanceService, AttendanceRecord } from '../lib/attendanceService';
 
 export const ClockWidget = () => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const [record, setRecord] = useState<AttendanceRecord | null>(null);
     const [loading, setLoading] = useState(true);
     const [duration, setDuration] = useState(0); // in seconds
@@ -29,7 +28,7 @@ export const ClockWidget = () => {
     const fetchAttendance = async () => {
         try {
             if (!user) return;
-            const data = await attendanceService.getTodayAttendance(user.uid);
+            const data = await attendanceService.getTodayAttendance(user.id);
             setRecord(data);
         } catch (err) {
             console.error(err);
@@ -45,7 +44,7 @@ export const ClockWidget = () => {
         const channel = supabase.channel('clock_widget_realtime')
             .on(
                 'postgres_changes',
-                { event: '*', schema: 'public', table: 'attendance', filter: `user_id=eq.${user.uid}` },
+                { event: '*', schema: 'public', table: 'attendance', filter: `user_id=eq.${user.id}` },
                 () => {
                     fetchAttendance(); // Reload on any change by this user
                 }
@@ -96,9 +95,62 @@ export const ClockWidget = () => {
     const handleClockIn = async () => {
         try {
             if (!user) return;
+
+            let status: 'present' | 'late' = 'present';
+
+            // Check Shift Timings
+            if (profile?.shift_start && profile?.shift_end) {
+                const now = new Date();
+                const [startH, startM] = profile.shift_start.split(':').map(Number);
+                const [endH, endM] = profile.shift_end.split(':').map(Number);
+
+                const startTime = new Date(now);
+                startTime.setHours(startH, startM, 0, 0);
+
+                const endTime = new Date(now);
+                endTime.setHours(endH, endM, 0, 0);
+
+                // Allow clock-in up to 2 hours early
+                const earlyBuffer = new Date(startTime);
+                earlyBuffer.setHours(startH - 2);
+
+                if (endTime < startTime) {
+                    // Overnight Shift logic
+                    if (now >= startTime) {
+                        const graceTime = new Date(startTime);
+                        graceTime.setMinutes(startM + 15);
+                        if (now > graceTime) status = 'late';
+                    } else if (now <= endTime) {
+                        status = 'late';
+                    } else if (now < earlyBuffer) {
+                        alert(`You are too early! Shift starts at ${profile.shift_start}`);
+                        return;
+                    }
+                } else {
+                    // Standard Day Shift
+                    // If buffer crosses midnight backwards (e.g. 1AM start, buffer 11PM previous day), this simple logic fails
+                    // But for standard day shifts (e.g. 9AM), buffer is 7AM same day.
+                    if (now < earlyBuffer) {
+                        alert(`You are too early! Shift starts at ${profile.shift_start}`);
+                        return;
+                    }
+                    if (now > endTime) {
+                        alert(`Shift ended at ${profile.shift_end}. You cannot clock in now.`);
+                        return;
+                    }
+
+                    const graceTime = new Date(startTime);
+                    graceTime.setMinutes(startM + 15);
+
+                    if (now > graceTime) {
+                        status = 'late';
+                    }
+                }
+            }
+
             setLoading(true);
             const loc = await getGeoLocation();
-            await attendanceService.clockIn(user.uid, loc);
+            await attendanceService.clockIn(user.id, loc, status);
             await fetchAttendance();
         } catch (err) {
             console.error(err);
@@ -151,6 +203,19 @@ export const ClockWidget = () => {
 
             <div className={styles.currentTime}>{formatTime(currentTime)}</div>
             <div className={styles.date}>{formatDate(currentTime)}</div>
+
+            {profile?.shift_start && profile?.shift_end && (
+                <div style={{
+                    marginTop: '8px',
+                    fontSize: '0.9rem',
+                    color: 'var(--text-muted)',
+                    background: 'rgba(0,0,0,0.05)',
+                    padding: '4px 12px',
+                    borderRadius: '12px'
+                }}>
+                    Shift: {profile.shift_start} - {profile.shift_end}
+                </div>
+            )}
 
             {isClockedIn ? (
                 <div className={`${styles.timerCircle} ${styles.active}`}>

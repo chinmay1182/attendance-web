@@ -1,13 +1,13 @@
 .container {
     padding: 0;
     max-width: 1200px;
-    margin: 40px auto 0;
 }
 
 .title {
     color: var(--text-main);
     margin-bottom: 30px;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
+    font-weight: 500;
 }
 
 .grid {

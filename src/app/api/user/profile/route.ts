@@ -18,6 +18,8 @@ export async function POST(request: Request) {
         const cacheKey = `user:profile:${uid}`;
 
         // 1. Try fetching from Redis Cache first
+        // TEMPORARY: Disable cache to force fresh fetch for role updates
+        /* 
         try {
             const cachedProfile = await redis.get(cacheKey);
             if (cachedProfile) {
@@ -27,6 +29,7 @@ export async function POST(request: Request) {
             console.warn('Redis Cache Read Error:', cacheErr);
             // Continue to DB if cache fails
         }
+        */
 
         // 2. Fetch user profile using Admin Client (Bypasses RLS)
         const { data, error } = await supabaseAdmin

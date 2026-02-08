@@ -1,7 +1,6 @@
 .container {
     padding: 0;
     max-width: 1200px;
-    margin: 40px auto 0;
 }
 
 .header {
@@ -13,8 +12,8 @@
 
 .title {
     color: var(--text-main);
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 1.5REM;
+    font-weight: 500;
 }
 
 .runBtn {
@@ -22,7 +21,7 @@
     background: #212121;
     color: white;
     border: none;
-    border-radius: 9999px;
+    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-medium);

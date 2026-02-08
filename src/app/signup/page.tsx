@@ -28,9 +28,10 @@ const SLIDES = [
 export default function SignupPage() {
     const router = useRouter();
     const [name, setName] = useState("");
+    const [companyName, setCompanyName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState<UserRole>("employee"); // Default role
+    const [role, setRole] = useState<UserRole>("admin"); // Default to Admin for new signups
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -75,7 +76,8 @@ export default function SignupPage() {
                     id: user.id,
                     email: email,
                     name: name,
-                    role: role,
+                    role: 'admin', // Always admin for self-signup
+                    companyName: companyName,
                 }),
             });
 
@@ -143,6 +145,13 @@ export default function SignupPage() {
 
                     <form onSubmit={handleSignup} className={styles.form}>
                         <Input
+                            label="Company Name"
+                            placeholder="Acme Corp"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            required
+                        />
+                        <Input
                             label="Full Name"
                             placeholder="Jane Doe"
                             value={name}
@@ -165,26 +174,6 @@ export default function SignupPage() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
-
-                        <div style={{ marginBottom: "20px" }}>
-                            <label className={styles.subtitle} style={{ display: "block", marginBottom: "8px", textAlign: "left", fontSize: "0.9rem" }}>Select Role</label>
-                            <select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value as UserRole)}
-                                style={{
-                                    width: "100%",
-                                    padding: "12px",
-                                    borderRadius: "12px",
-                                    border: "1px solid rgba(0,0,0,0.1)",
-                                    color: "black",
-                                    outline: "none"
-                                }}
-                            >
-                                <option value="employee" style={{ color: "black" }}>Employee</option>
-                                <option value="hr" style={{ color: "black" }}>HR</option>
-                                <option value="admin" style={{ color: "black" }}>Admin (Manager)</option>
-                            </select>
-                        </div>
 
 
                         <Button type="submit" isLoading={loading}>

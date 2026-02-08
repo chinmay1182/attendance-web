@@ -2,7 +2,6 @@
 .container {
     padding: 0;
     max-width: 1200px;
-    margin: 40px auto 0;
 }
 
 .header {
@@ -14,8 +13,8 @@
 
 .title {
     color: var(--text-main);
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 1.5rem;
+    font-weight: 500;
     margin: 0;
     margin-bottom: 8px;
 }

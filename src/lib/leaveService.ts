@@ -15,11 +15,11 @@ export interface LeaveRequest {
 export const leaveService = {
     async requestLeave(userId: string, leave: Omit<LeaveRequest, 'id' | 'user_id' | 'status' | 'created_at'>) {
         const { data, error } = await supabase
-            .from('leaves')
+            .from('leave_requests')
             .insert([
                 {
                     user_id: userId,
-                    type: leave.type,
+                    leave_type: leave.type, // Map 'type' to 'leave_type'
                     start_date: leave.start_date,
                     end_date: leave.end_date,
                     reason: leave.reason,
@@ -34,19 +34,17 @@ export const leaveService = {
     },
 
     async getMyLeaves(userId: string) {
-        try {
-            const res = await fetch(`/api/leaves?uid=${userId}`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-                cache: 'no-store'
-            });
-            if (!res.ok) throw new Error("Failed to fetch leaves");
-            const data = await res.json();
-            return data as LeaveRequest[];
-        } catch (error) {
+        const { data, error } = await supabase
+            .from('leave_requests')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) {
             console.error("Error fetching leaves:", error);
             return [];
         }
+        return data as any[];
     },
 
     async getAllEnsurePendingLeaves() {

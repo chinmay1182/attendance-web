@@ -1,0 +1,178 @@
+.sidebarNav {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    transition: all 0.3s ease;
+    height: 100%;
+    /* Assuming it should take full height provided by parent layout */
+}
+
+.logoSection {
+    padding-bottom: 24px;
+    width: 100%;
+}
+
+.logoImage {
+    object-fit: contain;
+    align-self: flex-start;
+}
+
+.scrollArea {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+
+    /* Space for scrollbar */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+.scrollArea::-webkit-scrollbar {
+    display: none;
+}
+
+.navLink {
+    text-decoration: none;
+    padding: 5px 16px;
+    border-radius: 12px;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    font-size: 16px;
+    font-weight: 300 !important;
+    margin-bottom: 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+}
+
+.navLinkActive {
+    color: var(--primary);
+    font-weight: 600;
+    padding: 8px 16px;
+    background: rgba(79, 70, 229, 0.08);
+    /* Primary with opacity */
+}
+
+.navLinkInactive {
+    color: var(--text-muted);
+    font-weight: 500;
+    background: transparent;
+}
+
+
+
+.divider {
+    height: 1px;
+    background: var(--glass-border);
+    margin: 16px 0;
+}
+
+.bottomActions {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+
+
+.userProfile {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    gap: 12px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.userInfo {
+    flex: 1;
+    overflow: hidden;
+}
+
+.userName {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-main);
+}
+
+.userRole {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: capitalize;
+}
+
+.logoutButton {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.logoutButton:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Dropdown specific */
+.dropdownButton {
+    justify-content: space-between;
+}
+
+.dropdownArrow {
+    transition: transform 0.2s;
+}
+
+.dropdownContent {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-left: 16px;
+    border-left: 2px solid var(--glass-border);
+    margin-left: 12px;
+    margin-top: 4px;
+}
+
+/* Skeletons Container */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}

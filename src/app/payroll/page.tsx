@@ -112,10 +112,10 @@ export default function PayrollPage() {
 
                 <div className={styles.statsGrid}>
                     {[
-                        { label: 'Total Payroll Cost', value: `$${stats.totalCost.toLocaleString()}` },
+                        { label: 'Total Payroll Cost', value: `₹${stats.totalCost.toLocaleString()}` },
                         { label: 'Employees Processed', value: stats.employeesProcessed.toString() },
                         { label: 'Pending Reviews', value: stats.pendingReviews.toString() },
-                        { label: 'Tax Deductions', value: `$${stats.taxDeductions.toLocaleString()}` }
+                        { label: 'Tax Deductions', value: `₹${stats.taxDeductions.toLocaleString()}` }
                     ].map((stat, i) => (
                         <div key={i} className={styles.statCard}>
                             <p className={styles.statLabel}>{stat.label}</p>
@@ -143,7 +143,7 @@ export default function PayrollPage() {
                                         <tr key={run.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
                                             <td style={{ padding: '12px', color: 'var(--text-main)' }}>{new Date(run.created_at).toLocaleDateString()}</td>
                                             <td style={{ padding: '12px', color: 'var(--text-main)' }}>{run.employees_count}</td>
-                                            <td style={{ padding: '12px', color: 'var(--text-main)' }}>${run.total_cost.toLocaleString()}</td>
+                                            <td style={{ padding: '12px', color: 'var(--text-main)' }}>₹{run.total_cost.toLocaleString()}</td>
                                             <td style={{ padding: '12px', color: '#16a34a', fontWeight: 'bold' }}>{run.status}</td>
                                         </tr>
                                     ))}
