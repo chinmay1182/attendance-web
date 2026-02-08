@@ -79,42 +79,94 @@ export const attendanceService = {
     },
 
     async capturePhoto(): Promise<Blob | null> {
-        return new Promise((resolve) => {
-            const video = document.createElement('video');
-            const canvas = document.createElement('canvas');
+        try {
+            // Check if browser supports camera
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('Camera not supported in this browser');
+                return null;
+            }
 
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(stream => {
-                    video.srcObject = stream;
-                    video.play();
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                const canvas = document.createElement('canvas');
+                let stream: MediaStream | null = null;
 
-                    // Wait for video to be ready
-                    video.onloadedmetadata = () => {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
+                // Timeout after 10 seconds
+                const timeout = setTimeout(() => {
+                    if (stream) {
+                        stream.getTracks().forEach(track => track.stop());
+                    }
+                    reject(new Error('Camera capture timeout'));
+                }, 10000);
 
-                        // Capture frame after a short delay
-                        setTimeout(() => {
-                            const ctx = canvas.getContext('2d');
-                            if (ctx) {
-                                ctx.drawImage(video, 0, 0);
-                                canvas.toBlob((blob) => {
-                                    // Stop camera
-                                    stream.getTracks().forEach(track => track.stop());
-                                    resolve(blob);
-                                }, 'image/jpeg', 0.8);
-                            } else {
-                                stream.getTracks().forEach(track => track.stop());
-                                resolve(null);
-                            }
-                        }, 500);
-                    };
+                navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
                 })
-                .catch(err => {
-                    console.error('Camera access denied:', err);
-                    resolve(null);
-                });
-        });
+                    .then(mediaStream => {
+                        stream = mediaStream;
+                        video.srcObject = stream;
+                        video.setAttribute('playsinline', 'true'); // For iOS
+                        video.play();
+
+                        // Wait for video to be ready
+                        video.onloadedmetadata = () => {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+
+                            // Capture frame after video is ready
+                            setTimeout(() => {
+                                try {
+                                    const ctx = canvas.getContext('2d');
+                                    if (ctx) {
+                                        ctx.drawImage(video, 0, 0);
+                                        canvas.toBlob((blob) => {
+                                            clearTimeout(timeout);
+                                            // Stop camera
+                                            if (stream) {
+                                                stream.getTracks().forEach(track => track.stop());
+                                            }
+                                            resolve(blob);
+                                        }, 'image/jpeg', 0.85);
+                                    } else {
+                                        clearTimeout(timeout);
+                                        if (stream) {
+                                            stream.getTracks().forEach(track => track.stop());
+                                        }
+                                        resolve(null);
+                                    }
+                                } catch (err) {
+                                    clearTimeout(timeout);
+                                    if (stream) {
+                                        stream.getTracks().forEach(track => track.stop());
+                                    }
+                                    console.error('Error capturing frame:', err);
+                                    resolve(null);
+                                }
+                            }, 1000); // Increased delay for better capture
+                        };
+
+                        video.onerror = (err) => {
+                            clearTimeout(timeout);
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                            console.error('Video error:', err);
+                            resolve(null);
+                        };
+                    })
+                    .catch(err => {
+                        clearTimeout(timeout);
+                        console.error('Camera access denied:', err);
+                        resolve(null);
+                    });
+            });
+        } catch (err) {
+            console.error('capturePhoto error:', err);
+            return null;
+        }
     },
 
     async uploadPhoto(userId: string, photo: Blob, type: 'in' | 'out'): Promise<string | null> {

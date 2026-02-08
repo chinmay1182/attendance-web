@@ -48,27 +48,23 @@ export default function LocationTrackingPage() {
             fetchLocations(); // Initial fetch
 
             // Subscribe to realtime location updates
-            const channel = supabase.channel('tracking_channel')
+            const locationChannel = supabase.channel('tracking_channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'user_locations' }, (payload) => {
-                    const newLocation = payload.new as UserLocation;
-                    setLocations(prev => {
-                        // Update existing or add new
-                        const index = prev.findIndex(l => l.user_id === newLocation.user_id);
-                        if (index > -1) {
-                            const updated = [...prev];
-                            updated[index] = { ...updated[index], ...newLocation };
-                            return updated;
-                        } else {
-                            // If new user appears, we might need to fetch their name separately or refetch all
-                            // For simplicity, refetching all to ensure joined data is correct
-                            fetchLocations();
-                            return prev;
-                        }
-                    });
+                    fetchLocations(); // Refetch to get joined data
                 })
                 .subscribe();
 
-            return () => { supabase.removeChannel(channel); };
+            // Subscribe to realtime attendance updates (for clock-in/out)
+            const attendanceChannel = supabase.channel('attendance_tracking_channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance' }, (payload) => {
+                    fetchLocations(); // Refetch to update punch times and photos
+                })
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(locationChannel);
+                supabase.removeChannel(attendanceChannel);
+            };
         }
     }, [profile]);
 
@@ -78,7 +74,7 @@ export default function LocationTrackingPage() {
             .from('user_locations')
             .select(`
                 user_id, latitude, longitude, updated_at,
-                user:users(name)
+                user:users(name, photo_url)
             `);
 
         if (locationData) {
@@ -86,7 +82,7 @@ export default function LocationTrackingPage() {
             const today = new Date().toISOString().split('T')[0];
             const { data: attendanceData } = await supabase
                 .from('attendance')
-                .select('user_id, punch_in, punch_out, punch_in_photo, punch_out_photo')
+                .select('user_id, clock_in, clock_out, photo_in, photo_out')
                 .eq('date', today)
                 .in('user_id', locationData.map((l: any) => l.user_id));
 
@@ -98,17 +94,30 @@ export default function LocationTrackingPage() {
                     latitude: item.latitude,
                     longitude: item.longitude,
                     updated_at: item.updated_at,
-                    user: item.user,
+                    user: {
+                        name: item.user?.name,
+                        photoURL: item.user?.photo_url
+                    },
                     attendance: att ? {
-                        punch_in: att.punch_in,
-                        punch_out: att.punch_out,
-                        punch_in_photo: att.punch_in_photo,
-                        punch_out_photo: att.punch_out_photo
+                        punch_in: att.clock_in,
+                        punch_out: att.clock_out,
+                        punch_in_photo: att.photo_in,
+                        punch_out_photo: att.photo_out
                     } : undefined
                 };
             });
             setLocations(formattedData);
         }
+    };
+
+    const getPhotoUrl = (path: string | null): string | null => {
+        if (!path) return null;
+
+        const { data } = supabase.storage
+            .from('attendance-photos')
+            .getPublicUrl(path);
+
+        return data.publicUrl;
     };
 
     const handleExportHistory = async () => {
@@ -261,10 +270,10 @@ export default function LocationTrackingPage() {
                                         {loc.attendance?.punch_in ? (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span>{new Date(loc.attendance.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                {loc.attendance.punch_in_photo && (
+                                                {loc.attendance.punch_in_photo && getPhotoUrl(loc.attendance.punch_in_photo) && (
                                                     <div style={{ position: 'relative' }}>
                                                         <img
-                                                            src={loc.attendance.punch_in_photo}
+                                                            src={getPhotoUrl(loc.attendance.punch_in_photo) || ''}
                                                             className={styles.punchImage}
                                                             alt="In"
                                                             title="Punch In Photo"
@@ -278,10 +287,10 @@ export default function LocationTrackingPage() {
                                         {loc.attendance?.punch_out ? (
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span>{new Date(loc.attendance.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                {loc.attendance.punch_out_photo && (
+                                                {loc.attendance.punch_out_photo && getPhotoUrl(loc.attendance.punch_out_photo) && (
                                                     <div style={{ position: 'relative' }}>
                                                         <img
-                                                            src={loc.attendance.punch_out_photo}
+                                                            src={getPhotoUrl(loc.attendance.punch_out_photo) || ''}
                                                             className={styles.punchImage}
                                                             alt="Out"
                                                             title="Punch Out Photo"

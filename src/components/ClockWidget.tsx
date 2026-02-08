@@ -148,9 +148,15 @@ export const ClockWidget = () => {
 
             setLoading(true);
 
-            // Capture photo
-            const photoBlob = await attendanceService.capturePhoto();
-            if (!photoBlob) {
+            // Capture photo with error handling
+            let photoBlob: Blob | null = null;
+            try {
+                photoBlob = await attendanceService.capturePhoto();
+                if (!photoBlob) {
+                    console.warn('Photo capture returned null');
+                }
+            } catch (photoErr) {
+                console.error('Photo capture error:', photoErr);
                 const proceed = confirm('Camera access failed. Continue without photo?');
                 if (!proceed) {
                     setLoading(false);
@@ -161,9 +167,9 @@ export const ClockWidget = () => {
             const loc = await getGeoLocation();
             await attendanceService.clockIn(user.id, loc, status, photoBlob);
             await fetchAttendance();
-        } catch (err) {
-            console.error(err);
-            alert("Failed to clock in");
+        } catch (err: any) {
+            console.error('Clock in error:', err);
+            alert(err?.message || "Failed to clock in");
         } finally {
             setLoading(false);
         }
@@ -174,9 +180,15 @@ export const ClockWidget = () => {
             if (!record) return;
             setLoading(true);
 
-            // Capture photo
-            const photoBlob = await attendanceService.capturePhoto();
-            if (!photoBlob) {
+            // Capture photo with error handling
+            let photoBlob: Blob | null = null;
+            try {
+                photoBlob = await attendanceService.capturePhoto();
+                if (!photoBlob) {
+                    console.warn('Photo capture returned null');
+                }
+            } catch (photoErr) {
+                console.error('Photo capture error:', photoErr);
                 const proceed = confirm('Camera access failed. Continue without photo?');
                 if (!proceed) {
                     setLoading(false);
@@ -188,9 +200,9 @@ export const ClockWidget = () => {
             await attendanceService.clockOut(record.id, loc, photoBlob);
             await fetchAttendance();
             setDuration(0);
-        } catch (err) {
-            console.error(err);
-            alert("Failed to clock out");
+        } catch (err: any) {
+            console.error('Clock out error:', err);
+            alert(err?.message || "Failed to clock out");
         } finally {
             setLoading(false);
         }
