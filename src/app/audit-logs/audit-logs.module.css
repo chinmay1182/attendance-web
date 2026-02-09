@@ -64,3 +64,36 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+/* Animations */
+@keyframes highlightNew {
+    0% {
+        background: var(--primary-light);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

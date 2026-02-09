@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
 import { Skeleton } from './Skeleton';
+import { NotificationBell } from './NotificationBell';
 
 export const Navbar = () => {
     const { logout, profile, user, loading } = useAuth();
@@ -82,6 +83,7 @@ export const Navbar = () => {
                     priority
                     className={styles.logoImage}
                 />
+                {!loading && <NotificationBell />}
             </div>
 
             {/* Navigation Links - Scrollable Area */}
@@ -252,7 +254,7 @@ export const Navbar = () => {
                 )}
             </div>
 
-            {/* Bottom Actions - NOW JUST PROFILE */}
+            {/* Bottom Actions - Profile & Notifications */}
             <div className={styles.bottomActions}>
                 {/* User Profile / Logout */}
                 <div className={styles.userProfile}>
