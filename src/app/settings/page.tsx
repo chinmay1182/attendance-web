@@ -27,6 +27,13 @@ export default function SettingsPage() {
     const [darkMode, setDarkMode] = useState(false);
     const [language, setLanguage] = useState('en');
 
+    const [uploading, setUploading] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [changingPassword, setChangingPassword] = useState(false);
+
     useEffect(() => {
         if (profile) {
             updateLocalState(profile);
@@ -38,7 +45,7 @@ export default function SettingsPage() {
                     { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user?.id}` },
                     (payload) => {
                         updateLocalState(payload.new);
-                        toast.success("Profile updated in real-time");
+                        // toast.success("Profile updated in real-time"); // Optional: prevent spam
                     }
                 )
                 .subscribe();
@@ -75,6 +82,41 @@ export default function SettingsPage() {
         toast.success("Preference saved");
     };
 
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0 || !user) return;
+
+        try {
+            setUploading(true);
+            const file = e.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${user.id}/${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                // Try creating bucket if it doesn't exist (if policy allows) or just fallback
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+            if (data) {
+                setPhotoURL(data.publicUrl);
+                // Auto-save to profile
+                await supabase.from('users').update({ photo_url: data.publicUrl }).eq('id', user.id);
+                toast.success('Avatar updated!');
+            }
+        } catch (error: any) {
+            console.error(error);
+            toast.error('Error uploading avatar. Ensure "avatars" bucket exists and is public.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) return;
@@ -103,6 +145,34 @@ export default function SettingsPage() {
         }
     };
 
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            setPasswordError("Passwords do not match");
+            return;
+        }
+        if (newPassword.length < 6) {
+            setPasswordError("Password must be at least 6 characters");
+            return;
+        }
+
+        setChangingPassword(true);
+        setPasswordError('');
+
+        try {
+            const { error } = await supabase.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            toast.success("Password updated successfully!");
+            setIsPasswordModalOpen(false);
+            setNewPassword('');
+            setConfirmPassword('');
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.message || "Failed to update password");
+        } finally {
+            setChangingPassword(false);
+        }
+    };
+
     return (
         <>
             <Navbar />
@@ -118,12 +188,19 @@ export default function SettingsPage() {
                                 <div className={styles.avatar} style={{ backgroundImage: photoURL ? `url(${photoURL})` : 'none' }}>
                                     {!photoURL && name.charAt(0).toUpperCase()}
                                 </div>
-                                <Input
-                                    label="Photo URL"
-                                    value={photoURL}
-                                    onChange={e => setPhotoURL(e.target.value)}
-                                    placeholder="https://example.com/photo.jpg"
-                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <label className={styles.uploadBtn}>
+                                        {uploading ? 'Uploading...' : 'Change Photo'}
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handlePhotoUpload}
+                                            style={{ display: 'none' }}
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Max 2MB. JPG, PNG</span>
+                                </div>
                             </div>
 
                             <Input
@@ -250,7 +327,7 @@ export default function SettingsPage() {
                                 <div className={styles.settingLabel}>Password</div>
                                 <div className={styles.settingDesc}>Update your password to keep your account secure</div>
                             </div>
-                            <Button variant="secondary" onClick={() => toast("Password change feature coming soon")}>
+                            <Button variant="secondary" onClick={() => setIsPasswordModalOpen(true)}>
                                 Change
                             </Button>
                         </div>
@@ -289,6 +366,56 @@ export default function SettingsPage() {
                         )}
                     </div>
                 </div>
+
+                {/* Password Change Modal */}
+                {isPasswordModalOpen && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                        background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+                    }} onClick={() => setIsPasswordModalOpen(false)}>
+                        <div style={{
+                            background: 'white', padding: '32px', borderRadius: '16px', width: '400px', maxWidth: '90%'
+                        }} onClick={e => e.stopPropagation()}>
+                            <h2 style={{ marginTop: 0 }}>Change Password</h2>
+
+                            <div style={{ marginTop: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px' }}>New Password</label>
+                                <input
+                                    type="password"
+                                    value={newPassword}
+                                    onChange={e => setNewPassword(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '16px' }}
+                                    placeholder="Min 6 characters"
+                                />
+                            </div>
+
+                            <div style={{ marginTop: '16px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px' }}>Confirm Password</label>
+                                <input
+                                    type="password"
+                                    value={confirmPassword}
+                                    onChange={e => setConfirmPassword(e.target.value)}
+                                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '16px' }}
+                                    placeholder="Re-enter password"
+                                />
+                            </div>
+
+                            {passwordError && <p style={{ color: 'red', marginTop: '12px', fontSize: '14px' }}>{passwordError}</p>}
+
+                            <div style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => setIsPasswordModalOpen(false)}
+                                    style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <Button onClick={handleChangePassword} isLoading={changingPassword}>
+                                    Update Password
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

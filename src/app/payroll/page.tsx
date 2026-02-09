@@ -104,35 +104,63 @@ export default function PayrollPage() {
     const handleRunPayroll = async () => {
         setLoading(true);
         try {
-            // Get actual employee count from database
-            const { count: employeeCount, error: countError } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true });
+            // 1. Get current month date range
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
 
-            if (countError) throw countError;
-
-            // Get employees with salary to calculate total cost
-            const { data: employeesWithSalary, error: salaryError } = await supabase
+            // 2. Fetch all employees with salary
+            const { data: employees, error: empError } = await supabase
                 .from('users')
-                .select('salary')
+                .select('id, salary, name')
                 .not('salary', 'is', null);
 
-            if (salaryError) throw salaryError;
+            if (empError) throw empError;
+            if (!employees || employees.length === 0) throw new Error("No employees with salary found");
 
-            // Calculate total cost from actual salaries
-            const totalCost = employeesWithSalary?.reduce((sum, emp) => sum + (emp.salary || 0), 0) || 0;
-            const actualEmployeeCount = employeeCount || 0;
+            // 3. Fetch attendance for these employees in this month
+            const userIds = employees.map(e => e.id);
+            const { data: attendance, error: attError } = await supabase
+                .from('attendance')
+                .select('user_id, date, status')
+                .in('user_id', userIds)
+                .gte('date', startOfMonth)
+                .lte('date', endOfMonth);
 
+            if (attError) throw attError;
+
+            // 4. Calculate Pay
+            let totalCost = 0;
+            const employeeStats = employees.map(emp => {
+                // Count Present and Half-days (0.5)
+                const empAttendance = attendance?.filter(a => a.user_id === emp.id) || [];
+                let daysPresent = 0;
+                empAttendance.forEach(a => {
+                    if (a.status === 'present' || a.status === 'late') daysPresent += 1;
+                    else if (a.status === 'half-day') daysPresent += 0.5;
+                });
+
+                // Formula: (Salary / 30) * Days
+                // If days > 30, cap at salary? Or pay overtime? For now, simple pro-rata.
+                const dailyRate = (emp.salary || 0) / 30;
+                const payable = Math.round(dailyRate * daysPresent);
+
+                totalCost += payable;
+                return { ...emp, daysPresent, payable };
+            });
+
+            // 5. Insert Run into DB
             const { error } = await supabase.from('payroll_runs').insert([{
                 total_cost: totalCost,
-                employees_count: actualEmployeeCount,
+                employees_count: employees.length,
                 status: 'Completed',
-                created_at: new Date().toISOString()
+                created_at: new Date().toISOString(),
+                // details: employeeStats // If we had a JSON column for details, we'd save it here
             }]);
 
             if (error) throw error;
 
-            toast.success(`Payroll run successfully for ${actualEmployeeCount} employees!`);
+            toast.success(`Payroll processed. Total Cost: ₹${totalCost.toLocaleString()}`);
             fetchPayrollData();
         } catch (error: any) {
             console.error(error);

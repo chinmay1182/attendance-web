@@ -34,71 +34,71 @@ export default function ChatPage() {
     const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
     useEffect(() => {
-        if (user && activeUser) {
-            fetchMessages();
+        if (!user) return;
 
-            // Message Subscription
-            const channel = supabase.channel('chat_room')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    // ... (existing message logic)
-                    const newMsg = payload.new as any;
-                    if (
-                        (newMsg.sender_id === user.uid && newMsg.receiver_id === activeUser.id) ||
-                        (newMsg.sender_id === activeUser.id && newMsg.receiver_id === user.uid)
-                    ) {
-                        setMessages(prev => [...prev, {
-                            id: newMsg.id,
-                            sender: newMsg.sender_id === user.uid ? 'me' : newMsg.sender_id,
-                            content: newMsg.content,
-                            created_at: newMsg.created_at
-                        }]);
-                    }
-                })
-                .on('presence', { event: 'sync' }, () => {
-                    const state = channel.presenceState();
-                    const userIds = new Set<string>();
-                    // Map presence state to user IDs
-                    for (const id in state) {
-                        userIds.add(id); // keys are user_ids usually if we set key
-                    }
-                    // Actually presence state keys are random UUIDs unless we specify key. 
-                    // We typically track via mapped user_id from presence payload.
-                })
-                .on('broadcast', { event: 'typing' }, (payload) => {
-                    if (payload.payload.user_id === activeUser.id) {
+        const channel = supabase.channel('chat_room')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                const newMsg = payload.new as any;
+                if (!activeUser) return;
+
+                if (
+                    (newMsg.sender_id === user.id && newMsg.receiver_id === activeUser.id) ||
+                    (newMsg.sender_id === activeUser.id && newMsg.receiver_id === user.id)
+                ) {
+                    setMessages(prev => [...prev, {
+                        id: newMsg.id,
+                        sender: newMsg.sender_id === user.id ? 'me' : newMsg.sender_id,
+                        content: newMsg.content,
+                        created_at: newMsg.created_at
+                    }]);
+                }
+            })
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                const userIds = new Set<string>();
+                for (const id in state) {
+                    // Supabase presence key is random, so we look at the payload
+                    // Payload structure: [ { user_id: '...', online_at: '...' } ]
+                    const users = state[id] as any[];
+                    users.forEach(u => {
+                        if (u.user_id) userIds.add(u.user_id);
+                    });
+                }
+                setOnlineUsers(userIds);
+            })
+            .on('broadcast', { event: 'typing' }, (payload) => {
+                if (activeUser && payload.payload.user_id === activeUser.id) {
+                    setTypingUsers(prev => {
+                        const next = new Set(prev);
+                        next.add(activeUser.id);
+                        return next;
+                    });
+                    setTimeout(() => {
                         setTypingUsers(prev => {
                             const next = new Set(prev);
-                            next.add(activeUser.id);
+                            next.delete(activeUser.id);
                             return next;
                         });
-                        // Clear typing after 3s
-                        setTimeout(() => {
-                            setTypingUsers(prev => {
-                                const next = new Set(prev);
-                                next.delete(activeUser.id);
-                                return next;
-                            });
-                        }, 3000);
-                    }
-                })
-                .subscribe();
+                    }, 3000);
+                }
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({ user_id: user.id, online_at: new Date().toISOString() });
+                }
+            });
 
-            return () => { supabase.removeChannel(channel); };
-        }
-    }, [user, activeUser]);
+        return () => { supabase.removeChannel(channel); };
+    }, [user, activeUser]); // Re-subscribing when activeUser changes is inefficient but simpler for now filters
 
     // Typing Emitter
     const handleTyping = async () => {
         await supabase.channel('chat_room').send({
             type: 'broadcast',
             event: 'typing',
-            payload: { user_id: user?.uid }
+            payload: { user_id: user?.id }
         });
     };
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
 
     const scrollToBottom = () => {
         if (scrollRef.current) {
@@ -107,7 +107,7 @@ export default function ChatPage() {
     };
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('id, name').neq('id', user?.uid);
+        const { data } = await supabase.from('users').select('id, name').neq('id', user?.id);
         if (data && data.length > 0) {
             setUsers(data);
             setActiveUser(data[0]);
@@ -128,13 +128,13 @@ export default function ChatPage() {
         const { data } = await supabase
             .from('messages')
             .select('*')
-            .or(`and(sender_id.eq.${user.uid},receiver_id.eq.${activeUser.id}),and(sender_id.eq.${activeUser.id},receiver_id.eq.${user.uid})`)
+            .or(`and(sender_id.eq.${user.id},receiver_id.eq.${activeUser.id}),and(sender_id.eq.${activeUser.id},receiver_id.eq.${user.id})`)
             .order('created_at', { ascending: true });
 
         if (data) {
             setMessages(data.map(m => ({
                 id: m.id,
-                sender: m.sender_id === user.uid ? 'me' : m.sender_id,
+                sender: m.sender_id === user.id ? 'me' : m.sender_id,
                 content: m.content,
                 created_at: m.created_at
             })));
@@ -143,6 +143,10 @@ export default function ChatPage() {
         }
     };
 
+    useEffect(() => {
+        fetchMessages();
+    }, [activeUser, user]);
+
     const handleSend = async () => {
         if (!input.trim() || !user || !activeUser) return;
 
@@ -150,7 +154,7 @@ export default function ChatPage() {
         setInput(''); // Optimistic clear
 
         const { error } = await supabase.from('messages').insert([{
-            sender_id: user.uid,
+            sender_id: user.id,
             receiver_id: activeUser.id,
             content: content
         }]);
@@ -177,10 +181,20 @@ export default function ChatPage() {
                                 className={`${styles.userItem} ${activeUser?.id === u.id ? styles.activeUser : ''}`}
                                 onClick={() => setActiveUser(u)}
                             >
-                                <div className={styles.avatar}>{u.name.charAt(0)}</div>
+                                <div className={styles.avatar} style={{ position: 'relative' }}>
+                                    {u.name.charAt(0)}
+                                    {onlineUsers.has(u.id) && (
+                                        <div style={{
+                                            position: 'absolute', bottom: 0, right: 0, width: 10, height: 10,
+                                            borderRadius: '50%', background: '#22c55e', border: '2px solid white'
+                                        }} />
+                                    )}
+                                </div>
                                 <div className={styles.userInfo}>
                                     <div className={styles.userName}>{u.name}</div>
-                                    <div className={styles.lastMsg}>Click to chat</div>
+                                    <div className={styles.lastMsg}>
+                                        {onlineUsers.has(u.id) ? 'Online' : 'Offline'}
+                                    </div>
                                 </div>
                             </div>
                         ))}

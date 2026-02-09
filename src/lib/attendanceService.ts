@@ -145,7 +145,7 @@ export const attendanceService = {
                                     console.error('Error capturing frame:', err);
                                     resolve(null);
                                 }
-                            }, 1000); // Increased delay for better capture
+                            }, 200); // Reduced delay for faster capture
                         };
 
                         video.onerror = (err) => {
