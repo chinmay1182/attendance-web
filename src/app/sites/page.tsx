@@ -1,5 +1,8 @@
 "use client";
 import React, { useEffect, useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
+
+const LeafletMap = dynamic(() => import('../../components/LeafletMap'), { ssr: false });
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
 import { useAuth } from '../../context/AuthContext';
@@ -63,6 +66,11 @@ export default function SitesPage() {
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [selectedSiteId, setSelectedSiteId] = useState('');
 
+    // Address Search State
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
+
     // Photo Verification & Geofence State
     const videoRef = useRef<HTMLVideoElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,7 +105,7 @@ export default function SitesPage() {
             const channel = supabase.channel('sites_user_realtime')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'site_assignments', filter: `user_id=eq.${user.uid}` },
+                    { event: '*', schema: 'public', table: 'site_assignments', filter: `user_id=eq.${user.id}` },
                     () => {
                         fetchMyAssignment();
                         import('react-hot-toast').then(({ default: toast }) => { toast("Site Assignment Updated"); });
@@ -128,19 +136,25 @@ export default function SitesPage() {
     };
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('id, name, email, role');
+        const { data } = await supabase.from('users').select('*');
         if (data) setUsers(data);
     };
 
     const fetchAssignments = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('site_assignments')
             .select(`
                 *,
-                user:users(name, email, role),
-                site:sites(name, address)
+                user:users!user_id(name, email, role),
+                site:sites!site_id(name, address, latitude, longitude, radius_meters)
             `)
             .eq('status', 'active');
+
+        console.log("Fetch Assignments Response:", { data, error });
+        if (error) {
+            console.error("Fetch Assignments Error:", error);
+        }
+
         if (data) setAssignments(data as any);
     };
 
@@ -152,7 +166,7 @@ export default function SitesPage() {
                 *,
                 site:sites(*)
             `)
-            .eq('user_id', user.uid)
+            .eq('user_id', user.id)
             .eq('status', 'active')
             .single();
         if (data) {
@@ -170,26 +184,53 @@ export default function SitesPage() {
             return;
         }
         setSubmitting(true);
-        const { error } = await supabase.from('sites').insert({
+
+        const payload = {
             name: newSite.name,
-            address: newSite.address,
-            description: newSite.description,
+            address: newSite.address || '',
+            description: newSite.description || '',
             latitude: parseFloat(newSite.latitude),
             longitude: parseFloat(newSite.longitude),
-            radius_meters: parseInt(newSite.radius),
-            daily_tasks: newSite.daily_tasks,
-            entry_policy: newSite.entry_policy
-        });
+            radius_meters: parseInt(newSite.radius) || 100,
+            daily_tasks: newSite.daily_tasks || '',
+            entry_policy: newSite.entry_policy || '',
+            is_active: true
+        };
+
+        console.log("Submitting payload:", payload);
+
+        // Add .select() to get the inserted data and ensure we see any return errors properly
+        const { data, error } = await supabase.from('sites').insert(payload).select();
 
         if (error) {
-            toast.error("Failed to add site");
+            console.error("Full Error Object:", error);
+            console.error("Error Message:", error.message);
+            console.error("Error Details:", error.details);
+            console.error("Error Hint:", error.hint);
+            toast.error(`Error: ${error.message || 'Unknown error occurred'}`);
         } else {
+            console.log("Successfully added site:", data);
             toast.success("New site added!");
             setIsAddSiteOpen(false);
             setNewSite({ name: '', address: '', description: '', latitude: '', longitude: '', radius: '100', daily_tasks: '', entry_policy: '' });
             fetchSites();
         }
         setSubmitting(false);
+    };
+
+    const handleDeleteSite = async (siteId: string) => {
+        if (!confirm("Are you sure you want to delete this site? This action cannot be undone.")) return;
+
+        const { error } = await supabase.from('sites').delete().eq('id', siteId);
+        if (error) {
+            console.error("Error deleting site:", error);
+            toast.error("Failed to delete site");
+        } else {
+            toast.success("Site deleted successfully");
+            fetchSites();
+            // Also refresh assignments as they depend on sites
+            fetchAssignments();
+        }
     };
 
     const handleAssignUser = async () => {
@@ -204,15 +245,18 @@ export default function SitesPage() {
             .eq('user_id', newAssign.user_id)
             .eq('status', 'active');
 
-        const { error } = await supabase.from('site_assignments').insert({
+        const { data, error } = await supabase.from('site_assignments').insert({
             user_id: newAssign.user_id,
             site_id: newAssign.site_id,
-            assigned_by: user?.uid,
+            assigned_by: user?.id,
             status: 'active'
-        });
+        }).select();
+
+        console.log("Assignment Insert Result:", data);
 
         if (error) {
-            toast.error("Failed to assign");
+            console.error("Assignment Error:", error);
+            toast.error(`Failed to assign: ${error.message}`);
         } else {
             toast.success("User assigned successfully");
             setIsAssignOpen(false);
@@ -237,6 +281,53 @@ export default function SitesPage() {
         } else {
             toast.error("No staff currently assigned to this site.");
         }
+    };
+
+    // --- Address Search ---
+
+    const handleSearchAddress = async () => {
+        if (!newSite.address || newSite.address.length < 3) {
+            toast.error("Enter at least 3 characters to search");
+            return;
+        }
+
+        setIsSearching(true);
+        try {
+            // Nominatim requires a User-Agent or Referer header to identify the application
+            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(newSite.address)}&addressdetails=1&limit=5`, {
+                headers: {
+                    'Accept-Language': 'en-US,en;q=0.9',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Nominatim API Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                setSearchResults(data);
+            } else {
+                toast.error("No results found");
+                setSearchResults([]);
+            }
+        } catch (error) {
+            console.error("Search error:", error);
+            toast.error("Failed to search address. Please try again later.");
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const selectAddress = (result: any) => {
+        setNewSite({
+            ...newSite,
+            address: result.display_name,
+            latitude: result.lat,
+            longitude: result.lon
+        });
+        setSearchResults([]);
     };
 
     // --- Check-In & Verification ---
@@ -298,7 +389,7 @@ export default function SitesPage() {
         navigator.geolocation.getCurrentPosition(async (pos) => {
             const { error } = await supabase.from('site_logs').insert({
                 assignment_id: myAssignment.id,
-                user_id: user?.uid,
+                user_id: user?.id,
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 photo_url: capturedPhoto,
@@ -354,10 +445,11 @@ export default function SitesPage() {
                                     </span>
                                 </div>
                                 <div className={styles.mapPreview}>
-                                    <img
-                                        src={`https://image.maps.ls.hereapi.com/mia/1.6/mapview?apiKey=GDl2vmjbRIX_WuX44MJUbieWTl8A7AW9eFyLhSIDj8I&c=${myAssignment.site.latitude},${myAssignment.site.longitude}&z=15&h=300&w=600`}
-                                        alt="Map"
-                                        className={styles.mapImg}
+                                    <LeafletMap
+                                        center={[myAssignment.site.latitude, myAssignment.site.longitude]}
+                                        zoom={15}
+                                        sites={[myAssignment.site]}
+                                        interactive={false}
                                     />
                                 </div>
 
@@ -427,15 +519,26 @@ export default function SitesPage() {
                                     <div key={site.id} className={styles.siteCard}>
                                         <div className={styles.siteHeader}>
                                             <h3>{site.name}</h3>
-                                            <span className={`${styles.badge} ${site.is_active ? styles.badgeActive : styles.badgeInactive}`}>
-                                                {site.is_active ? 'Active' : 'Inactive'}
-                                            </span>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <span className={`${styles.badge} ${site.is_active ? styles.badgeActive : styles.badgeInactive}`}>
+                                                    {site.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteSite(site.id); }}
+                                                    className={styles.closeBtn}
+                                                    style={{ position: 'static', width: '24px', height: '24px', color: '#ef4444', background: '#fee2e2' }}
+                                                    title="Delete Site"
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>delete</span>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className={styles.mapPreview}>
-                                            <img
-                                                src={`https://image.maps.ls.hereapi.com/mia/1.6/mapview?apiKey=GDl2vmjbRIX_WuX44MJUbieWTl8A7AW9eFyLhSIDj8I&c=${site.latitude},${site.longitude}&z=14&h=300&w=600`}
-                                                alt="Map"
-                                                className={styles.mapImg}
+                                            <LeafletMap
+                                                center={[site.latitude, site.longitude]}
+                                                zoom={14}
+                                                sites={[site]}
+                                                interactive={false}
                                             />
                                         </div>
                                         <p className={styles.address}>{site.address}</p>
@@ -444,7 +547,7 @@ export default function SitesPage() {
                                             <span>Lat: {site.latitude.toFixed(4)}, Lng: {site.longitude.toFixed(4)}</span>
                                         </div>
                                         <div style={{ marginTop: '16px', fontSize: '0.85rem' }}>
-                                            {assignments.filter(a => a.site_id === site.id).length} Active Staff
+                                            {assignments.filter(a => a.site_id === site.id && a.status === 'active').length} Active Staff
                                         </div>
                                     </div>
                                 ))}
@@ -470,10 +573,12 @@ export default function SitesPage() {
                                             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{assign.site?.address}</div>
                                         </div>
                                         <div className={styles.mapPreview} style={{ height: '120px' }}>
-                                            <img
-                                                src={`https://image.maps.ls.hereapi.com/mia/1.6/mapview?apiKey=GDl2vmjbRIX_WuX44MJUbieWTl8A7AW9eFyLhSIDj8I&c=${assign.site?.latitude},${assign.site?.longitude}&z=15&h=300&w=600`}
-                                                alt="Map"
-                                                className={styles.mapImg}
+                                            <LeafletMap
+                                                center={[assign.site?.latitude || 0, assign.site?.longitude || 0]}
+                                                zoom={15}
+                                                sites={assign.site ? [assign.site] : []}
+                                                markers={[{ id: assign.id, lat: assign.site?.latitude || 0, lng: assign.site?.longitude || 0, title: assign.user?.name || '' }]}
+                                                interactive={false}
                                             />
                                         </div>
                                     </div>
@@ -497,9 +602,50 @@ export default function SitesPage() {
                                 <label className={styles.label}>Site Name</label>
                                 <input className={styles.input} value={newSite.name} onChange={e => setNewSite({ ...newSite, name: e.target.value })} placeholder="e.g. Headquarters" />
                             </div>
-                            <div className={styles.inputGroup}>
+                            <div className={styles.inputGroup} style={{ position: 'relative' }}>
                                 <label className={styles.label}>Address</label>
-                                <input className={styles.input} value={newSite.address} onChange={e => setNewSite({ ...newSite, address: e.target.value })} placeholder="Full Address" />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        className={styles.input}
+                                        value={newSite.address}
+                                        onChange={e => setNewSite({ ...newSite, address: e.target.value })}
+                                        placeholder="Search or enter full address"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleSearchAddress();
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleSearchAddress}
+                                        className={styles.tabBtn}
+                                        style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', color: '#334155' }}
+                                        disabled={isSearching}
+                                    >
+                                        {isSearching ? '...' : 'Search'}
+                                    </button>
+                                </div>
+                                {searchResults.length > 0 && (
+                                    <div className={styles.searchResults}>
+                                        {searchResults.map((result, index) => (
+                                            <div
+                                                key={index}
+                                                className={styles.searchResultItem}
+                                                onClick={() => selectAddress(result)}
+                                            >
+                                                {result.display_name}
+                                            </div>
+                                        ))}
+                                        <div
+                                            className={styles.searchResultItem}
+                                            style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}
+                                            onClick={() => setSearchResults([])}
+                                        >
+                                            Close Results
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Daily Tasks / SOPs</label>
