@@ -111,7 +111,11 @@ export default function EmployeeDocsPage() {
 
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Upload failed");
+            if (error.message?.includes('Bucket not found')) {
+                toast.error("Error: Storage bucket 'employee_docs' is missing. Please contact administrator.");
+            } else {
+                toast.error(error.message || "Upload failed");
+            }
         } finally {
             setUploading(false);
         }

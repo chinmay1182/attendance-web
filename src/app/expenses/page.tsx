@@ -232,6 +232,7 @@ export default function ExpensesPage() {
             const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
             const { error: uploadError } = await supabase.storage.from('expenses').upload(fileName, file);
             if (uploadError) {
+                console.error('Upload Error:', JSON.stringify(uploadError, null, 2));
                 toast.error("Failed to upload receipt");
                 setSubmitting(false);
                 return;
@@ -254,7 +255,7 @@ export default function ExpensesPage() {
         }]);
 
         if (error) {
-            console.error(error);
+            console.error('Supabase Error:', JSON.stringify(error, null, 2));
             toast.error("Failed to submit");
         } else {
             toast.success("Expense submitted!");

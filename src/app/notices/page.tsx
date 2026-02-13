@@ -140,24 +140,61 @@ export default function NoticesPage() {
             setTargetId('');
             setIsModalOpen(false); // Close modal
             fetchNotices();
-        } catch (err) {
-            console.error(err);
-            toast.error("Failed to send notification");
+        } catch (err: any) {
+            console.error('Notice Error:', JSON.stringify(err, null, 2));
+            toast.error("Failed to send notification: " + (err.message || "Unknown error"));
         } finally {
             setSubmitting(false);
         }
     };
+
+    const [activeTab, setActiveTab] = useState<'inbox' | 'sent'>('inbox');
+
+    const filteredNotices = notices.filter(n => {
+        // console.log('Notice:', n.id, 'Sender:', n.sender_id, 'User:', user?.id, 'Tab:', activeTab);
+        if (activeTab === 'sent') {
+            const sender = n.sender_id || '';
+            const uid = user?.id || '';
+            return sender.toLowerCase() === uid.toLowerCase() && uid !== '';
+        }
+        return n.audience === 'all' ||
+            (n.audience === 'role' && n.target_id === profile?.role) ||
+            (n.audience === 'user' && n.target_id === user?.id);
+    });
 
     return (
         <>
             <Navbar />
             <Toaster position="top-right" />
             <div className={styles.container}>
-                <h1 className={styles.title}>Notice Board</h1>
+                <div className={styles.headerRow}>
+                    <h1 className={styles.title}>Notice Board</h1>
+                    {isAdminOrHr && (
+                        <div className={styles.tabs}>
+                            <button
+                                className={`${styles.tabBtn} ${activeTab === 'inbox' ? styles.activeTab : ''}`}
+                                onClick={() => setActiveTab('inbox')}
+                            >
+                                Inbox
+                            </button>
+                            <button
+                                className={`${styles.tabBtn} ${activeTab === 'sent' ? styles.activeTab : ''}`}
+                                onClick={() => setActiveTab('sent')}
+                            >
+                                Sent by Me
+                            </button>
+                            {/* <span style={{fontSize: '10px', color: '#999'}}>ID: {user?.id}</span> */}
+                        </div>
+                    )}
+                </div>
 
                 <div className={styles.noticesList}>
-                    {notices.length === 0 && <p className={styles.emptyState}>No notifications to display.</p>}
-                    {notices.map((notice) => (
+                    {filteredNotices.length === 0 && (
+                        <p className={styles.emptyState}>
+                            {activeTab === 'inbox' ? 'No new notifications.' : 'You haven\'t sent any notices yet.'}
+                        </p>
+                    )}
+                    {filteredNotices.map((notice) => (
                         <div key={notice.id} className={`${styles.noticeCard} ${styles[`priority${notice.priority || 'normal'}`]}`}>
                             <div className={styles.header}>
                                 <div className={styles.senderInfo}>
@@ -176,7 +213,7 @@ export default function NoticesPage() {
 
                             {isAdminOrHr && (notice.audience !== 'all') && (
                                 <div className={styles.targetInfo}>
-                                    Target: {notice.audience === 'role' ? `Role: ${notice.target_id}` : `User: ${usersList.find(u => u.id === notice.target_id)?.name || 'Unknown'}`}
+                                    Target: {notice.audience === 'role' ? `Role: ${notice.target_id}` : `User: ${usersList.find(u => u.id === notice.target_id)?.name || 'Unknown (' + notice.target_id + ')'}`}
                                 </div>
                             )}
                         </div>

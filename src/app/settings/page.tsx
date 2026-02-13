@@ -111,7 +111,11 @@ export default function SettingsPage() {
             }
         } catch (error: any) {
             console.error(error);
-            toast.error('Error uploading avatar. Ensure "avatars" bucket exists and is public.');
+            if (error.message?.includes('Bucket not found')) {
+                toast.error('Error: Storage bucket "avatars" is missing. Please contact administrator to create it.');
+            } else {
+                toast.error(error.message || 'Error uploading avatar.');
+            }
         } finally {
             setUploading(false);
         }

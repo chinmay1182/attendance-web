@@ -69,7 +69,10 @@ export default function JobApplyPage() {
             setSubmitted(true);
             toast.success("Application Submitted!");
         } catch (error) {
-            console.error(error);
+            console.error('Job Application Error:', error); // If it's an Error object, don't stringify first. If it's a supabase object, stringify.
+            if (error && typeof error === 'object') {
+                console.error('Details:', JSON.stringify(error, null, 2));
+            }
             toast.error("Something went wrong. Please try again.");
         } finally {
             setSubmitting(false);
