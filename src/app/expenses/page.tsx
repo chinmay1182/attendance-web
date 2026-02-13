@@ -11,15 +11,19 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import * as XLSX from 'xlsx'; // Added for export functionality
+import * as XLSX from 'xlsx';
 import { Skeleton } from '../../components/Skeleton';
 
 type Expense = {
     id: string;
     title: string;
     amount: number;
+    daily_allowance: number;
+    travel_allowance: number;
+    medical_allowance: number;
+    other_allowance: number;
     date: string;
-    status: string;
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Partial';
     created_at: string;
     receipt_url?: string;
     user_id: string;
@@ -28,8 +32,10 @@ type Expense = {
         department: string;
         email: string;
     };
-    category?: string;
+    category?: string; // Keeping for backward compatibility or extra categorization
     rejection_reason?: string;
+    admin_comments?: string;
+    approved_amount?: number;
     is_paid?: boolean;
     paid_at?: string;
     payment_batch_id?: string;
@@ -57,6 +63,12 @@ export default function ExpensesPage() {
     const [rejectionReason, setRejectionReason] = useState('');
     const [selectedReceipt, setSelectedReceipt] = useState<string | null>(null);
 
+    // Review Modal State
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+    const [reviewAmount, setReviewAmount] = useState<string>('');
+    const [reviewComment, setReviewComment] = useState('');
+
     // Budget Management State
     const [budgetModalOpen, setBudgetModalOpen] = useState(false);
     const [editingBudgets, setEditingBudgets] = useState<{ id?: string, department: string, budget_limit: number }[]>([]);
@@ -65,19 +77,28 @@ export default function ExpensesPage() {
 
     // Form State
     const [title, setTitle] = useState('');
-    const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState('Other'); // New
-    const [date, setDate] = useState('');
+
+    // Allowances
+    const [dailyAllowance, setDailyAllowance] = useState('');
+    const [travelAllowance, setTravelAllowance] = useState('');
+    const [medicalAllowance, setMedicalAllowance] = useState('');
+    const [otherAllowance, setOtherAllowance] = useState('');
+
+    // Total is calculated automatically
+    const [totalAmount, setTotalAmount] = useState(0);
+
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [file, setFile] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    const EXPENSE_CATEGORIES: any = {
-        'Travel': 5000,
-        'Food': 500,
-        'Office': 2000,
-        'Accommodation': 8000,
-        'Other': 10000
-    };
+    // Calculate total whenever allowances change
+    useEffect(() => {
+        const daily = parseFloat(dailyAllowance) || 0;
+        const travel = parseFloat(travelAllowance) || 0;
+        const medical = parseFloat(medicalAllowance) || 0;
+        const other = parseFloat(otherAllowance) || 0;
+        setTotalAmount(daily + travel + medical + other);
+    }, [dailyAllowance, travelAllowance, medicalAllowance, otherAllowance]);
 
     useEffect(() => {
         if (profile) {
@@ -107,7 +128,7 @@ export default function ExpensesPage() {
             .channel('expenses_my_realtime')
             .on(
                 'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `user_id=eq.${user?.uid}` },
+                { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `user_id=eq.${user?.id}` },
                 (payload: any) => {
                     // Update local state instantly
                     setExpenses(prev => prev.map(e => e.id === payload.new.id ? { ...e, ...payload.new } : e));
@@ -124,7 +145,7 @@ export default function ExpensesPage() {
         const { data } = await supabase
             .from('expenses')
             .select('*')
-            .eq('user_id', user?.uid)
+            .eq('user_id', user?.id)
             .order('created_at', { ascending: false });
         if (data) setExpenses(data as Expense[]);
     };
@@ -132,9 +153,15 @@ export default function ExpensesPage() {
     const fetchAdminData = async () => {
         setLoadingData(true);
         try {
+            if (!profile?.company_id) {
+                setLoadingData(false);
+                return;
+            }
+
             const { data: expData } = await supabase
                 .from('expenses')
-                .select('*, users(name, department, email)')
+                .select('*, users!inner(name, department, email, company_id)')
+                .eq('users.company_id', profile.company_id)
                 .order('created_at', { ascending: false });
 
             const { data: budgetData } = await supabase
@@ -148,16 +175,16 @@ export default function ExpensesPage() {
                 // KPI
                 const total = typedData.reduce((sum, item) => sum + (item.amount || 0), 0);
                 const pending = typedData.filter(i => i.status === 'Pending').length;
-                const approved = typedData.filter(i => i.status === 'Approved').length;
+                const approved = typedData.filter(i => i.status === 'Approved' || i.status === 'Partial').length;
                 setDashboardKPI({ total, pending, approved });
 
                 // Status Chart
-                const statusCount = { Pending: 0, Approved: 0, Rejected: 0 };
+                const statusCount = { Pending: 0, Approved: 0, Rejected: 0, Partial: 0 };
                 typedData.forEach(i => {
                     const s = i.status as keyof typeof statusCount || 'Pending';
                     if (statusCount[s] !== undefined) statusCount[s]++;
                 });
-                setStatusData(Object.keys(statusCount).map(k => ({ name: k, value: statusCount[k as keyof typeof statusCount] })));
+                setStatusData(Object.keys(statusCount).map(k => ({ name: k, value: statusCount[k as keyof typeof statusCount] })).filter(d => d.value > 0));
 
                 // Dept Chart & Budget Calc
                 const deptMap: any = {};
@@ -196,20 +223,13 @@ export default function ExpensesPage() {
     };
 
     const handleSubmit = async () => {
-        if (!title || !amount || !date) return toast.error("Please fill all details");
-
-        // Policy Check
-        const limit = EXPENSE_CATEGORIES[category] || 10000;
-        if (parseFloat(amount) > limit) {
-            const confirm = window.confirm(`This amount exceeds the policy limit of ₹${limit} for ${category}. Do you want to submit anyway?`);
-            if (!confirm) return;
-        }
+        if (!title || !date || totalAmount <= 0) return toast.error("Please fill details and add at least one allowance.");
 
         setSubmitting(true);
         let receiptUrl = null;
         if (file) {
             const fileExt = file.name.split('.').pop();
-            const fileName = `${user?.uid}_${Date.now()}.${fileExt}`;
+            const fileName = `${user?.id}_${Date.now()}.${fileExt}`;
             const { error: uploadError } = await supabase.storage.from('expenses').upload(fileName, file);
             if (uploadError) {
                 toast.error("Failed to upload receipt");
@@ -221,24 +241,70 @@ export default function ExpensesPage() {
         }
 
         const { error } = await supabase.from('expenses').insert([{
-            user_id: user?.uid,
+            user_id: user?.id,
             title,
-            category,
-            amount: parseFloat(amount),
+            amount: totalAmount,
+            daily_allowance: parseFloat(dailyAllowance) || 0,
+            travel_allowance: parseFloat(travelAllowance) || 0,
+            medical_allowance: parseFloat(medicalAllowance) || 0,
+            other_allowance: parseFloat(otherAllowance) || 0,
             date,
             status: 'Pending',
             receipt_url: receiptUrl
         }]);
 
         if (error) {
+            console.error(error);
             toast.error("Failed to submit");
         } else {
             toast.success("Expense submitted!");
-            setTitle(''); setAmount(''); setDate(''); setFile(null);
+            // Reset Form
+            setTitle('');
+            setDailyAllowance(''); setTravelAllowance(''); setMedicalAllowance(''); setOtherAllowance('');
+            setDate(new Date().toISOString().split('T')[0]);
+            setFile(null);
+
             fetchMyExpenses();
             if (profile?.role === 'admin') fetchAdminData();
         }
         setSubmitting(false);
+    };
+
+    // Admin Actions
+    const handleOpenReview = (expense: Expense) => {
+        setSelectedExpense(expense);
+        setReviewAmount(expense.amount.toString());
+        setReviewComment('');
+        setReviewModalOpen(true);
+    };
+
+    const handleProcessReview = async (status: 'Approved' | 'Partial' | 'Rejected') => {
+        if (!selectedExpense) return;
+
+        const approvedAmt = status === 'Rejected' ? 0 : parseFloat(reviewAmount);
+
+        if (status === 'Partial' && approvedAmt >= selectedExpense.amount) {
+            toast.error("For partial approval, amount should be less than total claim.");
+            return;
+        }
+
+        const { error } = await supabase
+            .from('expenses')
+            .update({
+                status,
+                approved_amount: approvedAmt,
+                admin_comments: reviewComment,
+                rejection_reason: status === 'Rejected' ? reviewComment : null
+            })
+            .eq('id', selectedExpense.id);
+
+        if (error) {
+            toast.error("Failed to update status");
+        } else {
+            toast.success(`Claim marked as ${status}`);
+            setReviewModalOpen(false);
+            fetchAdminData();
+        }
     };
 
     const handleBulkStatus = async (status: string, reason: string | null = null) => {
@@ -284,8 +350,6 @@ export default function ExpensesPage() {
     };
 
     const openBudgetModal = () => {
-        // Deep copy existing budgets to editing state
-        // If we have deptBudgets with usage info, we map it to just the editable fields
         const editable = deptBudgets.map(b => ({
             id: b.id,
             department: b.department,
@@ -301,7 +365,6 @@ export default function ExpensesPage() {
             budget_limit: b.budget_limit
         }));
 
-        // Add new if present
         if (newDeptName && newDeptLimit) {
             upsertData.push({
                 department: newDeptName,
@@ -330,13 +393,13 @@ export default function ExpensesPage() {
             Date: e.date,
             Employee: e.users?.name,
             Dept: e.users?.department,
-            Category: (e as any).category || 'Other',
             Title: e.title,
-            Amount: e.amount,
+            Requested: e.amount,
+            Approved: e.approved_amount || 0,
             Status: e.status,
             Paid: (e as any).is_paid ? 'Yes' : 'No',
             PaidAt: (e as any).paid_at ? new Date((e as any).paid_at).toLocaleDateString() : '-',
-            Reason: (e as any).rejection_reason || ''
+            AdminComment: e.admin_comments || (e as any).rejection_reason || ''
         }));
         const ws = XLSX.utils.json_to_sheet(data);
         const wb = XLSX.utils.book_new();
@@ -355,35 +418,28 @@ export default function ExpensesPage() {
         if (isPaid) return styles.statusPaid;
         if (status === 'Approved') return styles.statusApproved;
         if (status === 'Rejected') return styles.statusRejected;
+        if (status === 'Partial') return styles.statusPartial;
         return styles.statusPending;
     };
 
-    const COLORS = ['#f59e0b', '#10b981', '#ef4444'];
+    const COLORS = ['#f59e0b', '#10b981', '#ef4444', '#d97706'];
 
     if (authLoading) return (
         <>
             <Navbar />
             <div className={styles.container}>
-                {/* Header Skeleton */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <Skeleton width={250} height={40} />
                     <Skeleton width={200} height={40} borderRadius={8} />
                 </div>
-
-                {/* KPI Skeletons */}
                 <div className={styles.statsGrid}>
                     <Skeleton height={100} borderRadius={16} />
                     <Skeleton height={100} borderRadius={16} />
                     <Skeleton height={100} borderRadius={16} />
                 </div>
-
-                {/* Charts Area Skeleton */}
                 <div className={styles.chartsGrid} style={{ marginTop: 24 }}>
                     <Skeleton height={300} borderRadius={16} />
                     <Skeleton height={300} borderRadius={16} />
-                    <div style={{ gridColumn: 'span 2' }}>
-                        <Skeleton height={300} borderRadius={16} />
-                    </div>
                 </div>
             </div>
         </>
@@ -395,16 +451,6 @@ export default function ExpensesPage() {
             <div className={styles.container}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <h1 className={styles.title}>Expense Management</h1>
-                    {(profile?.role === 'admin' || profile?.role === 'hr') && (
-                        <div className={styles.tabs} style={{ marginBottom: 0 }}>
-                            <button className={`${styles.tabBtn} ${activeTab === 'all-expenses' ? styles.active : ''}`} onClick={() => setActiveTab('all-expenses')}>
-                                Dashboard
-                            </button>
-                            <button className={`${styles.tabBtn} ${activeTab === 'my-expenses' ? styles.active : ''}`} onClick={() => setActiveTab('my-expenses')}>
-                                My Claims
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {activeTab === 'all-expenses' && (
@@ -420,7 +466,7 @@ export default function ExpensesPage() {
                             </div>
                             <div className={styles.statCard}>
                                 <div className={styles.statValue} style={{ color: '#10b981' }}>{dashboardKPI.approved}</div>
-                                <div className={styles.statLabel}>Approved Claims</div>
+                                <div className={styles.statLabel}>Approved / Partial</div>
                             </div>
                         </div>
 
@@ -479,26 +525,12 @@ export default function ExpensesPage() {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
-                            <div className={styles.chartCard} style={{ gridColumn: 'span 2' }}>
-                                <h3 className={styles.chartTitle}>Expenses by Department</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={deptChartData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--glass-border)" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                                        <YAxis axisLine={false} tickLine={false} />
-                                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
-                                        <Bar dataKey="Amount" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
                         </div>
 
                         <div className={styles.bulkActions}>
                             <span style={{ fontWeight: 600, color: '#64748b' }}>{selectedIds.size} Selected</span>
                             <div style={{ flex: 1 }}></div>
-                            <button onClick={() => handleBulkStatus('Approved')} className={styles.tabBtn} style={{ background: '#dcfce7', color: '#16a34a' }}>Approve</button>
                             <button onClick={handleMarkAsPaid} className={styles.tabBtn} style={{ background: '#e0f2fe', color: '#0284c7' }}>Mark Paid</button>
-                            <button onClick={() => setRejectModalOpen(true)} className={styles.tabBtn} style={{ background: '#fee2e2', color: '#dc2626' }}>Reject</button>
                             <button onClick={handleExport} className={styles.tabBtn} style={{ background: '#212121', color: 'white' }}>Export</button>
                         </div>
 
@@ -510,12 +542,12 @@ export default function ExpensesPage() {
                                             if (e.target.checked) setSelectedIds(new Set(allExpenses.map(x => x.id)));
                                             else setSelectedIds(new Set());
                                         }} /></th>
-                                        <th>Date</th>
+                                        <th>Date/Title</th>
                                         <th>Employee</th>
-                                        <th>Dept / Category</th>
-                                        <th>Amount</th>
+                                        <th>Breakdown</th>
+                                        <th>Total</th>
+                                        <th>Approved</th>
                                         <th>Status</th>
-                                        <th>Payout</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -523,35 +555,38 @@ export default function ExpensesPage() {
                                     {allExpenses.map((exp) => (
                                         <tr key={exp.id} style={{ background: selectedIds.has(exp.id) ? '#f8fafc' : 'transparent', opacity: (exp as any).is_paid ? 0.6 : 1 }}>
                                             <td><input type="checkbox" checked={selectedIds.has(exp.id)} onChange={() => toggleSelect(exp.id)} className={styles.tableCheckbox} /></td>
-                                            <td>{new Date(exp.date).toLocaleDateString()}</td>
+                                            <td>
+                                                <div style={{ fontWeight: 600 }}>{new Date(exp.date).toLocaleDateString()}</div>
+                                                <div style={{ fontSize: '0.85rem', color: '#666' }}>{exp.title}</div>
+                                            </td>
                                             <td>
                                                 <strong>{exp.users?.name}</strong><br />
-                                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{exp.users?.email}</span>
+                                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{exp.users?.department}</span>
                                             </td>
+                                            <td style={{ fontSize: '0.8rem', color: '#555' }}>
+                                                <div>Daily: ₹{exp.daily_allowance || 0}</div>
+                                                <div>Travel: ₹{exp.travel_allowance || 0}</div>
+                                                <div style={{ color: '#888' }}>+ Med/Other</div>
+                                            </td>
+                                            <td style={{ fontWeight: 600 }}>₹{exp.amount.toFixed(2)}</td>
                                             <td>
-                                                <div style={{ fontWeight: 500 }}>{exp.users?.department}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{(exp as any).category}</div>
+                                                {exp.approved_amount ?
+                                                    <span style={{ color: '#16a34a', fontWeight: 600 }}>₹{exp.approved_amount}</span> :
+                                                    '-'
+                                                }
                                             </td>
-                                            <td>₹{exp.amount.toFixed(2)}</td>
                                             <td>
                                                 <span className={`${styles.statusBadge} ${getStatusClass(exp.status)}`}>{exp.status}</span>
+                                                {exp.is_paid && <div style={{ fontSize: '0.7rem', color: '#0284c7', marginTop: 4, fontWeight: 600 }}>PAID</div>}
                                             </td>
                                             <td>
-                                                {(exp as any).is_paid ? (
-                                                    <span className={`${styles.statusBadge} ${styles.statusPaid}`}>PAID</span>
-                                                ) : (
-                                                    <span style={{ fontSize: '0.8rem', color: '#aaa' }}>Unpaid</span>
-                                                )}
-                                            </td>
-                                            <td>
-                                                {exp.receipt_url && (
-                                                    <button
-                                                        onClick={() => setSelectedReceipt(exp.receipt_url!)}
-                                                        style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontWeight: 500 }}
-                                                    >
-                                                        Receipt
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => handleOpenReview(exp)}
+                                                    className={styles.tabBtn}
+                                                    style={{ fontSize: '0.85rem', padding: '6px 12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}
+                                                >
+                                                    Review
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -570,36 +605,67 @@ export default function ExpensesPage() {
                     <div className={styles.myClaimsContainer}>
                         <div className={styles.formCard}>
                             <h3 className={styles.subtitle}>New Claim</h3>
+
                             <div className={styles.grid}>
                                 <input
                                     type="text"
-                                    placeholder="Expense Title"
+                                    placeholder="Expense Title (e.g. Site Visit Pune)"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     className={styles.input}
+                                    style={{ gridColumn: 'span 2' }}
                                 />
-                                <select
-                                    value={category}
-                                    onChange={(e) => setCategory(e.target.value)}
-                                    className={styles.select}
-                                >
-                                    {Object.keys(EXPENSE_CATEGORIES).map(c => (
-                                        <option key={c} value={c}>{c} (Max ₹{EXPENSE_CATEGORIES[c]})</option>
-                                    ))}
-                                </select>
-                                <input
-                                    type="number"
-                                    placeholder="Amount"
-                                    value={amount}
-                                    onChange={(e) => setAmount(e.target.value)}
-                                    className={styles.input}
-                                />
+                                <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4, display: 'block' }}>Daily Allowance</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={dailyAllowance}
+                                            onChange={(e) => setDailyAllowance(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4, display: 'block' }}>Travel Allowance</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={travelAllowance}
+                                            onChange={(e) => setTravelAllowance(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4, display: 'block' }}>Medical Allowance</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={medicalAllowance}
+                                            onChange={(e) => setMedicalAllowance(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.8rem', color: '#666', marginBottom: 4, display: 'block' }}>Other Allowance</label>
+                                        <input
+                                            type="number"
+                                            placeholder="0.00"
+                                            value={otherAllowance}
+                                            onChange={(e) => setOtherAllowance(e.target.value)}
+                                            className={styles.input}
+                                        />
+                                    </div>
+                                </div>
+
                                 <input
                                     type="date"
                                     value={date}
                                     onChange={(e) => setDate(e.target.value)}
                                     className={styles.input}
+                                    style={{ gridColumn: 'span 2' }}
                                 />
+
                                 <div className={styles.uploadBox}>
                                     <input
                                         type="file"
@@ -610,6 +676,12 @@ export default function ExpensesPage() {
                                     {file && <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Selected: {file.name}</span>}
                                 </div>
                             </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px' }}>
+                                <span style={{ fontWeight: 600, color: '#64748b' }}>Total Claim Amount:</span>
+                                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: '#000' }}>₹{totalAmount.toFixed(2)}</span>
+                            </div>
+
                             <button
                                 onClick={handleSubmit}
                                 disabled={submitting}
@@ -627,15 +699,26 @@ export default function ExpensesPage() {
                                     <div>
                                         <h4 className={styles.expenseTitle}>{expense.title}</h4>
                                         <p className={styles.expenseDate}>
-                                            {new Date(expense.date).toLocaleDateString()} • <span style={{ color: '#64748b' }}>{(expense as any).category}</span>
+                                            {new Date(expense.date).toLocaleDateString()}
                                         </p>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 4 }}>
+                                            D: {expense.daily_allowance} | T: {expense.travel_allowance} | M: {expense.medical_allowance} | O: {expense.other_allowance}
+                                        </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div className={styles.expenseAmount}>₹{expense.amount.toFixed(2)}</div>
-                                        <div className={`${styles.statusBadge} ${getStatusClass(expense.status, (expense as any).is_paid)}`}>
+                                        {expense.approved_amount ? <div style={{ fontSize: '0.8rem', color: '#16a34a' }}>Approved: ₹{expense.approved_amount}</div> : null}
+
+                                        <div className={`${styles.statusBadge} ${getStatusClass(expense.status, (expense as any).is_paid)}`} style={{ marginTop: 4 }}>
                                             {(expense as any).is_paid ? 'PAID' : expense.status}
                                         </div>
-                                        {(expense as any).rejection_reason && <div style={{ fontSize: '0.75rem', color: '#ef4444' }}>Reason: {(expense as any).rejection_reason}</div>}
+
+                                        {(expense.admin_comments || expense.rejection_reason) && (
+                                            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: 4, maxWidth: '200px' }}>
+                                                Note: {expense.admin_comments || expense.rejection_reason}
+                                            </div>
+                                        )}
+
                                         {expense.receipt_url && (
                                             <button
                                                 onClick={() => setSelectedReceipt(expense.receipt_url!)}
@@ -668,21 +751,84 @@ export default function ExpensesPage() {
                     </div>
                 )}
 
-                {/* Reject Reason Modal */}
-                {rejectModalOpen && (
-                    <div className={styles.modalOverlay} onClick={() => setRejectModalOpen(false)}>
-                        <div className={styles.modal} style={{ width: '400px' }} onClick={e => e.stopPropagation()}>
-                            <h3>Reject Expenses</h3>
-                            <p>You are rejecting {selectedIds.size} claim(s). Please provide a reason.</p>
-                            <textarea
-                                className={styles.textArea}
-                                value={rejectionReason}
-                                onChange={e => setRejectionReason(e.target.value)}
-                                placeholder="Reason for rejection (e.g. Policy Violation)"
+                {/* Review Modal */}
+                {reviewModalOpen && selectedExpense && (
+                    <div className={styles.modalOverlay} onClick={() => setReviewModalOpen(false)}>
+                        <div className={styles.modal} style={{ width: '500px' }} onClick={e => e.stopPropagation()}>
+                            <button className={styles.closeBtn} onClick={() => setReviewModalOpen(false)}>
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+
+                            <h3 style={{ marginTop: 0 }}>Review Expense Claim</h3>
+
+                            <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ color: '#64748b' }}>Employee:</span>
+                                    <span style={{ fontWeight: 600 }}>{selectedExpense.users?.name}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ color: '#64748b' }}>Total Requested:</span>
+                                    <span style={{ fontWeight: 700 }}>₹{selectedExpense.amount}</span>
+                                </div>
+                                <hr style={{ borderColor: '#e2e8f0', borderStyle: 'solid' }} />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.9rem', marginTop: '8px' }}>
+                                    <div>Daily: ₹{selectedExpense.daily_allowance}</div>
+                                    <div>Travel: ₹{selectedExpense.travel_allowance}</div>
+                                    <div>Medical: ₹{selectedExpense.medical_allowance}</div>
+                                    <div>Other: ₹{selectedExpense.other_allowance}</div>
+                                </div>
+                            </div>
+
+                            {selectedExpense.receipt_url && (
+                                <button
+                                    onClick={() => setSelectedReceipt(selectedExpense.receipt_url!)}
+                                    className={styles.tabBtn}
+                                    style={{ width: '100%', border: '1px solid #e2e8f0', marginBottom: '20px' }}
+                                >
+                                    View Attached Receipt
+                                </button>
+                            )}
+
+                            <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Approved Amount</label>
+                            <input
+                                type="number"
+                                value={reviewAmount}
+                                onChange={(e) => setReviewAmount(e.target.value)}
+                                className={styles.input}
+                                style={{ marginBottom: '16px' }}
                             />
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                                <button onClick={() => setRejectModalOpen(false)} className={styles.tabBtn} style={{ flex: 1, border: '1px solid #ddd' }}>Cancel</button>
-                                <button onClick={() => handleBulkStatus('Rejected', rejectionReason)} className={styles.tabBtn} style={{ flex: 1, background: '#ef4444', color: 'white' }}>Confirm Reject</button>
+
+                            <label style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block', marginBottom: '8px' }}>Admin Comments / Rejection Reason</label>
+                            <textarea
+                                value={reviewComment}
+                                onChange={(e) => setReviewComment(e.target.value as string)}
+                                className={styles.textArea}
+                                placeholder="Add a note..."
+                                style={{ minHeight: '80px', marginBottom: '24px' }}
+                            />
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                                <button
+                                    onClick={() => handleProcessReview('Rejected')}
+                                    className={styles.tabBtn}
+                                    style={{ background: '#fee2e2', color: '#dc2626' }}
+                                >
+                                    Reject
+                                </button>
+                                <button
+                                    onClick={() => handleProcessReview('Partial')}
+                                    className={styles.tabBtn}
+                                    style={{ background: '#fef3c7', color: '#d97706' }}
+                                >
+                                    Partial
+                                </button>
+                                <button
+                                    onClick={() => handleProcessReview('Approved')}
+                                    className={styles.tabBtn}
+                                    style={{ background: '#dcfce7', color: '#16a34a' }}
+                                >
+                                    Approve Full
+                                </button>
                             </div>
                         </div>
                     </div>

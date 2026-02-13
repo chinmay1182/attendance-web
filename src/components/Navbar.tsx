@@ -129,6 +129,10 @@ export const Navbar = () => {
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>business</span>
                                     Company
                                 </Link>
+                                <Link href="/expenses" className={`${styles.navLink} ${pathname.startsWith('/expenses') ? styles.navLinkActive : styles.navLinkInactive}`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>payments</span>
+                                    Expenses
+                                </Link>
                             </>
                         )}
 
@@ -141,6 +145,11 @@ export const Navbar = () => {
                                 <Link href="/dashboard" className={`${styles.navLink} ${pathname === '/dashboard' ? styles.navLinkActive : styles.navLinkInactive}`}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>home</span>
                                     Home
+                                </Link>
+
+                                <Link href="/expenses" className={`${styles.navLink} ${pathname.startsWith('/expenses') ? styles.navLinkActive : styles.navLinkInactive}`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>payments</span>
+                                    Expenses
                                 </Link>
 
                                 <Link href="/team" className={`${styles.navLink} ${pathname.startsWith('/team') ? styles.navLinkActive : styles.navLinkInactive}`}>

@@ -347,6 +347,11 @@
     color: #dc2626;
 }
 
+.statusPartial {
+    background: #fef3c7;
+    color: #d97706;
+}
+
 /* Modal */
 .modalOverlay {
     position: fixed;

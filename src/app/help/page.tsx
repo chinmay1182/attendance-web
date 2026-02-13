@@ -13,10 +13,11 @@ type Ticket = {
     status: string;
     created_at: string;
     notes?: string;
+    user_id: string;
 };
 
 export default function HelpPage() {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [category, setCategory] = useState('IT Support');
     const [description, setDescription] = useState('');
@@ -32,18 +33,28 @@ export default function HelpPage() {
         if (user) {
             fetchTickets();
 
+            // Realtime Subscription
             const channel = supabase.channel('my_tickets')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'tickets', filter: `user_id=eq.${user.id}` },
+                    { event: '*', schema: 'public', table: 'tickets' },
                     (payload: any) => {
+                        const newTicket = payload.new as any;
+                        const oldTicket = payload.old as any;
+
+                        // Check relevance: Admin sees all, User sees own
+                        let isRelevant = false;
+                        if (profile?.role === 'admin') isRelevant = true;
+                        if (newTicket?.user_id === user.id) isRelevant = true;
+                        if (oldTicket?.user_id === user.id) isRelevant = true;
+
+                        if (!isRelevant) return;
+
                         if (payload.eventType === 'INSERT') {
-                            setTickets(prev => [payload.new, ...prev]);
+                            setTickets(prev => [newTicket, ...prev]);
                         } else if (payload.eventType === 'UPDATE') {
-                            setTickets(prev => prev.map(t => t.id === payload.new.id ? payload.new : t));
-                            import('react-hot-toast').then(({ default: toast }) => {
-                                toast('🎫 Ticket Status Updated: ' + payload.new.status);
-                            });
+                            setTickets(prev => prev.map(t => t.id === newTicket.id ? newTicket : t));
+                            // Only show toast if logic aligns (optional, keeping simple)
                         }
                     }
                 )
@@ -51,14 +62,20 @@ export default function HelpPage() {
 
             return () => { supabase.removeChannel(channel); };
         }
-    }, [user]);
+    }, [user, profile]);
 
     const fetchTickets = async () => {
-        const { data, error } = await supabase
+        let query = supabase
             .from('tickets')
             .select('*')
-            .eq('user_id', user?.id)
             .order('created_at', { ascending: false });
+
+        // Filter for non-admins
+        if (profile?.role !== 'admin') {
+            query = query.eq('user_id', user?.id);
+        }
+
+        const { data } = await query;
         if (data) setTickets(data);
     };
 
@@ -157,6 +174,14 @@ export default function HelpPage() {
                         <div key={ticket.id} className={styles.ticketCard}>
                             <div className={styles.ticketHeader}>
                                 <span className={styles.ticketCategory}>{ticket.category}</span>
+                                {profile?.role === 'admin' && (
+                                    <span className={styles.ticketUserBadge} style={{
+                                        fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px',
+                                        background: '#e0f2fe', color: '#0369a1', marginLeft: 'auto', marginRight: '8px'
+                                    }}>
+                                        User: {ticket.user_id?.slice(0, 8)}...
+                                    </span>
+                                )}
                                 <div className={styles.actions}>
                                     <select
                                         className={styles.statusSelect}
@@ -164,6 +189,7 @@ export default function HelpPage() {
                                         data-status={ticket.status}
                                         onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
                                         onClick={(e) => e.stopPropagation()}
+                                        disabled={profile?.role !== 'admin' && ticket.user_id !== user?.id} // Only admin or owner can change
                                     >
                                         <option value="Open">Open</option>
                                         <option value="In Progress">In Progress</option>
