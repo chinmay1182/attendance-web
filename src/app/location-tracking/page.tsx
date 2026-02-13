@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 // Dynamically import Map component to avoid SSR issues
-const Map = dynamic(() => import('../../components/LeafletMap'), {
+const Map = dynamic(() => import('../../components/GoogleMap'), {
     ssr: false,
     loading: () => <p>Loading Map...</p>
 });
@@ -172,7 +172,7 @@ export default function LocationTrackingPage() {
                                 lat: loc.latitude,
                                 lng: loc.longitude,
                                 title: loc.user?.name || 'Unknown User',
-                                isSelected: loc.user_id === selectedEmployee
+                                // isSelected is not supported in GoogleMap component yet
                             }))}
                     />
                 </div>

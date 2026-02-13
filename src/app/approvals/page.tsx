@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabaseClient';
 import toast from 'react-hot-toast';
 import styles from './approvals.module.css';
 
-const LeafletMap = dynamic(() => import('../../components/LeafletMap'), { ssr: false });
+const GoogleMap = dynamic(() => import('../../components/GoogleMap'), { ssr: false });
 
 type Approval = {
     id: string;
@@ -126,12 +126,12 @@ export default function ApprovalsPage() {
 
                                 <div style={{ height: '120px', margin: '16px 0', borderRadius: '8px', overflow: 'hidden' }}>
                                     {item.location_in ? (
-                                        <LeafletMap
-                                            center={[item.location_in.lat, item.location_in.lng]}
+                                        <GoogleMap
+                                            center={{ lat: item.location_in.lat, lng: item.location_in.lng }}
                                             zoom={14}
                                             markers={[{ id: '1', lat: item.location_in.lat, lng: item.location_in.lng, title: 'Check-In' }]}
                                             sites={item.site ? [(item.site as any)] : []}
-                                            interactive={false}
+                                            interactive={true}
                                         />
                                     ) : (
                                         <div style={{ background: '#f8fafc', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>No Location Data</div>

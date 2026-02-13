@@ -2,9 +2,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
-const LeafletMap = dynamic(() => import('../../components/LeafletMap'), { ssr: false });
+const GoogleMap = dynamic(() => import('../../components/GoogleMap'), { ssr: false });
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
+
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
 import { useAuth } from '../../context/AuthContext';
 import styles from './sites.module.css';
 import toast from 'react-hot-toast';
@@ -87,6 +90,12 @@ export default function SitesPage() {
     });
     const [newAssign, setNewAssign] = useState({ user_id: '', site_id: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    const { isLoaded } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        libraries
+    });
 
     useEffect(() => {
         if (canManage) {
@@ -445,11 +454,12 @@ export default function SitesPage() {
                                     </span>
                                 </div>
                                 <div className={styles.mapPreview}>
-                                    <LeafletMap
-                                        center={[myAssignment.site.latitude, myAssignment.site.longitude]}
+                                    <GoogleMap
+                                        center={{ lat: myAssignment.site.latitude, lng: myAssignment.site.longitude }}
                                         zoom={15}
                                         sites={[myAssignment.site]}
-                                        interactive={false}
+                                        interactive={true}
+                                        className={styles.mapPreview}
                                     />
                                 </div>
 
@@ -534,11 +544,12 @@ export default function SitesPage() {
                                             </div>
                                         </div>
                                         <div className={styles.mapPreview}>
-                                            <LeafletMap
-                                                center={[site.latitude, site.longitude]}
+                                            <GoogleMap
+                                                center={{ lat: site.latitude || 0, lng: site.longitude || 0 }}
                                                 zoom={14}
                                                 sites={[site]}
-                                                interactive={false}
+                                                interactive={true}
+                                                className={styles.mapPreview}
                                             />
                                         </div>
                                         <p className={styles.address}>{site.address}</p>
@@ -573,12 +584,13 @@ export default function SitesPage() {
                                             <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{assign.site?.address}</div>
                                         </div>
                                         <div className={styles.mapPreview} style={{ height: '120px' }}>
-                                            <LeafletMap
-                                                center={[assign.site?.latitude || 0, assign.site?.longitude || 0]}
+                                            <GoogleMap
+                                                center={{ lat: assign.site?.latitude || 0, lng: assign.site?.longitude || 0 }}
                                                 zoom={15}
                                                 sites={assign.site ? [assign.site] : []}
                                                 markers={[{ id: assign.id, lat: assign.site?.latitude || 0, lng: assign.site?.longitude || 0, title: assign.user?.name || '' }]}
-                                                interactive={false}
+                                                interactive={true}
+                                                className={styles.mapPreview}
                                             />
                                         </div>
                                     </div>
@@ -604,48 +616,38 @@ export default function SitesPage() {
                             </div>
                             <div className={styles.inputGroup} style={{ position: 'relative' }}>
                                 <label className={styles.label}>Address</label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input
-                                        className={styles.input}
-                                        value={newSite.address}
-                                        onChange={e => setNewSite({ ...newSite, address: e.target.value })}
-                                        placeholder="Search or enter full address"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleSearchAddress();
+                                {isLoaded && (
+                                    <Autocomplete
+                                        onLoad={(autocomplete) => {
+                                            // Store autocomplete instance if needed
+                                            (window as any).autocomplete = autocomplete;
+                                        }}
+                                        onPlaceChanged={() => {
+                                            const autocomplete = (window as any).autocomplete;
+                                            if (autocomplete !== null) {
+                                                const place = autocomplete.getPlace();
+                                                if (place.geometry && place.geometry.location) {
+                                                    setNewSite({
+                                                        ...newSite,
+                                                        address: place.formatted_address || '',
+                                                        latitude: place.geometry.location.lat().toString(),
+                                                        longitude: place.geometry.location.lng().toString()
+                                                    });
+                                                }
+                                            } else {
+                                                console.log('Autocomplete is not loaded yet!');
                                             }
                                         }}
-                                    />
-                                    <button
-                                        onClick={handleSearchAddress}
-                                        className={styles.tabBtn}
-                                        style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', color: '#334155' }}
-                                        disabled={isSearching}
                                     >
-                                        {isSearching ? '...' : 'Search'}
-                                    </button>
-                                </div>
-                                {searchResults.length > 0 && (
-                                    <div className={styles.searchResults}>
-                                        {searchResults.map((result, index) => (
-                                            <div
-                                                key={index}
-                                                className={styles.searchResultItem}
-                                                onClick={() => selectAddress(result)}
-                                            >
-                                                {result.display_name}
-                                            </div>
-                                        ))}
-                                        <div
-                                            className={styles.searchResultItem}
-                                            style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}
-                                            onClick={() => setSearchResults([])}
-                                        >
-                                            Close Results
-                                        </div>
-                                    </div>
+                                        <input
+                                            className={styles.input}
+                                            value={newSite.address}
+                                            onChange={e => setNewSite({ ...newSite, address: e.target.value })}
+                                            placeholder="Search or enter full address"
+                                        />
+                                    </Autocomplete>
                                 )}
+
                             </div>
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Daily Tasks / SOPs</label>

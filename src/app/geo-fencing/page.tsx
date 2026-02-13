@@ -7,23 +7,18 @@ import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 
 // Define types first so dynamic can use them
+// Define types first so dynamic can use them
 type Site = {
     id: string;
     name: string;
-    radius: number;
+    radius_meters: number;
     latitude: number;
     longitude: number;
 };
 
-type LeafletMapProps = {
-    sites: Site[];
-    onLocationSelect: (lat: number, lng: number) => void;
-};
-
-// Dynamically import the custom map component with explicit prop types
-// We use a relative path that is definitely correct: ../../components/LeafletMap
-const MapWithNoSSR = dynamic<LeafletMapProps>(
-    () => import('../../components/LeafletMap'),
+// Dynamically import the custom map component
+const MapWithNoSSR = dynamic(
+    () => import('../../components/GoogleMap'),
     { ssr: false }
 );
 
@@ -59,7 +54,7 @@ export default function GeoFencingPage() {
 
         const { error } = await supabase.from('sites').insert([{
             name,
-            radius: parseInt(radius),
+            radius_meters: parseInt(radius),
             latitude: lat,
             longitude: lng
         }]);
@@ -84,9 +79,10 @@ export default function GeoFencingPage() {
 
                 <div className={styles.card}>
                     <div className={styles.mapContainer} style={{ height: '400px', borderRadius: '12px', overflow: 'hidden', marginBottom: '24px' }}>
-                        {/* We use the extracted component to handle Leaflet logic safely */}
+                        {/* We use the extracted component to handle Google Maps logic safely */}
                         <MapWithNoSSR
                             sites={sites}
+                            interactive={true}
                             onLocationSelect={(lt: number, lg: number) => {
                                 setLat(lt);
                                 setLng(lg);
@@ -123,7 +119,7 @@ export default function GeoFencingPage() {
                     {sites.map(site => (
                         <div key={site.id} className={styles.siteItem}>
                             <h3 className={styles.siteName}>{site.name}</h3>
-                            <p className={styles.siteDetails}>Radius: {site.radius}m</p>
+                            <p className={styles.siteDetails}>Radius: {site.radius_meters}m</p>
                             <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Lat: {site.latitude?.toFixed(4)}, Lng: {site.longitude?.toFixed(4)}</p>
                         </div>
                     ))}
