@@ -205,6 +205,9 @@ export default function EmployeeDashboard() {
                                         <button onClick={() => router.push('/documents')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span className="material-symbols-outlined">folder</span> Company Docs
                                         </button>
+                                        <button onClick={() => router.push('/approvals')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #fed7aa', background: '#fff7ed', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: '#c2410c' }}>
+                                            <span className="material-symbols-outlined">check_circle</span> Approvals
+                                        </button>
                                     </div>
                                 </div>
                             </div>

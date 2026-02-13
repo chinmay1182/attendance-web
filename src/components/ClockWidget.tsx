@@ -165,8 +165,68 @@ export const ClockWidget = () => {
             }
 
             const loc = await getGeoLocation();
-            await attendanceService.clockIn(user.id, loc, status, photoBlob);
+            if (!loc) {
+                alert("Location access is required to clock in.");
+                setLoading(false);
+                return;
+            }
+
+            // Find nearest site
+            const nearestSite = await (attendanceService as any).findNearestSite(loc.lat, loc.lng);
+            if (!nearestSite) {
+                alert("You are not within range of any valid site. Access Denied.");
+                setLoading(false);
+                return;
+            }
+
+            // Check Assignment
+            const { data: assignment } = await supabase
+                .from('site_assignments')
+                .select('site_id, site:sites(name)')
+                .eq('user_id', user.id)
+                .eq('status', 'active')
+                .single();
+
+            let approvalStatus: 'Approved' | 'Pending' = 'Approved';
+
+            if (assignment) {
+                // Handle Supabase joining sometimes returning array
+                const assignedSiteName = Array.isArray((assignment as any).site) ? (assignment as any).site[0]?.name : (assignment as any).site?.name;
+
+                if (assignment.site_id !== nearestSite.id) {
+                    const confirmed = window.confirm(
+                        `⚠️ Location Warning\n\n` +
+                        `You are at: ${nearestSite.name}\n` +
+                        `Assigned to: ${assignedSiteName}\n\n` +
+                        `Your attendance will be marked "Pending Approval". Proceed?`
+                    );
+                    if (!confirmed) {
+                        setLoading(false);
+                        return;
+                    }
+                    approvalStatus = 'Pending';
+                }
+            } else {
+                // No active assignment
+                const confirmed = window.confirm(
+                    `⚠️ No Assignment Found\n\n` +
+                    `You are checking in at: ${nearestSite.name}\n` +
+                    `Attendance will be marked "Pending Approval". Proceed?`
+                );
+                if (!confirmed) {
+                    setLoading(false);
+                    return;
+                }
+                approvalStatus = 'Pending';
+            }
+
+            await attendanceService.clockIn(user.id, loc, status, photoBlob, nearestSite.id, approvalStatus);
             await fetchAttendance();
+
+            if (approvalStatus === 'Pending') {
+                alert("Clock-in successful! Status: Pending Approval");
+            }
+
         } catch (err: any) {
             console.error('Clock in error:', err);
             alert(err?.message || "Failed to clock in");

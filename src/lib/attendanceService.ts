@@ -13,6 +13,9 @@ export interface AttendanceRecord {
     photo_out?: string | null;
     location_in?: { lat: number, lng: number } | null;
     location_out?: { lat: number, lng: number } | null;
+    site_id?: string;
+    approval_status?: 'Approved' | 'Pending' | 'Rejected';
+    admin_notes?: string;
 }
 
 export const attendanceService = {
@@ -193,7 +196,14 @@ export const attendanceService = {
         }
     },
 
-    async clockIn(userId: string, location?: { lat: number, lng: number }, status: 'present' | 'late' | 'absent' = 'present', photoBlob?: Blob | null) {
+    async clockIn(
+        userId: string,
+        location?: { lat: number, lng: number },
+        status: 'present' | 'late' | 'absent' = 'present',
+        photoBlob?: Blob | null,
+        siteId?: string,
+        approvalStatus: 'Approved' | 'Pending' | 'Rejected' = 'Approved'
+    ) {
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
@@ -213,7 +223,9 @@ export const attendanceService = {
                     clock_in: now,
                     status: status,
                     location_in: location,
-                    photo_in: photoPath
+                    photo_in: photoPath,
+                    site_id: siteId,
+                    approval_status: approvalStatus
                 }
             ])
             .select()
@@ -267,5 +279,45 @@ export const attendanceService = {
             .getPublicUrl(path);
 
         return data.publicUrl;
+    },
+
+    async findNearestSite(lat: number, lng: number): Promise<{ id: string, name: string, distance: number, radius: number } | null> {
+        // Fetch all sites with basic filters
+        const { data: sites } = await supabase.from('sites').select('id, name, latitude, longitude, radius_meters');
+
+        if (!sites || sites.length === 0) return null;
+
+        let nearest = null;
+        let minDistance = Infinity;
+
+        const R = 6371e3; // meters
+
+        for (const site of sites) {
+            const φ1 = lat * Math.PI / 180;
+            const φ2 = site.latitude * Math.PI / 180;
+            const Δφ = (site.latitude - lat) * Math.PI / 180;
+            const Δλ = (site.longitude - lng) * Math.PI / 180;
+
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                Math.cos(φ1) * Math.cos(φ2) *
+                Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c;
+
+            // Check if within site radius
+            if (d <= (site.radius_meters || 100)) {
+                if (d < minDistance) {
+                    minDistance = d;
+                    nearest = {
+                        id: site.id,
+                        name: site.name,
+                        distance: d,
+                        radius: site.radius_meters || 100
+                    };
+                }
+            }
+        }
+
+        return nearest;
     }
 };
