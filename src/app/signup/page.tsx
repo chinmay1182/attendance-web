@@ -187,7 +187,7 @@ export default function SignupPage() {
                     </p>
 
                     <p className={styles.terms}>
-                        By continuing, you agree to our <Link href="#" className={styles.link} style={{ marginLeft: 0 }}>Terms of Service</Link> and <Link href="#" className={styles.link} style={{ marginLeft: 0 }}>Privacy Policy</Link>.
+                        By continuing, you agree to our <Link href="#" className={styles.link} style={{ marginLeft: 0 }}>Terms of Service</Link> and <Link href="/privacy-policy" className={styles.link} style={{ marginLeft: 0 }}>Privacy Policy</Link>.
                     </p>
                 </div>
             </div>

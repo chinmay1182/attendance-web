@@ -204,7 +204,7 @@ export default function Home() {
           </div>
           <div className={styles.footerCol}>
             <h4>Legal</h4>
-            <Link href="#" className={styles.footerLink}>Privacy</Link>
+            <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
             <Link href="#" className={styles.footerLink}>Terms</Link>
           </div>
         </div>
