@@ -1,7 +1,6 @@
 "use client";
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Navbar } from '../../components/Navbar';
 import styles from './privacy.module.css';
 
 export default function PrivacyPolicyPage() {
@@ -9,7 +8,6 @@ export default function PrivacyPolicyPage() {
 
     return (
         <>
-            <Navbar />
             <div className={styles.container}>
                 <div className={styles.headerRow}>
                     <button onClick={() => router.back()} className={styles.backButton}>
