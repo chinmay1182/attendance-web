@@ -205,6 +205,7 @@ export default function Home() {
           <div className={styles.footerCol}>
             <h4>Legal</h4>
             <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
+            <Link href="/delete-account" className={styles.footerLink}>Delete Account</Link>
             <Link href="#" className={styles.footerLink}>Terms</Link>
           </div>
         </div>
