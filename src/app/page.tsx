@@ -120,47 +120,60 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className={styles.pricingSection}>
-        <h2 className={styles.sectionTitle}>Simple, Transparent Pricing</h2>
-        <div className={styles.pricingGrid}>
-          {/* Free Tier */}
-          <div className={styles.pricingCard}>
-            <h3 className={styles.priceTitle}>Starter</h3>
-            <div className={styles.priceAmount}>$0<span>/mo</span></div>
-            <ul className={styles.priceFeatures}>
-              <li>✓ Up to 5 Employees</li>
-              <li>✓ Basic Reports</li>
-              <li>✓ Mobile App Access</li>
-            </ul>
-            <button className={styles.priceButton}>Get Started</button>
-          </div>
 
-          {/* Pro Tier */}
-          <div className={`${styles.pricingCard} ${styles.popular}`}>
-            <div className={styles.popularBadge}>MOST POPULAR</div>
-            <h3 className={styles.priceTitle}>Growth</h3>
-            <div className={styles.priceAmount}>$29<span>/mo</span></div>
-            <ul className={styles.priceFeatures}>
-              <li>✓ Up to 50 Employees</li>
-              <li>✓ Geofencing & GPS</li>
-              <li>✓ Advanced Analytics</li>
-              <li>✓ Data Export</li>
-            </ul>
-            <button className={styles.priceButton}>Start Free Trial</button>
-          </div>
 
-          {/* Enterprise Tier */}
-          <div className={styles.pricingCard}>
-            <h3 className={styles.priceTitle}>Enterprise</h3>
-            <div className={styles.priceAmount}>$99<span>/mo</span></div>
-            <ul className={styles.priceFeatures}>
-              <li>✓ Unlimited Employees</li>
-              <li>✓ Dedicated Support</li>
-              <li>✓ Custom Integration</li>
-              <li>✓ SLA Guarantee</li>
-            </ul>
-            <button className={styles.priceButton}>Contact Sales</button>
+      {/* App Showcase Section */}
+      <section className={styles.showcaseSection}>
+        <div className={styles.showcaseHeader}>
+          <h2 className={styles.sectionTitle}>Experience the Future of Work</h2>
+          <p className={styles.showcaseDesc}>
+            A beautifully crafted mobile app that your team will actually love to use.
+            Everything you need, right in your pocket.
+          </p>
+        </div>
+
+        <div className={styles.mockupsContainer}>
+          <div className={styles.mockupsTrack}>
+            <ShowcaseCard
+              img="/mockups/group-62.png"
+              title="Smart Dashboard"
+              desc="Get a bird's-eye view of your daily schedule, active hours, and quick actions."
+            />
+            <ShowcaseCard
+              img="/mockups/group-63.png"
+              title="One-Tap Attendance"
+              desc="Clock in seamlessly with location verification and device restrictions."
+            />
+            <ShowcaseCard
+              img="/mockups/group-64.png"
+              title="Attendance Logs"
+              desc="View detailed logs of your entire month with status indicators."
+            />
+            <ShowcaseCard
+              img="/mockups/group-65.png"
+              title="Detailed Analytics"
+              desc="Track your performance with beautiful charts and visual insights."
+            />
+            <ShowcaseCard
+              img="/mockups/group-66.png"
+              title="Leave Management"
+              desc="Apply for leaves, view balances, and track approval status."
+            />
+            <ShowcaseCard
+              img="/mockups/group-67.png"
+              title="Expense Claims"
+              desc="Upload bills and request reimbursements directly from the app."
+            />
+            <ShowcaseCard
+              img="/mockups/group-68.png"
+              title="Team Directory"
+              desc="Connect with your peers and view team availability."
+            />
+            <ShowcaseCard
+              img="/mockups/group-69.png"
+              title="Admin Controls"
+              desc="Manage requests and view team presence directly on mobile."
+            />
           </div>
         </div>
       </section>
@@ -185,7 +198,9 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerGrid}>
           <div>
-            <div className={styles.footerLogo}>Attendance Pro</div>
+            <div className={styles.footerLogo}>
+              <Image src="/myaccount.svg" alt="Attendance Pro" width={150} height={40} style={{ objectFit: 'contain' }} />
+            </div>
             <p className={styles.footerDesc}>
               Making workforce management effortless, beautiful, and intelligent for teams of all sizes.
             </p>
@@ -193,7 +208,6 @@ export default function Home() {
           <div className={styles.footerCol}>
             <h4>Product</h4>
             <Link href="#features" className={styles.footerLink}>Features</Link>
-            <Link href="#pricing" className={styles.footerLink}>Pricing</Link>
             <Link href="/login" className={styles.footerLink}>Login</Link>
           </div>
           <div className={styles.footerCol}>
@@ -223,6 +237,20 @@ function FeatureCard({ icon, title, desc }: { icon: string, title: string, desc:
       <div className={styles.iconBox}>{icon}</div>
       <h3 className={styles.featureTitle}>{title}</h3>
       <p className={styles.featureDesc}>{desc}</p>
+    </div>
+  );
+}
+
+function ShowcaseCard({ img, title, desc }: { img: string, title: string, desc: string }) {
+  return (
+    <div className={styles.mockupCard}>
+      <div className={styles.mockupImageWrapper}>
+        <Image src={img} alt={title} width={280} height={560} className={styles.mockupImage} unoptimized />
+      </div>
+      <div className={styles.mockupInfo}>
+        <h4 className={styles.mockupTitle}>{title}</h4>
+        <p className={styles.mockupFeature}>{desc}</p>
+      </div>
     </div>
   );
 }
