@@ -3,6 +3,8 @@ import React from "react";
 import { FaqItem } from "../components/FaqItem";
 import Link from "next/link";
 import Image from "next/image";
+import Showcase from "../components/Showcase";
+import AnimatedTitle from "../components/AnimatedTitle";
 import styles from "./page.module.css";
 
 export default function Home() {
@@ -24,7 +26,6 @@ export default function Home() {
           <Link href="#product" className={styles.navLink}>Product</Link>
           <Link href="#solutions" className={styles.navLink}>Solutions</Link>
           <Link href="#resources" className={styles.navLink}>Resources</Link>
-          <Link href="#pricing" className={styles.navLink}>Pricing</Link>
           <Link href="/login" className={styles.loginBtn}>Log In</Link>
           <Link href="#contact" className={styles.outlineBtn}>Talk to Expert</Link>
           <Link href="/signup" className={`${styles.primaryBtn} ${styles.navBtn}`}>Try for Free</Link>
@@ -36,7 +37,7 @@ export default function Home() {
         <div className={styles.badge}>✨ V2.0 Now Available</div>
         <h1 className={styles.title}>
           The future of <br />
-          <span className={styles.gradientText}>Workforce Management</span>
+          <AnimatedTitle />
         </h1>
         <p className={styles.subtitle}>
           The premium attendance management solution for modern teams.
@@ -53,7 +54,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Trusted By Section */}
+      {/* Trusted By Section 
       <section className={styles.trustedSection}>
         <p className={styles.trustedTitle}>Trusted by innovative teams</p>
         <div className={styles.logosGrid}>
@@ -63,135 +64,108 @@ export default function Home() {
           <div className={styles.logoItem}>FluxSystems</div>
         </div>
       </section>
+      */}
 
       {/* Features Grid */}
-      <section id="features" className={styles.features}>
-        <FeatureCard
-          icon="⚡"
-          title="Real-time Tracking"
-          desc="Live clock-in statuses, active timers, and effective hour calculations for your entire remote or office team."
-        />
-        <FeatureCard
-          icon="📍"
-          title="Smart Geofencing"
-          desc="Automatically restrict or flag check-ins based on precise GPS office coordinates to ensure compliance."
-        />
-        <FeatureCard
-          icon="📊"
-          title="Advanced Analytics"
-          desc="Beautiful bar charts and exportable Excel reports to visualize attendance trends and absenteeism."
-        />
-        <FeatureCard
-          icon="🗓️"
-          title="Team Calendar"
-          desc="A unified view of holidays, approved leaves, and team schedules to better plan your sprints."
-        />
-        <FeatureCard
-          icon="🌓"
-          title="Premium UI"
-          desc="A specifically crafted dark-mode glassmorphism interface that feels amazing to use every single day."
-        />
-        <FeatureCard
-          icon="🔄"
-          title="Regularization"
-          desc="Forgot to clock out? Submit correction requests that admins can approve in a single click."
-        />
+      <section id="features" className={styles.featuresSection}>
+        <div className={styles.featuresInner}>
+          <h2 className={styles.sectionTitle}>Everything You Need to Manage Your Team</h2>
+          <div className={styles.features}>
+            <FeatureCard
+              icon="⚡"
+              title="Real-time Tracking"
+              desc="Live clock-in statuses, active timers, and effective hour calculations for your entire remote or office team."
+            />
+            <FeatureCard
+              icon="📍"
+              title="Smart Geofencing"
+              desc="Automatically restrict or flag check-ins based on precise GPS office coordinates to ensure compliance."
+            />
+            <FeatureCard
+              icon="📊"
+              title="Advanced Analytics"
+              desc="Beautiful bar charts and exportable Excel reports to visualize attendance trends and absenteeism."
+            />
+            <FeatureCard
+              icon="🗓️"
+              title="Team Calendar"
+              desc="A unified view of holidays, approved leaves, and team schedules to better plan your sprints."
+            />
+            <FeatureCard
+              icon="🌓"
+              title="Premium UI"
+              desc="A specifically crafted dark-mode glassmorphism interface that feels amazing to use every single day."
+            />
+            <FeatureCard
+              icon="🔄"
+              title="Regularization"
+              desc="Forgot to clock out? Submit correction requests that admins can approve in a single click."
+            />
+          </div>
+        </div>
       </section>
 
       {/* How it Works Section */}
       <section id="how-it-works" className={styles.stepsSection}>
-        <h2 className={styles.sectionTitle}>How It Works</h2>
-        <div className={styles.stepsGrid}>
-          <div className={styles.stepCard}>
-            <div className={styles.stepNumber}>01</div>
-            <h3 className={styles.stepTitle}>Create Account</h3>
-            <p className={styles.stepDesc}>Sign up your company and invite your team members via email.</p>
+        <div className={styles.stepsInner}>
+          <h2 className={styles.sectionTitle}>How It Works</h2>
+          <div className={styles.stepsGrid}>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNumber}>01</div>
+              <h3 className={styles.stepTitle}>Create Account</h3>
+              <p className={styles.stepDesc}>Sign up your company and invite your team members via email.</p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNumber}>02</div>
+              <h3 className={styles.stepTitle}>Set Policies</h3>
+              <p className={styles.stepDesc}>Define office locations, shifts, and holiday calendars in settings.</p>
+            </div>
+            <div className={styles.stepCard}>
+              <div className={styles.stepNumber}>03</div>
+              <h3 className={styles.stepTitle}>Start Tracking</h3>
+              <p className={styles.stepDesc}>Employees clock in via mobile or web. You get real-time reports.</p>
+            </div>
           </div>
-          <div className={styles.stepCard}>
-            <div className={styles.stepNumber}>02</div>
-            <h3 className={styles.stepTitle}>Set Policies</h3>
-            <p className={styles.stepDesc}>Define office locations, shifts, and holiday calendars in settings.</p>
-          </div>
-          <div className={styles.stepCard}>
-            <div className={styles.stepNumber}>03</div>
-            <h3 className={styles.stepTitle}>Start Tracking</h3>
-            <p className={styles.stepDesc}>Employees clock in via mobile or web. You get real-time reports.</p>
+        </div>
+      </section>
+
+      {/* Help & Support Section */}
+      <section id="support" className={styles.supportSection}>
+        <div className={styles.supportInner}>
+          <h2 className={styles.sectionTitle}>Help & Support</h2>
+          <div className={styles.stepsGrid}>
+            <div className={styles.supportCard}>
+              <div className={styles.supportIcon}>📞</div>
+              <h3 className={styles.supportTitle}>Call Us</h3>
+              <p className={styles.supportDesc}>+91 8808022200</p>
+            </div>
+            <div className={styles.supportCard}>
+              <div className={styles.supportIcon}>✉️</div>
+              <h3 className={styles.supportTitle}>Email Support</h3>
+              <p className={styles.supportDesc}>support@myaccount.asia</p>
+            </div>
+            <div className={styles.supportCard}>
+              <div className={styles.supportIcon}>💬</div>
+              <h3 className={styles.supportTitle}>Live Chat</h3>
+              <p className={styles.supportDesc}>Available 24/7 in-app</p>
+            </div>
           </div>
         </div>
       </section>
 
+      <Showcase />
 
-
-      {/* App Showcase Section */}
-      <section className={styles.showcaseSection}>
-        <div className={styles.showcaseHeader}>
-          <h2 className={styles.sectionTitle}>Experience the Future of Work</h2>
-          <p className={styles.showcaseDesc}>
-            A beautifully crafted mobile app that your team will actually love to use.
-            Everything you need, right in your pocket.
-          </p>
-        </div>
-
-        <div className={styles.mockupsContainer}>
-          <div className={styles.mockupsTrack}>
-            <ShowcaseCard
-              img="/mockups/group-62.png"
-              title="Smart Dashboard"
-              desc="Get a bird's-eye view of your daily schedule, active hours, and quick actions."
-            />
-            <ShowcaseCard
-              img="/mockups/group-63.png"
-              title="One-Tap Attendance"
-              desc="Clock in seamlessly with location verification and device restrictions."
-            />
-            <ShowcaseCard
-              img="/mockups/group-64.png"
-              title="Attendance Logs"
-              desc="View detailed logs of your entire month with status indicators."
-            />
-            <ShowcaseCard
-              img="/mockups/group-65.png"
-              title="Detailed Analytics"
-              desc="Track your performance with beautiful charts and visual insights."
-            />
-            <ShowcaseCard
-              img="/mockups/group-66.png"
-              title="Leave Management"
-              desc="Apply for leaves, view balances, and track approval status."
-            />
-            <ShowcaseCard
-              img="/mockups/group-67.png"
-              title="Expense Claims"
-              desc="Upload bills and request reimbursements directly from the app."
-            />
-            <ShowcaseCard
-              img="/mockups/group-68.png"
-              title="Team Directory"
-              desc="Connect with your peers and view team availability."
-            />
-            <ShowcaseCard
-              img="/mockups/group-69.png"
-              title="Admin Controls"
-              desc="Manage requests and view team presence directly on mobile."
-            />
-          </div>
-        </div>
-      </section>
 
       {/* FAQ Section */}
       <section id="faq" className={styles.faqSection}>
-        <h2 className={styles.sectionTitle}>Frequently Asked Questions</h2>
-        <FaqItem question="Can I access this on mobile?" answer="Yes! Attendance Pro is fully responsive and works great on any smartphone or tablet." />
-        <FaqItem question="How does the geofencing work?" answer="We use your browser's GPS to verify checking in. Admins can set a permissible radius around the office location." />
-        <FaqItem question="Is my data secure?" answer="Absolutely. We use industry-standard encryption and Firebase Authentication to ensure your data is safe." />
-        <FaqItem question="Can I export reports?" answer="Yes, admins can export detailed attendance sheets in Excel format with a single click." />
-      </section>
-
-      {/* CTA Section */}
-      <section className={styles.ctaSection}>
-        <h2 className={styles.ctaTitle}>Ready to transform your workplace?</h2>
-        <p className={styles.ctaDesc}>Join thousands of forward-thinking companies managing their teams with Attendance Pro.</p>
-        <Link href="/signup" className={styles.ctaBtn}>Start Your Free Trial</Link>
+        <div className={styles.faqInner}>
+          <h2 className={styles.sectionTitle}>Frequently Asked Questions</h2>
+          <FaqItem question="Can I set up multiple office locations?" answer="Yes, administrators can create specific geofenced locations for different offices to ensure teams clock in only when they arrive at their designated site." />
+          <FaqItem question="How does the regularization workflow function?" answer="If an employee misses a clock-out, they can submit a regularization request with their correction. Admins receive a notification and can approve or deny it in a single click." />
+          <FaqItem question="What kind of reports can I export?" answer="You can extract full monthly attendance logs, calculate effective working hours, check late timings, and download everything as Excel sheets for payroll processing." />
+          <FaqItem question="Is my team's location tracked continuously?" answer="No, we respect employee privacy. Location is only fetched precisely at the moment of 'Clock In' and 'Clock Out' to verify they are within the designated geofenced radius." />
+          <FaqItem question="Can employees track leaves and expenses too?" answer="Absolutely! The app comes with complete leave management and expense claim systems baked right into the unified dashboard." />
+        </div>
       </section>
 
       {/* Footer */}
@@ -204,6 +178,13 @@ export default function Home() {
             <p className={styles.footerDesc}>
               Making workforce management effortless, beautiful, and intelligent for teams of all sizes.
             </p>
+            <div className={styles.socialIcons}>
+              <Link href="#" target="_blank"><Image src="https://img.icons8.com/ios/50/facebook-new.png" alt="Facebook" width={32} height={32} unoptimized /></Link>
+              <Link href="#" target="_blank"><Image src="https://img.icons8.com/ios/50/twitterx--v1.png" alt="Twitter" width={32} height={32} unoptimized /></Link>
+              <Link href="#" target="_blank"><Image src="https://img.icons8.com/ios/50/instagram-new--v1.png" alt="Instagram" width={32} height={32} unoptimized /></Link>
+              <Link href="#" target="_blank"><Image src="https://img.icons8.com/ios/50/linkedin.png" alt="LinkedIn" width={32} height={32} unoptimized /></Link>
+              <Link href="#" target="_blank"><Image src="https://img.icons8.com/ios/50/whatsapp--v1.png" alt="WhatsApp" width={32} height={32} unoptimized /></Link>
+            </div>
           </div>
           <div className={styles.footerCol}>
             <h4>Product</h4>
@@ -223,10 +204,16 @@ export default function Home() {
             <Link href="#" className={styles.footerLink}>Terms</Link>
           </div>
         </div>
+
         <div className={styles.copyright}>
-          © 2025 Attendance Pro. All rights reserved.
+          © 2026 Attendance Pro. All rights reserved.
         </div>
       </footer>
+
+      {/* WhatsApp FAB */}
+      <Link href="https://wa.me/1234567890" target="_blank" className={styles.whatsappFab}>
+        <Image src="https://img.icons8.com/ios/50/whatsapp--v1.png" alt="Chat with us" width={32} height={32} unoptimized />
+      </Link>
     </div>
   );
 }
@@ -240,19 +227,3 @@ function FeatureCard({ icon, title, desc }: { icon: string, title: string, desc:
     </div>
   );
 }
-
-function ShowcaseCard({ img, title, desc }: { img: string, title: string, desc: string }) {
-  return (
-    <div className={styles.mockupCard}>
-      <div className={styles.mockupImageWrapper}>
-        <Image src={img} alt={title} width={280} height={560} className={styles.mockupImage} unoptimized />
-      </div>
-      <div className={styles.mockupInfo}>
-        <h4 className={styles.mockupTitle}>{title}</h4>
-        <p className={styles.mockupFeature}>{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-
