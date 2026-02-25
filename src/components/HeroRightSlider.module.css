@@ -1,0 +1,116 @@
+.heroRightCard {
+    background: linear-gradient(135deg, #ffffff 0%, #e8f5e9 100%);
+    padding: 8rem 2rem 4rem;
+    border-radius: 0;
+    animation: fadeIn 0.8s ease-out;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.contentWrapper {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.imageWrapper {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 2.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+.textSliderWrapper {
+    position: relative;
+    height: 60px;
+    /* increased to fit larger text */
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.slideText {
+    position: absolute;
+    width: 100%;
+    font-size: 1.8rem;
+    /* significantly larger */
+    font-weight: 700;
+    /* extra bold */
+    color: #212121;
+    /* premium blue to make it pop */
+    text-align: center;
+    transition: opacity 0.6s ease-in-out;
+    /* smooth pure fade, no moving/jumping */
+    opacity: 0;
+    pointer-events: none;
+}
+
+.slideText.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.slideText.inactive {
+    opacity: 0;
+}
+
+/* Floating Shapes similar to Login Page */
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
+    z-index: 1;
+}
+
+.shape1 {
+    width: 250px;
+    height: 250px;
+    background: #bfdbfe;
+    /* blue-200 to match theme */
+    top: -10%;
+    left: -10%;
+}
+
+.shape2 {
+    width: 200px;
+    height: 200px;
+    background: #ddd6fe;
+    /* violet-200 */
+    bottom: -5%;
+    right: -5%;
+    animation-delay: -5s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
+}
