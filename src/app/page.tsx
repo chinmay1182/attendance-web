@@ -50,7 +50,7 @@ export default function MyAccountLandingPage() {
               <Link href="/login" className={styles.primaryBtn}>
                 Login
               </Link>
-              <Link href="/register" className={styles.outlineBtn}>
+              <Link href="https://myaccount.asia/signup" className={styles.outlineBtn}>
                 Get Started Free
               </Link>
             </div>
