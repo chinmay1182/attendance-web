@@ -12,8 +12,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Attendance Pro",
-  description: "Premium Attendance Management System",
+  title: "MyAccount | Your Small Management Tool",
+  description: "A free public utility platform built for Startups, MSMEs & Women Founders.",
 };
 
 export default function RootLayout({

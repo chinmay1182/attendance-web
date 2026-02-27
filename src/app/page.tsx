@@ -6,6 +6,7 @@ import HeroRightSlider from "../components/HeroRightSlider";
 import Link from "next/link";
 import Image from "next/image";
 import { Poppins } from "next/font/google";
+import RequestCallModal from "../components/RequestCallModal";
 import styles from "./page.module.css";
 
 const poppins = Poppins({
@@ -24,8 +25,7 @@ export default function MyAccountLandingPage() {
           </div>
           <div className={styles.headerRight}>
             <div className={styles.supportContact}>
-              <span className={styles.supportContactTitle}>Call Support</span>
-              <a href="tel:+918810878185" className={styles.supportContactValue}>+91 88108 78185</a>
+              <RequestCallModal />
             </div>
             {/* <div className={styles.supportContact}>
               <span className={styles.supportContactTitle}>Email Support</span>
@@ -153,12 +153,6 @@ export default function MyAccountLandingPage() {
               <h3 className={styles.supportCardTitle}>Time-Bound Closure</h3>
               <p className={styles.supportCardDesc}>We aim for structured and timely resolution of all concerns.</p>
             </div>
-          </div>
-
-          <div className={styles.supportButtonGroup}>
-            <Link href="/support" className={styles.supportMainButton}>
-              Go to Support Portal
-            </Link>
           </div>
         </div>
       </section>

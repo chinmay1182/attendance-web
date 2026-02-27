@@ -7,12 +7,12 @@ import styles from './Showcase.module.css';
 const MOCKUPS = [
     { img: "/mockups/group-62.png", title: "Smart Dashboard", desc: "Get a bird's-eye view of your daily schedule, active hours, and quick actions." },
     { img: "/mockups/group-63.png", title: "One-Tap Attendance", desc: "Clock in seamlessly with location verification and device restrictions." },
-    { img: "/mockups/group-64.png", title: "Attendance Logs", desc: "View detailed logs of your entire month with status indicators." },
-    { img: "/mockups/group-65.png", title: "Detailed Analytics", desc: "Track your performance with beautiful charts and visual insights." },
-    { img: "/mockups/group-66.png", title: "Leave Management", desc: "Apply for leaves, view balances, and track approval status." },
-    { img: "/mockups/group-67.png", title: "Expense Claims", desc: "Upload bills and request reimbursements directly from the app." },
-    { img: "/mockups/group-68.png", title: "Team Directory", desc: "Connect with your peers and view team availability." },
-    { img: "/mockups/group-69.png", title: "Admin Controls", desc: "Manage requests and view team presence directly on mobile." },
+    { img: "/mockups/group-64.png", title: "Employee Rewards", desc: "View and redeem rewards earned through your hard work and dedication." },
+    { img: "/mockups/group-65.png", title: "Real-time Notifications", desc: "Stay updated with real-time notifications about your attendance, leaves, and rewards." },
+    { img: "/mockups/group-66.png", title: "Settings", desc: "Customize your app preferences and manage your account settings." },
+    { img: "/mockups/group-67.png", title: "Company Sites", desc: "Manage your company sites and locations." },
+    { img: "/mockups/group-68.png", title: "Leave Management", desc: "Apply for leaves, view balances, and track approval status." },
+    { img: "/mockups/group-69.png", title: "Expense Claims", desc: "Upload bills and request reimbursements directly from the app." },
 ];
 
 export default function Showcase() {
