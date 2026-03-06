@@ -18,7 +18,7 @@ type UserStub = {
 };
 
 export default function ChatPage() {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [users, setUsers] = useState<UserStub[]>([]);
@@ -26,8 +26,8 @@ export default function ChatPage() {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (user) fetchUsers();
-    }, [user]);
+        if (user && profile) fetchUsers();
+    }, [user, profile]);
 
     // Presence State
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
@@ -107,7 +107,17 @@ export default function ChatPage() {
     };
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('id, name').neq('id', user?.id);
+        let query = supabase.from('users').select('id, name, role').neq('id', user?.id);
+
+        if (profile?.company_id) {
+            query = query.eq('company_id', profile.company_id);
+        }
+
+        if (profile?.role === 'employee') {
+            query = query.in('role', ['admin', 'hr']);
+        }
+
+        const { data } = await query;
         if (data && data.length > 0) {
             setUsers(data);
             setActiveUser(data[0]);

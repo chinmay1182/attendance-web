@@ -73,11 +73,16 @@ export default function TeamPage() {
     };
 
     const fetchEmployees = async () => {
-        // 1. Fetch Users
-        const { data: usersData, error: usersError } = await supabase
+        let query = supabase
             .from('users')
             .select('*')
             .order('created_at', { ascending: false });
+
+        if (profile?.company_id) {
+            query = query.eq('company_id', profile.company_id);
+        }
+
+        const { data: usersData, error: usersError } = await query;
 
         if (usersError) {
             console.error('Error fetching users:', usersError);
