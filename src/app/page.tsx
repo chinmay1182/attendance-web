@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 // import { FaqItem } from "../components/FaqItem";
 import Showcase from "../components/Showcase";
@@ -14,9 +16,32 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+const notifications = [
+  "Billing portal is accessible at billing.myaccount.asia →",
+  "Welcome to MyAccount - Your Free Public Utility Platform!",
+  "Manage Sales, Attendance & Billing in one compliance-ready system.",
+  "Free for Startups, MSMEs & Women Founders.",
+];
+
 export default function MyAccountLandingPage() {
+  const [currentNotif, setCurrentNotif] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentNotif((prev) => (prev + 1) % notifications.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className={`${styles.container} ${poppins.className}`}>
+      {/* Top Notification Bar */}
+      <div className={styles.notifBar}>
+        <div key={currentNotif} className={styles.notifContent}>
+          {notifications[currentNotif]}
+        </div>
+      </div>
+
       {/* Header / Nav */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
@@ -24,13 +49,18 @@ export default function MyAccountLandingPage() {
             <Image src="/myaccount.svg" alt="MyAccount Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
           </div>
           <div className={styles.headerRight}>
+            <Link href="https://billing.myaccount.asia/" className={styles.navLink}>
+              Billing <span className={styles.newBadge}>New</span>
+            </Link>
+            <Link href="https://myaccount.asia/" className={styles.navLink}>
+              Attendance
+            </Link>
+            <div className={styles.smtLink}>
+              SMT <span className={styles.soonBadge}>Soon</span>
+            </div>
             <div className={styles.supportContact}>
               <RequestCallModal />
             </div>
-            {/* <div className={styles.supportContact}>
-              <span className={styles.supportContactTitle}>Email Support</span>
-              <a href="mailto:support@myaccount.asia" className={styles.supportContactValue}>support@myaccount.asia</a>
-            </div> */}
           </div>
         </div>
       </header>
