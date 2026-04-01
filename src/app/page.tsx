@@ -1,10 +1,8 @@
 "use client";
 
 import React from "react";
-// import { FaqItem } from "../components/FaqItem";
 import Showcase from "../components/Showcase";
 import HeroRightSlider from "../components/HeroRightSlider";
-// import AnimatedTitle from "../components/AnimatedTitle";
 import Link from "next/link";
 import Image from "next/image";
 import { Poppins } from "next/font/google";
@@ -23,8 +21,27 @@ const notifications = [
   "Free for Startups, MSMEs & Women Founders.",
 ];
 
+const productLinks = [
+  {
+    name: "MyAccount Attendance",
+    description: "Manage attendance, shifts, and workforce operations.",
+    href: "https://myaccount.asia/",
+  },
+  {
+    name: "MyAccount Billing",
+    description: "Create invoices, manage payments, and track billing.",
+    href: "https://billing.myaccount.asia/",
+  },
+  {
+    name: "MyAccount SMT",
+    description: "Handle sales workflows, leads, and business follow-ups.",
+    href: "https://smt.myaccount.asia/",
+  },
+];
+
 export default function MyAccountLandingPage() {
   const [currentNotif, setCurrentNotif] = React.useState(0);
+  const [isPortalModalOpen, setIsPortalModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -55,9 +72,9 @@ export default function MyAccountLandingPage() {
             <Link href="https://myaccount.asia/" className={styles.navLink}>
               Attendance
             </Link>
-            <div className={styles.smtLink}>
-              SMT <span className={styles.soonBadge}>Soon</span>
-            </div>
+            <Link href="https://smt.myaccount.asia/" className={styles.navLink}>
+              SMT
+            </Link>
             <div className={styles.supportContact}>
               <RequestCallModal />
             </div>
@@ -77,12 +94,13 @@ export default function MyAccountLandingPage() {
               Manage your Sales (SMT), Attendance & Billing — all in one compliance-ready system.
             </p>
             <div className={styles.heroButtons}>
-              <Link href="/login" className={styles.primaryBtn}>
-                Login
-              </Link>
-              <Link href="https://myaccount.asia/signup" className={styles.outlineBtn}>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => setIsPortalModalOpen(true)}
+              >
                 Get Started Free
-              </Link>
+              </button>
             </div>
           </div>
           <HeroRightSlider />
@@ -207,6 +225,12 @@ export default function MyAccountLandingPage() {
 
       {/* Footer */}
       <footer className={styles.footer}>
+        <div className={styles.footerLinks}>
+          <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
+          <Link href="/terms-of-use" className={styles.footerLink}>Terms of Use</Link>
+          <a href="mailto:support@myaccount.asia" className={styles.footerLink}>Contact Us</a>
+          <Link href="/delete-account" className={styles.footerLink}>Delete Account</Link>
+        </div>
         <p className={styles.footerText}>© {new Date().getFullYear()} MyAccount. All rights reserved.</p>
         <div className={styles.poweredBy}>
           Powered by
@@ -215,6 +239,49 @@ export default function MyAccountLandingPage() {
           </div>
         </div>
       </footer>
+
+      {isPortalModalOpen && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setIsPortalModalOpen(false)}
+        >
+          <div
+            className={styles.portalModal}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h3 className={styles.modalTitle}>Choose your MyAccount product</h3>
+                <p className={styles.modalSubtitle}>
+                  Select the portal you want to open.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalClose}
+                onClick={() => setIsPortalModalOpen(false)}
+                aria-label="Close selection modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.portalGrid}>
+              {productLinks.map((product) => (
+                <a
+                  key={product.href}
+                  href={product.href}
+                  className={styles.portalCard}
+                >
+                  <span className={styles.portalLabel}>{product.name}</span>
+                  <p className={styles.portalDesc}>{product.description}</p>
+                  <span className={styles.portalAction}>Open portal</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

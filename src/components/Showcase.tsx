@@ -73,9 +73,12 @@ export default function Showcase() {
             <div className={styles.showcaseHeader}>
                 <div className={styles.headerContent}>
                     <div className={styles.headerText}>
-                        <h2 className={styles.sectionTitle}>Available on Google Play Store</h2>
+                        <div className={styles.titleRow}>
+                            <h2 className={styles.sectionTitle}>Available on Google Play Store</h2>
+                            <span className={styles.comingSoonBadge}>Coming Soon</span>
+                        </div>
                         <p className={styles.showcaseDesc}>
-                            MyAccount Android Application is live on the Google Play Store for a seamless mobile experience. Download now to manage SMT, Attendance & Billing anytime, anywhere.
+                            MyAccount Android Application is live on the Google Play Store for a seamless mobile experience. Download now to manage Attendance anytime, anywhere.
                         </p>
                     </div>
                     <div className={styles.navArrows}>

@@ -102,18 +102,20 @@ export default function EmployeeDashboard() {
             return;
         }
 
+        if (!profile?.company_id) {
+            toast.error("Company context missing");
+            return;
+        }
+
         setUpdatingShift(true);
         try {
-            // Apply updates to ALL users except system users (assuming id != 000...)
-            // 1. Update ALL users
-            // Using a filter that matches all likely UUIDs to bypass safety check
             const { data, error: updateError } = await supabase
                 .from('users')
                 .update({
                     shift_start: shiftStart,
                     shift_end: shiftEnd
                 })
-                .neq('id', '00000000-0000-0000-0000-000000000000')
+                .eq('company_id', profile.company_id)
                 .select('id');
 
             if (updateError) throw updateError;

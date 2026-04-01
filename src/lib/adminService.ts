@@ -4,14 +4,14 @@ import { UserProfile } from "../types/user";
 import { AttendanceRecord } from "./attendanceService";
 
 export const adminService = {
-    async getAllUsers() {
+    async getAllUsers(uid: string) {
         try {
-            const res = await fetch(`/api/company/users`, {
+            const res = await fetch(`/api/company/users?uid=${encodeURIComponent(uid)}`, {
                 cache: 'no-store' // Always fetch fresh from API (which handles Redis caching)
             });
             if (!res.ok) throw new Error('Failed to fetch users');
             const data = await res.json();
-            return data as UserProfile[];
+            return (data.users || []) as UserProfile[];
         } catch (error) {
             console.error('Error fetching users:', error);
             return [];

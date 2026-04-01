@@ -203,7 +203,6 @@ export const Navbar = () => {
                                     {isHrDrpOpen && (
                                         <div className={styles.dropdownContent}>
                                             <Link href="/recruitment" className={`${styles.navLink} ${pathname.startsWith('/recruitment') ? styles.navLinkActive : styles.navLinkInactive}`}>Hiring</Link>
-                                            <Link href="/payroll" className={`${styles.navLink} ${pathname.startsWith('/payroll') ? styles.navLinkActive : styles.navLinkInactive}`}>Payroll</Link>
                                             <Link href="/tasks" className={`${styles.navLink} ${pathname.startsWith('/tasks') ? styles.navLinkActive : styles.navLinkInactive}`}>Tasks</Link>
                                             <Link href="/leave-policy" className={`${styles.navLink} ${pathname.startsWith('/leave-policy') ? styles.navLinkActive : styles.navLinkInactive}`}>Leaves</Link>
                                         </div>

@@ -235,7 +235,6 @@ export default function HelpPage() {
                                 >
                                     <option>IT Support</option>
                                     <option>HR Query</option>
-                                    <option>Payroll Issue</option>
                                     <option>Other</option>
                                 </select>
                             </div>

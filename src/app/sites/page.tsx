@@ -145,18 +145,25 @@ export default function SitesPage() {
     };
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('*');
+        let query = supabase.from('users').select('*');
+        if (profile?.company_id) {
+            query = query.eq('company_id', profile.company_id);
+        }
+        const { data } = await query;
         if (data) setUsers(data);
     };
 
     const fetchAssignments = async () => {
+        if (!profile?.company_id) return;
+
         const { data, error } = await supabase
             .from('site_assignments')
             .select(`
                 *,
-                user:users!user_id(name, email, role),
+                user:users!inner(name, email, role, company_id),
                 site:sites!site_id(name, address, latitude, longitude, radius_meters)
             `)
+            .eq('user.company_id', profile.company_id)
             .eq('status', 'active');
 
         console.log("Fetch Assignments Response:", { data, error });
