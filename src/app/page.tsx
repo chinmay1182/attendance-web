@@ -25,7 +25,7 @@ const productLinks = [
   {
     name: "MyAccount Attendance",
     description: "Manage attendance, shifts, and workforce operations.",
-    href: "https://myaccount.asia/",
+    href: "https://myaccount.asia/login",
   },
   {
     name: "MyAccount Billing",
