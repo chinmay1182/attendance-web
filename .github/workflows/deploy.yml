@@ -1,74 +1,46 @@
-name: Deploy to Hostinger VPS
+script: |
+  set -e
 
-on:
-  push:
-    branches:
-      - main
-      - master
+  APP_DIR="/home/myaccount/htdocs/myaccount.asia"
+  CONTAINER_NAME="attendance-web"
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  echo "Starting deployment to $APP_DIR..."
 
-    steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }} # Or use key: ${{ secrets.SSH_KEY }}
-          port: 22
-          script: |
-            set -e # Exit on error
+  if [ ! -d "$APP_DIR" ]; then
+    echo "Creating directory..."
+    mkdir -p $APP_DIR
+  fi
 
-            # Configuration based on CloudPanel settings
-            APP_DIR="/home/myaccount/htdocs/myaccount.asia"
-            CONTAINER_NAME="attendance-web"
-            IMAGE_NAME="attendance-web"
-            PORT=3001
+  cd $APP_DIR
 
-            echo "Starting deployment to $APP_DIR..."
+  echo "Checking repo..."
 
-            # Check if directory exists
-            if [ ! -d "$APP_DIR" ]; then
-              echo "Directory $APP_DIR does not exist. Creating it..."
-              mkdir -p $APP_DIR
-            fi
+  if [ -d ".git" ]; then
+    echo "Repo exists → pulling latest code"
+    git fetch --all
+    git reset --hard origin/main || git reset --hard origin/master
+  else
+    echo "Fresh setup → cleaning directory and cloning"
+    
+    # ⚠️ Important fix
+    rm -rf * .[^.]* 2>/dev/null || true
+    
+    git clone https://github.com/chinmay1182/attendance-web.git .
+  fi
 
-            cd $APP_DIR
+  echo "Starting Docker..."
 
-            # Pull latest changes
-            echo "Pulling latest changes..."
-            if [ -d ".git" ]; then
-              git fetch origin master || git fetch --all
-              git reset --hard origin/master
-            else
-              echo "Initializing git and cloning..."
-              # Clone current directory . if empty, or else warn
-              git clone git@github.com:chinmay1182/attendance-web.git .
-            fi
+  if [ ! -f .env ]; then
+    echo "Warning: .env file missing"
+  fi
 
-            # Build and Start with Docker Compose
-            echo "Starting Docker Compose..."
+  if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+    docker rm -f $CONTAINER_NAME
+  fi
 
-            # Ensure .env exists (or created from secrets if you were using secrets manager, 
-            # but current script assumes file exists on server).
-            if [ ! -f .env ]; then
-              echo "Warning: .env file not found. App might fail."
-            fi
+  docker compose down --remove-orphans || true
+  docker compose up -d --build
 
-            # Force cleanup old containers if they exist to prevent name conflicts
-            if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
-                echo "Removing existing container: $CONTAINER_NAME"
-                docker rm -f $CONTAINER_NAME
-            fi
+  docker image prune -f
 
-            # Pull latest images (if using remote images) or force build
-            docker compose down --remove-orphans || true
-            docker compose up -d --build
-
-            # Cleanup unused images
-            echo "Cleaning up..."
-            docker image prune -f
-
-            echo "Deployment successful!"
+  echo "Deployment successful 🚀"
