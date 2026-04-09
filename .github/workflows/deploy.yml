@@ -1,46 +1,56 @@
-script: |
-  set -e
+name: Production Deploy
 
-  APP_DIR="/home/myaccount/htdocs/myaccount.asia"
-  CONTAINER_NAME="attendance-web"
+on:
+  push:
+    branches:
+      - main
 
-  echo "Starting deployment to $APP_DIR..."
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
 
-  if [ ! -d "$APP_DIR" ]; then
-    echo "Creating directory..."
-    mkdir -p $APP_DIR
-  fi
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            set -e
 
-  cd $APP_DIR
+            APP_DIR="/home/myaccount/apps/attendance-web"
+            RELEASES_DIR="$APP_DIR/releases"
+            CURRENT_LINK="$APP_DIR/current"
+            TIMESTAMP=$(date +%s)
 
-  echo "Checking repo..."
+            echo "🚀 Starting deploy..."
 
-  if [ -d ".git" ]; then
-    echo "Repo exists → pulling latest code"
-    git fetch --all
-    git reset --hard origin/main || git reset --hard origin/master
-  else
-    echo "Fresh setup → cleaning directory and cloning"
-    
-    # ⚠️ Important fix
-    rm -rf * .[^.]* 2>/dev/null || true
-    
-    git clone https://github.com/chinmay1182/attendance-web.git .
-  fi
+            mkdir -p $RELEASES_DIR
+            cd $RELEASES_DIR
 
-  echo "Starting Docker..."
+            echo "📥 Cloning new release..."
+            git clone https://github.com/chinmay1182/attendance-web.git $TIMESTAMP
 
-  if [ ! -f .env ]; then
-    echo "Warning: .env file missing"
-  fi
+            cd $TIMESTAMP
 
-  if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
-    docker rm -f $CONTAINER_NAME
-  fi
+            echo "📦 Installing & building..."
+            docker compose build
 
-  docker compose down --remove-orphans || true
-  docker compose up -d --build
+            echo "🔗 Switching to new release..."
+            ln -sfn $RELEASES_DIR/$TIMESTAMP $CURRENT_LINK
 
-  docker image prune -f
+            cd $CURRENT_LINK
 
-  echo "Deployment successful 🚀"
+            echo "🐳 Restarting containers..."
+            docker compose down || true
+            docker compose up -d
+
+            echo "🧹 Cleaning old releases..."
+            ls -dt $RELEASES_DIR/* | tail -n +4 | xargs rm -rf || true
+
+            echo "🧼 Cleaning Docker..."
+            docker image prune -f
+
+            echo "✅ Deployment successful!"
