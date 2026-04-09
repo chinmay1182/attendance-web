@@ -1,9 +1,10 @@
-name: Production Deploy
+name: Deploy to Hostinger VPS
 
 on:
   push:
     branches:
       - main
+      - master
 
 jobs:
   deploy:
@@ -15,42 +16,59 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          password: ${{ secrets.VPS_PASSWORD }} # Or use key: ${{ secrets.SSH_KEY }}
           port: 22
           script: |
-            set -e
+            set -e # Exit on error
 
-            APP_DIR="/home/myaccount/apps/attendance-web"
-            RELEASES_DIR="$APP_DIR/releases"
-            CURRENT_LINK="$APP_DIR/current"
-            TIMESTAMP=$(date +%s)
+            # Configuration based on CloudPanel settings
+            APP_DIR="/home/myaccount/htdocs/myaccount.asia"
+            CONTAINER_NAME="attendance-web"
+            IMAGE_NAME="attendance-web"
+            PORT=3001
 
-            echo "🚀 Starting deploy..."
+            echo "Starting deployment to $APP_DIR..."
 
-            mkdir -p $RELEASES_DIR
-            cd $RELEASES_DIR
+            # Check if directory exists
+            if [ ! -d "$APP_DIR" ]; then
+              echo "Directory $APP_DIR does not exist. Creating it..."
+              mkdir -p $APP_DIR
+            fi
 
-            echo "📥 Cloning new release..."
-            git clone https://github.com/chinmay1182/attendance-web.git $TIMESTAMP
+            cd $APP_DIR
 
-            cd $TIMESTAMP
+            # Pull latest changes
+            echo "Pulling latest changes..."
+            if [ -d ".git" ]; then
+              git fetch origin master || git fetch --all
+              git reset --hard origin/master
+            else
+              echo "Initializing git and cloning..."
+              # Clone current directory . if empty, or else warn
+              git clone git@github.com:chinmay1182/attendance-web.git .
+            fi
 
-            echo "📦 Installing & building..."
-            docker compose build
+            # Build and Start with Docker Compose
+            echo "Starting Docker Compose..."
 
-            echo "🔗 Switching to new release..."
-            ln -sfn $RELEASES_DIR/$TIMESTAMP $CURRENT_LINK
+            # Ensure .env exists (or created from secrets if you were using secrets manager, 
+            # but current script assumes file exists on server).
+            if [ ! -f .env ]; then
+              echo "Warning: .env file not found. App might fail."
+            fi
 
-            cd $CURRENT_LINK
+            # Force cleanup old containers if they exist to prevent name conflicts
+            if [ "$(docker ps -aq -f name=$CONTAINER_NAME)" ]; then
+                echo "Removing existing container: $CONTAINER_NAME"
+                docker rm -f $CONTAINER_NAME
+            fi
 
-            echo "🐳 Restarting containers..."
-            docker compose down || true
-            docker compose up -d
+            # Pull latest images (if using remote images) or force build
+            docker compose down --remove-orphans || true
+            docker compose up -d --build
 
-            echo "🧹 Cleaning old releases..."
-            ls -dt $RELEASES_DIR/* | tail -n +4 | xargs rm -rf || true
-
-            echo "🧼 Cleaning Docker..."
+            # Cleanup unused images
+            echo "Cleaning up..."
             docker image prune -f
 
-            echo "✅ Deployment successful!"
+            echo "Deployment successful!"
