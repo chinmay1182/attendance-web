@@ -77,7 +77,7 @@ export const Navbar = () => {
             <div className={styles.logoSection}>
                 <Image
                     src="/myaccount.svg"
-                    alt="Attendance Pro"
+                    alt="Attendance Pros"
                     width={180}
                     height={40}
                     priority
