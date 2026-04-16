@@ -21,6 +21,7 @@ export default function SettingsPage() {
     const [position, setPosition] = useState('');
     const [bio, setBio] = useState('');
     const [photoURL, setPhotoURL] = useState('');
+    const [recoveryPin, setRecoveryPin] = useState('');
 
     // App preferences
     const [emailNotif, setEmailNotif] = useState(true);
@@ -62,6 +63,7 @@ export default function SettingsPage() {
         setPosition(data.position || '');
         setBio(data.bio || '');
         setPhotoURL(data.photo_url || '');
+        setRecoveryPin(data.recovery_pin || '');
 
         if (data.settings) {
             setEmailNotif(data.settings.email_notifications ?? true);
@@ -135,7 +137,8 @@ export default function SettingsPage() {
                     department,
                     position,
                     bio,
-                    photo_url: photoURL
+                    photo_url: photoURL,
+                    recovery_pin: recoveryPin
                 })
                 .eq('id', user.id);
 
@@ -334,6 +337,21 @@ export default function SettingsPage() {
                             <Button variant="secondary" onClick={() => setIsPasswordModalOpen(true)}>
                                 Change
                             </Button>
+                        </div>
+
+                        <div className={styles.settingItem} style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px', marginTop: '24px' }}>
+                            <div style={{ flex: 1 }}>
+                                <div className={styles.settingLabel}>Security PIN (Recovery Code)</div>
+                                <div className={styles.settingDesc}>6-digit code used to reset password if email is inaccessible</div>
+                                <div style={{ marginTop: '12px', maxWidth: '200px' }}>
+                                    <Input
+                                        placeholder="000000"
+                                        value={recoveryPin}
+                                        onChange={e => setRecoveryPin(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                                        maxLength={6}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         {isAdmin && (

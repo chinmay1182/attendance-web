@@ -1,13 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://gfgejihnmtnwnfcxsfkf.supabase.co'
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = 'https://gfgejihnmtnwnfcxsfkf.supabase.co'
+const supabaseServiceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmZ2VqaWhubXRud25mY3hzZmtmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njc0NjcyMSwiZXhwIjoyMDgyMzIyNzIxfQ.PP6v0b39JP1Nfau6ox8Wwcs2gH8gM_JeXBh5Ojf2teA'
 
-if (!supabaseServiceRoleKey) {
-    // We can't throw here because it might break build time if env is missing,
-    // but we should warn or handle it. For now, we'll let operations fail if key is missing.
-    console.warn('Missing SUPABASE_SERVICE_ROLE_KEY environment variable.')
-}
-
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey || '')
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
