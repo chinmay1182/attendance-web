@@ -298,7 +298,7 @@ export default function MyAccountLandingPage() {
                 onClick={() => setIsPortalModalOpen(false)}
                 aria-label="Close selection modal"
               >
-                ×
+                <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
