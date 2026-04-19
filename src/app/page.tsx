@@ -24,17 +24,17 @@ const notifications = [
 const productLinks = [
   {
     name: "MyAccount Attendance",
-    description: "Manage attendance, shifts, and workforce operations.",
+    description: "Manage attendance, shifts, and workforce operations. (Available on Web & App)",
     href: "https://myaccount.asia/login",
   },
   {
     name: "MyAccount Billing",
-    description: "Create invoices, manage payments, and track billing.",
+    description: "Create invoices, manage payments, and track billing. (Available on Web)",
     href: "https://billing.myaccount.asia/",
   },
   {
     name: "MyAccount SMT",
-    description: "Handle sales workflows, leads, and business follow-ups.",
+    description: "Handle sales workflows, leads, and business follow-ups. (Available on Web)",
     href: "https://smt.myaccount.asia/",
   },
 ];
@@ -42,6 +42,7 @@ const productLinks = [
 export default function MyAccountLandingPage() {
   const [currentNotif, setCurrentNotif] = React.useState(0);
   const [isPortalModalOpen, setIsPortalModalOpen] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     const timer = setInterval(() => {
@@ -65,14 +66,25 @@ export default function MyAccountLandingPage() {
           <div className={styles.headerLogo}>
             <Image src="/myaccount.svg" alt="MyAccount Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
           </div>
-          <div className={styles.headerRight}>
-            <Link href="https://billing.myaccount.asia/" className={styles.navLink}>
+
+          <button
+            className={styles.mobileMenuBtn}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle Menu"
+          >
+            <span className="material-symbols-outlined">
+              {isMobileMenuOpen ? "close" : "menu"}
+            </span>
+          </button>
+
+          <div className={`${styles.headerRight} ${isMobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
+            <Link href="https://billing.myaccount.asia/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Billing <span className={styles.newBadge}>New</span>
             </Link>
-            <Link href="https://myaccount.asia/" className={styles.navLink}>
+            <Link href="https://myaccount.asia/login" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Attendance
             </Link>
-            <Link href="https://smt.myaccount.asia/" className={styles.navLink}>
+            <Link href="https://smt.myaccount.asia/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               SMT
             </Link>
             <div className={styles.supportContact}>
@@ -113,27 +125,51 @@ export default function MyAccountLandingPage() {
           <h2 className={styles.sectionTitle}>Core Free Modules</h2>
           <div className={styles.featuresGrid}>
             <div className={styles.featureCard}>
-              <div className={styles.featureNumber}>1</div>
+              <div className={styles.featureIconWrapper}>
+                <span className="material-symbols-outlined">monitoring</span>
+              </div>
               <h3 className={styles.featureTitle}>SMT (Sales Management Tool)</h3>
               <p className={styles.featureDesc}>
                 Manage leads, track follow-ups, convert prospects, and organize customer data efficiently.
               </p>
+              <div className={styles.featureFooter}>
+                <div className={styles.availabilityBadge}>
+                  <span className="material-symbols-outlined">language</span>
+                  Available on Web
+                </div>
+              </div>
             </div>
 
             <div className={styles.featureCard}>
-              <div className={styles.featureNumber}>2</div>
+              <div className={styles.featureIconWrapper}>
+                <span className="material-symbols-outlined">fingerprint</span>
+              </div>
               <h3 className={styles.featureTitle}>Attendance Management</h3>
               <p className={styles.featureDesc}>
                 Track employee attendance, monitor working hours, and maintain workforce discipline digitally.
               </p>
+              <div className={styles.featureFooter}>
+                <div className={styles.availabilityBadge}>
+                  <span className="material-symbols-outlined">devices</span>
+                  Available on Web & App
+                </div>
+              </div>
             </div>
 
             <div className={styles.featureCard}>
-              <div className={styles.featureNumber}>3</div>
+              <div className={styles.featureIconWrapper}>
+                <span className="material-symbols-outlined">receipt_long</span>
+              </div>
               <h3 className={styles.featureTitle}>Billing & Invoicing</h3>
               <p className={styles.featureDesc}>
                 Generate professional invoices, manage payments, and maintain billing records effortlessly.
               </p>
+              <div className={styles.featureFooter}>
+                <div className={styles.availabilityBadge}>
+                  <span className="material-symbols-outlined">language</span>
+                  Available on Web
+                </div>
+              </div>
             </div>
           </div>
         </div>
