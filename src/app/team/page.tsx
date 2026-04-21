@@ -26,6 +26,8 @@ type Employee = {
 type Department = { id: string, name: string };
 type Site = { id: string, name: string };
 
+import { RoleGuard } from '../../components/RoleGuard';
+
 export default function TeamPage() {
     const { user, profile } = useAuth();
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -368,7 +370,7 @@ export default function TeamPage() {
     };
 
     return (
-        <>
+        <RoleGuard allowedRoles={['admin', 'hr']}>
             <Navbar />
 
             <div className={styles.container}>
@@ -684,6 +686,6 @@ export default function TeamPage() {
                     </div>
                 </div>
             )}
-        </>
+        </RoleGuard>
     );
 }

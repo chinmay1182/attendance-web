@@ -102,38 +102,33 @@ export default function EmployeeDashboard() {
             return;
         }
 
-        if (!profile?.company_id) {
-            toast.error("Company context missing");
+        if (!profile?.company_id || !user?.id) {
+            toast.error("Session information missing");
             return;
         }
 
         setUpdatingShift(true);
         try {
-            const { data, error: updateError } = await supabase
-                .from('users')
-                .update({
-                    shift_start: shiftStart,
-                    shift_end: shiftEnd
+            const res = await fetch('/api/team/bulk-update-shifts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    adminId: user.id,
+                    companyId: profile.company_id,
+                    shiftStart,
+                    shiftEnd
                 })
-                .eq('company_id', profile.company_id)
-                .select('id');
-
-            if (updateError) throw updateError;
-
-            const count = data?.length || 0;
-
-            await supabase.from('shift_history').insert({
-                admin_id: user?.id,
-                shift_start: shiftStart,
-                shift_end: shiftEnd,
-                applied_to_count: count
             });
 
-            toast.success(`Shift updated for ${count} employees`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to update shifts");
+
+            toast.success(`Shift updated for ${data.updatedCount} employees`);
             setIsShiftModalOpen(false);
+            fetchShiftHistory();
         } catch (error: any) {
             console.error(error);
-            toast.error("Failed to update shifts");
+            toast.error(error.message || "Failed to update shifts");
         } finally {
             setUpdatingShift(false);
         }

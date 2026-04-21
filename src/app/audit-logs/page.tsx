@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { logAudit, AuditActions } from '../../lib/auditLogger';
 import styles from './audit-logs.module.css';
 import toast, { Toaster } from 'react-hot-toast';
+import { RoleGuard } from '../../components/RoleGuard';
 
 type AuditLog = {
     id: string;
@@ -171,7 +172,7 @@ export default function AuditLogsPage() {
     const uniqueActions = Array.from(new Set(logs.map(log => log.action)));
 
     return (
-        <>
+        <RoleGuard allowedRoles={['admin']}>
             <Toaster position="top-right" />
             <Navbar />
             <div className={styles.container}>
@@ -379,6 +380,6 @@ export default function AuditLogsPage() {
                     </div>
                 </div>
             </div>
-        </>
+        </RoleGuard>
     );
 }

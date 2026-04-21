@@ -69,13 +69,28 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { uid, updates } = body;
+        const { uid, updates, requesterId } = body;
 
         if (!uid || !updates) {
             return NextResponse.json(
                 { error: 'Missing UID or updates' },
                 { status: 400 }
             );
+        }
+
+        // Authorization Check: 
+        // 1. User can update themselves OR 
+        // 2. An Admin can update others in their company
+        if (requesterId && requesterId !== uid) {
+             const { data: requesterProfile } = await supabaseAdmin
+                .from('users')
+                .select('role, company_id')
+                .eq('id', requesterId)
+                .single();
+
+             if (requesterProfile?.role !== 'admin') {
+                 return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+             }
         }
 
         // 1. Update user profile using Admin Client
