@@ -113,26 +113,26 @@ export const NotificationBell = () => {
     const updatePosition = () => {
         if (buttonRef.current && isOpen) {
             const rect = buttonRef.current.getBoundingClientRect();
+            const dropdownWidth = 360;
+            let leftPos = rect.left;
+            
+            // If it's too close to the right edge, align right edge of dropdown to right edge of button
+            if (leftPos + dropdownWidth > window.innerWidth - 20) {
+                leftPos = rect.right - dropdownWidth;
+            }
+
             setDropdownStyle({
                 position: 'fixed',
-                top: `${rect.bottom + 10}px`,
-                left: `${rect.left}px`,
-                zIndex: 99999 // Ensure it's on top of everything
+                top: `${rect.bottom + 12}px`,
+                left: `${leftPos}px`,
+                zIndex: 1000000
             });
         }
     };
 
     const toggleDropdown = () => {
         if (!isOpen) {
-            if (buttonRef.current) {
-                const rect = buttonRef.current.getBoundingClientRect();
-                setDropdownStyle({
-                    position: 'fixed',
-                    top: `${rect.bottom + 10}px`,
-                    left: `${rect.left}px`,
-                    zIndex: 99999
-                });
-            }
+            setTimeout(() => updatePosition(), 0); // Ensure state is ready
             setIsOpen(true);
         } else {
             setIsOpen(false);
