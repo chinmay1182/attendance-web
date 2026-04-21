@@ -73,22 +73,16 @@ export default function TeamPage() {
     };
 
     const fetchEmployees = async () => {
-        let query = supabase
-            .from('users')
-            .select('*')
-            .order('created_at', { ascending: false });
+        if (!profile?.id) return;
 
-        if (profile?.company_id) {
-            query = query.eq('company_id', profile.company_id);
-        }
+        try {
+            const res = await fetch(`/api/team?uid=${profile.id}`);
+            const data = await res.json();
 
-        const { data: usersData, error: usersError } = await query;
+            if (!res.ok) throw new Error(data.error || 'Failed to load employees');
 
-        if (usersError) {
-            console.error('Error fetching users:', usersError);
-            toast.error('Failed to load employees');
-            return;
-        }
+            const usersData = data.users;
+            if (!usersData) return;
 
         // 2. Fetch Assignments with Site data
         const { data: assignmentsData, error: assignmentsError } = await supabase
@@ -100,17 +94,19 @@ export default function TeamPage() {
         }
 
         // 3. Merge Data
-        if (usersData) {
-            const employeesWithSites = usersData.map(user => {
-                const userAssignments = assignmentsData
-                    ? assignmentsData.filter((a: any) => a.user_id === user.id)
-                    : [];
-                return {
-                    ...user,
-                    site_assignments: userAssignments
-                };
-            });
-            setEmployees(employeesWithSites);
+        const employeesWithSites = usersData.map((user: any) => {
+            const userAssignments = assignmentsData
+                ? assignmentsData.filter((a: any) => a.user_id === user.id)
+                : [];
+            return {
+                ...user,
+                site_assignments: userAssignments
+            };
+        });
+        setEmployees(employeesWithSites);
+        } catch (error) {
+            console.error('Error fetching employees:', error);
+            toast.error('Failed to load employees');
         }
     };
 
@@ -215,28 +211,30 @@ export default function TeamPage() {
         setSubmitting(true);
         try {
             if (isEditing) {
-                // Update existing user
-                const updates: any = {
-                    name: formData.name,
-                    role: formData.role,
-                    department: formData.department,
-                    phone: formData.phone,
-                    bio: formData.bio,
-                    id_proof: formData.idProof,
-                    address: formData.address,
-                    salary: formData.salary ? parseFloat(formData.salary) : null
-                };
+                // Update existing user via Profile API
+                const res = await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: formData.id,
+                        updates: {
+                            name: formData.name,
+                            role: formData.role,
+                            department: formData.department,
+                            phone: formData.phone,
+                            bio: formData.bio,
+                            id_proof: formData.idProof,
+                            address: formData.address,
+                            salary: formData.salary ? parseFloat(formData.salary) : null,
+                            created_at: formData.joiningDate ? new Date(formData.joiningDate).toISOString() : undefined
+                        }
+                    })
+                });
 
-                if (formData.joiningDate) {
-                    updates.created_at = new Date(formData.joiningDate).toISOString();
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || "Failed to update employee");
                 }
-
-                const { error } = await supabase
-                    .from('users')
-                    .update(updates)
-                    .eq('id', formData.id);
-
-                if (error) throw error;
 
                 // Update Site Assignment
                 await supabase.from('site_assignments').delete().eq('user_id', formData.id);
@@ -251,7 +249,7 @@ export default function TeamPage() {
 
                 toast.success("Employee updated successfully");
             } else {
-                // Create new user via API
+                // Create new user via Add Member API
                 const res = await fetch('/api/team/add-member', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -261,7 +259,14 @@ export default function TeamPage() {
                         password: formData.password,
                         role: formData.role,
                         companyId: profile?.company_id || 'default',
-                        username: formData.username || formData.email.split('@')[0] + Math.floor(Math.random() * 1000)
+                        username: formData.username || formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
+                        department: formData.department,
+                        phone: formData.phone,
+                        bio: formData.bio,
+                        id_proof: formData.idProof,
+                        address: formData.address,
+                        salary: formData.salary,
+                        joiningDate: formData.joiningDate
                     })
                 });
 
@@ -269,20 +274,6 @@ export default function TeamPage() {
                 if (!res.ok) throw new Error(data.error || "Failed to create user");
 
                 const newUserId = data.userId;
-
-                const updates: any = {
-                    department: formData.department,
-                    phone: formData.phone,
-                    bio: formData.bio,
-                    id_proof: formData.idProof,
-                    address: formData.address,
-                    salary: formData.salary ? parseFloat(formData.salary) : null
-                };
-                if (formData.joiningDate) {
-                    updates.created_at = new Date(formData.joiningDate).toISOString();
-                }
-
-                await supabase.from('users').update(updates).eq('id', newUserId);
 
                 if (formData.siteId) {
                     await supabase.from('site_assignments').insert({

@@ -244,20 +244,12 @@ export const Navbar = () => {
                             Help & Support
                         </Link>
 
-                        <Link href="/chat" className={`${styles.navLink} ${pathname.startsWith('/chat') ? styles.navLinkActive : styles.navLinkInactive}`}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>chat</span>
-                            Messages
-                        </Link>
+
                         <Link href="/settings" className={`${styles.navLink} ${pathname.startsWith('/settings') ? styles.navLinkActive : styles.navLinkInactive}`}>
                             <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>settings</span>
                             Settings
                         </Link>
-                        <button onClick={toggleTheme} className={`${styles.navLink} ${styles.navLinkInactive}`}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                                {theme === 'light' ? 'light_mode' : 'moon_stars'}
-                            </span>
-                            {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                        </button>
+
                     </>
                 )}
             </div>

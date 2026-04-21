@@ -25,7 +25,6 @@ export default function SettingsPage() {
 
     // App preferences
     const [emailNotif, setEmailNotif] = useState(true);
-    const [darkMode, setDarkMode] = useState(false);
     const [language, setLanguage] = useState('en');
 
     const [uploading, setUploading] = useState(false);
@@ -67,7 +66,6 @@ export default function SettingsPage() {
 
         if (data.settings) {
             setEmailNotif(data.settings.email_notifications ?? true);
-            setDarkMode(data.settings.dark_mode ?? false);
             setLanguage(data.settings.language || 'en');
         }
     };
@@ -80,8 +78,21 @@ export default function SettingsPage() {
             [key]: value
         };
 
-        await supabase.from('users').update({ settings: newSettings }).eq('id', user.id);
-        toast.success("Preference saved");
+        try {
+            const res = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid: user.id,
+                    updates: { settings: newSettings }
+                })
+            });
+
+            if (!res.ok) throw new Error('Failed to save preference');
+            toast.success("Preference saved");
+        } catch (err) {
+            toast.error("Failed to save preference");
+        }
     };
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,26 +109,23 @@ export default function SettingsPage() {
                 .from('avatars')
                 .upload(filePath, file);
 
-            if (uploadError) {
-                // Try creating bucket if it doesn't exist (if policy allows) or just fallback
-                throw uploadError;
-            }
+            if (uploadError) throw uploadError;
 
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
 
             if (data) {
                 setPhotoURL(data.publicUrl);
-                // Auto-save to profile
-                await supabase.from('users').update({ photo_url: data.publicUrl }).eq('id', user.id);
+                // Auto-save to profile via API
+                await fetch('/api/user/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: user.id, updates: { photo_url: data.publicUrl } })
+                });
                 toast.success('Avatar updated!');
             }
         } catch (error: any) {
             console.error(error);
-            if (error.message?.includes('Bucket not found')) {
-                toast.error('Error: Storage bucket "avatars" is missing. Please contact administrator to create it.');
-            } else {
-                toast.error(error.message || 'Error uploading avatar.');
-            }
+            toast.error(error.message || 'Error uploading avatar.');
         } finally {
             setUploading(false);
         }
@@ -129,24 +137,32 @@ export default function SettingsPage() {
         setLoading(true);
 
         try {
-            const { error } = await supabase
-                .from('users')
-                .update({
-                    name,
-                    phone,
-                    department,
-                    position,
-                    bio,
-                    photo_url: photoURL,
-                    recovery_pin: recoveryPin
-                })
-                .eq('id', user.id);
+            const updates = {
+                name,
+                phone,
+                department,
+                position,
+                bio,
+                photo_url: photoURL,
+                recovery_pin: recoveryPin
+            };
 
-            if (error) throw error;
+            const res = await fetch('/api/user/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid: user.id,
+                    updates
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+            
             toast.success("Profile updated successfully!");
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
-            toast.error("Failed to update profile.");
+            toast.error(err.message || "Failed to update profile.");
         } finally {
             setLoading(false);
         }
@@ -286,21 +302,7 @@ export default function SettingsPage() {
                             />
                         </div>
 
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Dark Mode</div>
-                                <div className={styles.settingDesc}>Toggle dark theme appearance</div>
-                            </div>
-                            <input
-                                type="checkbox"
-                                checked={darkMode}
-                                onChange={e => {
-                                    setDarkMode(e.target.checked);
-                                    savePreference('dark_mode', e.target.checked);
-                                }}
-                                style={{ width: 20, height: 20, accentColor: 'var(--primary)' }}
-                            />
-                        </div>
+
 
                         <div className={styles.settingItem}>
                             <div>

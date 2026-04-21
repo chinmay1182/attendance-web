@@ -77,19 +77,20 @@ export default function RewardsPage() {
     const fetchEmployees = async () => {
         if (!user?.id) return;
 
-        const { data, error } = await supabase
-            .from('users')
-            .select('id, name, email, reward_points')
-            .neq('id', user.id) // Exclude current user
-            .order('name');
+        try {
+            const res = await fetch(`/api/team?uid=${user.id}`);
+            const data = await res.json();
 
-        if (error) {
+            if (!res.ok) throw new Error(data.error || 'Failed to load employees');
+
+            if (data.users) {
+                // Filter out current user from the list
+                const otherEmployees = data.users.filter((emp: Employee) => emp.id !== user.id);
+                setEmployees(otherEmployees);
+            }
+        } catch (error) {
+            console.error('Error fetching employees:', error);
             toast.error('Failed to load employees');
-            return;
-        }
-
-        if (data) {
-            setEmployees(data);
         }
     };
 

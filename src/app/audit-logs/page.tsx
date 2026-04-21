@@ -72,35 +72,46 @@ export default function AuditLogsPage() {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
+            // 1. Fetch raw logs first
+            const { data: logsData, error: logsError } = await supabase
                 .from('audit_logs')
-                .select(`
-                    id,
-                    created_at,
-                    action,
-                    details,
-                    actor_id,
-                    user_id,
-                    users:actor_id (name)
-                `)
+                .select('id, created_at, action, details, actor_id, user_id')
                 .order('created_at', { ascending: false })
                 .limit(100);
 
-            if (error) {
-                console.error('Error fetching logs:', error);
-                console.error('Error details:', JSON.stringify(error, null, 2));
-                toast.error(`Failed to load audit logs: ${error.message || 'Unknown error'}`);
+            if (logsError) {
+                console.error('Error fetching logs:', logsError);
+                toast.error(`Failed to load audit logs: ${logsError.message}`);
                 setLogs([]);
-            } else {
-                console.log('Fetched logs:', data?.length || 0, 'records');
-                // Map the data to handle the users join (convert array to single object)
-                const mappedData = (data || []).map((log: any) => ({
-                    ...log,
-                    users: Array.isArray(log.users) && log.users.length > 0 ? log.users[0] : log.users
-                }));
-                setLogs(mappedData);
+                return;
             }
-        } catch (err) {
+
+            if (logsData && logsData.length > 0) {
+                // 2. Extract unique actor IDs and fetch their names
+                const uniqueActorIds = Array.from(new Set(logsData.map(l => l.actor_id).filter(Boolean)));
+                
+                const { data: usersData, error: usersError } = await supabase
+                    .from('users')
+                    .select('id, name')
+                    .in('id', uniqueActorIds);
+
+                if (usersError) {
+                    console.warn('Could not fetch user names for audit logs:', usersError);
+                }
+
+                // 3. Map user names back to logs
+                const userMap = new Map((usersData || []).map(u => [u.id, u.name]));
+                
+                const mappedLogs = logsData.map(log => ({
+                    ...log,
+                    users: userMap.has(log.actor_id) ? { name: userMap.get(log.actor_id) } : null
+                }));
+
+                setLogs(mappedLogs);
+            } else {
+                setLogs([]);
+            }
+        } catch (err: any) {
             console.error('Exception fetching logs:', err);
             toast.error('Failed to load audit logs');
             setLogs([]);

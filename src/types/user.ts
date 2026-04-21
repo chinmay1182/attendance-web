@@ -12,5 +12,7 @@ export interface UserProfile {
     shift_end?: string;
     department?: string;
     company_id?: string;
+    position?: string;
     createdAt: string;
+    reward_points?: number;
 }

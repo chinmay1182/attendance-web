@@ -64,6 +64,11 @@
     font-family: inherit;
 }
 
+.navLink:hover:not(.navLinkActive) {
+    background: rgba(0, 0, 0, 0.03);
+    color: var(--text-main);
+}
+
 .navLinkActive {
     color: var(--primary);
     font-weight: 600;

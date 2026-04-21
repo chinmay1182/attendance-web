@@ -66,3 +66,46 @@ export async function POST(request: Request) {
         );
     }
 }
+export async function PUT(request: Request) {
+    try {
+        const body = await request.json();
+        const { uid, updates } = body;
+
+        if (!uid || !updates) {
+            return NextResponse.json(
+                { error: 'Missing UID or updates' },
+                { status: 400 }
+            );
+        }
+
+        // 1. Update user profile using Admin Client
+        const { data, error } = await supabaseAdmin
+            .from("users")
+            .update(updates)
+            .eq("id", uid)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Supabase Update Error:', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        // 2. Invalidate/Update Redis Cache
+        const cacheKey = `user:profile:${uid}`;
+        try {
+            await redis.set(cacheKey, JSON.stringify(data), { EX: 3600 });
+        } catch (cacheWriteErr) {
+            console.warn('Redis Cache Write Error:', cacheWriteErr);
+        }
+
+        return NextResponse.json({ success: true, user: data });
+
+    } catch (err: any) {
+        console.error('API Error:', err);
+        return NextResponse.json(
+            { error: 'Internal Server Error' },
+            { status: 500 }
+        );
+    }
+}

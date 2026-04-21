@@ -5,24 +5,14 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, password, role, companyId, username } = body;
+        const { 
+            name, email, password, role, companyId, username,
+            department, phone, bio, id_proof, address, salary, joiningDate 
+        } = body;
 
         // Validation
         if (!name || !email || !password || !role) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-        }
-
-        // If username provided, validate simple format?
-        if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
-            return NextResponse.json({ error: 'Invalid username format (letters, numbers, underscore only)' }, { status: 400 });
-        }
-
-        // Check uniqueness of username early? Or let insert fail? 
-        if (username) {
-            const { data: existingUser } = await supabaseAdmin.from('users').select('id').eq('username', username).single();
-            if (existingUser) {
-                return NextResponse.json({ error: 'Username already taken' }, { status: 400 });
-            }
+            return NextResponse.json({ error: 'Missing name, email, password or role' }, { status: 400 });
         }
 
         if (!companyId) {
@@ -33,8 +23,8 @@ export async function POST(request: Request) {
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
-            email_confirm: true, // Auto confirm
-            user_metadata: { name, username } // Save username in metadata too?
+            email_confirm: true,
+            user_metadata: { name, username }
         });
 
         if (authError) {
@@ -45,20 +35,33 @@ export async function POST(request: Request) {
         const userId = authData.user.id;
 
         // 2. Create User Profile in DB
+        const insertData: any = {
+            id: userId,
+            name,
+            email,
+            role,
+            company_id: companyId,
+            username: username || null,
+            department: department || null,
+            phone: phone || null,
+            bio: bio || null,
+            id_proof: id_proof || null,
+            address: address || null,
+            salary: salary ? parseFloat(salary) : null
+        };
+
+        if (joiningDate) {
+            insertData.created_at = new Date(joiningDate).toISOString();
+        }
+
         const { error: dbError } = await supabaseAdmin
             .from('users')
-            .insert([{
-                id: userId,
-                name,
-                email,
-                role,
-                company_id: companyId,
-                username: username || null
-            }]);
+            .insert([insertData]);
 
         if (dbError) {
             console.error('DB Insert Error:', dbError);
-            // Optional: Delete auth user if DB insert fails to maintain consistency
+            // Cleanup auth user on failure
+            await supabaseAdmin.auth.admin.deleteUser(userId);
             return NextResponse.json({ error: dbError.message }, { status: 500 });
         }
 
