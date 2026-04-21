@@ -258,7 +258,7 @@ export default function TeamPage() {
                         email: formData.email,
                         password: formData.password,
                         role: formData.role,
-                        companyId: profile?.company_id || 'default',
+                        companyId: profile?.company_id,
                         username: formData.username || formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
                         department: formData.department,
                         phone: formData.phone,
