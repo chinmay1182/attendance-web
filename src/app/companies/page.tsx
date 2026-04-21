@@ -12,6 +12,13 @@ type Company = {
     name: string;
     description?: string;
     location?: string;
+    address?: string;
+    state?: string;
+    pincode?: string;
+    gstin?: string;
+    cin?: string;
+    contact_number?: string;
+    email?: string;
     created_at: string;
     owner_id: string; // admin who created it
 };
@@ -78,7 +85,14 @@ export default function CompaniesPage() {
                     .update({
                         name: currentCompany.name,
                         description: currentCompany.description,
-                        location: currentCompany.location
+                        location: currentCompany.location,
+                        address: currentCompany.address,
+                        state: currentCompany.state,
+                        pincode: currentCompany.pincode,
+                        gstin: currentCompany.gstin,
+                        cin: currentCompany.cin,
+                        contact_number: currentCompany.contact_number,
+                        email: currentCompany.email
                     })
                     .eq('id', currentCompany.id);
 
@@ -92,6 +106,13 @@ export default function CompaniesPage() {
                         name: currentCompany.name,
                         description: currentCompany.description,
                         location: currentCompany.location,
+                        address: currentCompany.address,
+                        state: currentCompany.state,
+                        pincode: currentCompany.pincode,
+                        gstin: currentCompany.gstin,
+                        cin: currentCompany.cin,
+                        contact_number: currentCompany.contact_number,
+                        email: currentCompany.email,
                         owner_id: user?.id
                     }]);
 
@@ -159,27 +180,41 @@ export default function CompaniesPage() {
                         <table className={styles.table}>
                             <thead>
                                 <tr>
-                                    <th>Name</th>
+                                    <th>Company Details</th>
                                     <th>Description</th>
-                                    <th>Location</th>
-                                    <th>Created At</th>
+                                    <th>Location / Address</th>
+                                    <th>Tax / Identity</th>
+                                    <th>Contact Info</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
+                                    <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>Loading...</td></tr>
                                 ) : (
                                     <>
                                         {companies.length === 0 && (
-                                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: '24px' }}>No companies found.</td></tr>
+                                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>No companies found.</td></tr>
                                         )}
                                         {companies.map(comp => (
                                             <tr key={comp.id}>
-                                                <td><strong>{comp.name}</strong></td>
-                                                <td>{comp.description || '-'}</td>
-                                                <td>{comp.location || '-'}</td>
-                                                <td>{new Date(comp.created_at).toLocaleDateString()}</td>
+                                                <td>
+                                                    <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{comp.name}</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: {comp.id.substring(0, 8)}...</div>
+                                                </td>
+                                                <td style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '200px' }}>{comp.description || '-'}</td>
+                                                <td>
+                                                    <div style={{ fontWeight: 500 }}>{comp.location || '-'}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{comp.address} {comp.state} {comp.pincode}</div>
+                                                </td>
+                                                <td>
+                                                    <div style={{ fontSize: '0.85rem' }}><span style={{ color: '#94a3b8' }}>GST:</span> {comp.gstin || '-'}</div>
+                                                    <div style={{ fontSize: '0.85rem' }}><span style={{ color: '#94a3b8' }}>CIN:</span> {comp.cin || '-'}</div>
+                                                </td>
+                                                <td>
+                                                    <div style={{ fontSize: '0.85rem' }}>{comp.contact_number || '-'}</div>
+                                                    <div style={{ fontSize: '0.85rem', color: 'var(--primary)' }}>{comp.email || '-'}</div>
+                                                </td>
                                                 <td>
                                                     <button className={styles.actionBtn} onClick={() => openEdit(comp)}>Edit</button>
                                                     <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => handleDelete(comp.id)}>Delete</button>
@@ -204,24 +239,103 @@ export default function CompaniesPage() {
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <h2 style={{ marginTop: 0, marginBottom: '24px' }}>{isEditing ? 'Edit Company' : 'Add New Company'}</h2>
 
-                        <div className={styles.inputGroup}>
-                            <label className={styles.label}>Company Name *</label>
-                            <input
-                                className={styles.input}
-                                value={currentCompany.name || ''}
-                                onChange={e => setCurrentCompany({ ...currentCompany, name: e.target.value })}
-                                placeholder="e.g. Acme Corp"
-                            />
+                        <div className={styles.inputGrid}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Company Name *</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.name || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, name: e.target.value })}
+                                    placeholder="e.g. Acme Corp"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Location / HQ</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.location || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, location: e.target.value })}
+                                    placeholder="e.g. New York, USA"
+                                />
+                            </div>
                         </div>
 
                         <div className={styles.inputGroup}>
-                            <label className={styles.label}>Location / HQ</label>
+                            <label className={styles.label}>Full Address</label>
                             <input
                                 className={styles.input}
-                                value={currentCompany.location || ''}
-                                onChange={e => setCurrentCompany({ ...currentCompany, location: e.target.value })}
-                                placeholder="e.g. New York, USA"
+                                value={currentCompany.address || ''}
+                                onChange={e => setCurrentCompany({ ...currentCompany, address: e.target.value })}
+                                placeholder="Street, Building, etc."
                             />
+                        </div>
+
+                        <div className={styles.inputGrid}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>State</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.state || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, state: e.target.value })}
+                                    placeholder="e.g. California"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Pincode / ZIP</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.pincode || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, pincode: e.target.value })}
+                                    placeholder="e.g. 123456"
+                                />
+                            </div>
+                        </div>
+
+                        <div className={styles.inputGrid}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>GSTIN</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.gstin || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, gstin: e.target.value })}
+                                    placeholder="GST Number"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>CIN</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.cin || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, cin: e.target.value })}
+                                    placeholder="Corporate ID Number"
+                                />
+                            </div>
+                        </div>
+
+                        <div className={styles.inputGrid}>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Contact Number</label>
+                                <input
+                                    className={styles.input}
+                                    value={currentCompany.contact_number || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, contact_number: e.target.value })}
+                                    placeholder="Phone number"
+                                />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Email Address</label>
+                                <input
+                                    className={styles.input}
+                                    type="email"
+                                    value={currentCompany.email || ''}
+                                    onChange={e => setCurrentCompany({ ...currentCompany, email: e.target.value })}
+                                    placeholder="company@email.com"
+                                />
+                            </div>
                         </div>
 
                         <div className={styles.inputGroup}>
@@ -231,6 +345,7 @@ export default function CompaniesPage() {
                                 value={currentCompany.description || ''}
                                 onChange={e => setCurrentCompany({ ...currentCompany, description: e.target.value })}
                                 placeholder="Short description..."
+                                style={{ minHeight: '60px' }}
                             />
                         </div>
 
