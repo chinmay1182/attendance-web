@@ -5,6 +5,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { Toaster } from "react-hot-toast";
 
 import { ThemeProvider } from "../context/ThemeContext";
+import Chatbot from "../components/Chatbot";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body className={poppins.className}>
         <AuthProvider>
           <ThemeProvider>
+            <Chatbot />
             <Toaster position="top-right" />
             {children}
           </ThemeProvider>
