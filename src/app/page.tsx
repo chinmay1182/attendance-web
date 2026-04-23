@@ -16,7 +16,7 @@ const poppins = Poppins({
 
 const notifications = [
   "Billing portal is accessible at billing.myaccount.asia →",
-  "Welcome to MyAccount - Your Free Public Utility Platform!",
+  "Welcome to MyAccount by ConsoLegal - Your Free Public Utility Platform!",
   "Manage Sales, Attendance & Billing in one compliance-ready system.",
   "Free for Startups, MSMEs & Women Founders.",
 ];
@@ -100,6 +100,19 @@ export default function MyAccountLandingPage() {
           <div className={styles.heroLeft}>
             <h1 className={styles.heroTitle}>
               Welcome to MyAccount
+              <div className={styles.heroSubTitleRow}>
+                <span className={styles.heroPoweredBy}>by</span>
+                <div className={styles.heroLogoPill}>
+                  <Image
+                    src="/consolegal.jpeg"
+                    alt="ConsoLegal"
+                    width={120}
+                    height={36}
+                    style={{ objectFit: 'contain', borderRadius: '9999px' }}
+                    unoptimized
+                  />
+                </div>
+              </div>
             </h1>
             <p className={styles.heroSubtitle}>
               A free public utility platform built for Startups, MSMEs & Women Founders.
