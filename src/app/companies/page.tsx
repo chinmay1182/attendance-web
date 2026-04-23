@@ -61,10 +61,12 @@ export default function CompaniesPage() {
     };
 
     const fetchCompanies = async () => {
+        if (!profile?.company_id) { setLoading(false); return; }
         setLoading(true);
         const { data, error } = await supabase
             .from('companies')
             .select('*')
+            .eq('id', profile.company_id)
             .order('created_at', { ascending: false });
 
         if (data) setCompanies(data);

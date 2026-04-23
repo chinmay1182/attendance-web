@@ -140,7 +140,12 @@ export default function SitesPage() {
     // --- Data Fetching ---
 
     const fetchSites = async () => {
-        const { data } = await supabase.from('sites').select('*').order('created_at', { ascending: false });
+        if (!profile?.company_id) return;
+        const { data } = await supabase
+            .from('sites')
+            .select('*')
+            .eq('company_id', profile.company_id)
+            .order('created_at', { ascending: false });
         if (data) setSites(data);
     };
 

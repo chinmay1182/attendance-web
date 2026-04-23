@@ -63,34 +63,31 @@ export default function LocationTrackingPage() {
     }, [profile]);
 
     const fetchLocations = async () => {
+        if (!profile?.company_id) return;
         try {
-            // Fetch today's attendance with user details
+            // Scope to company users only
+            const { data: companyUsers } = await supabase
+                .from('users').select('id').eq('company_id', profile.company_id);
+            const userIds = (companyUsers || []).map(u => u.id);
+            if (userIds.length === 0) { setLocations([]); return; }
+
             const today = new Date().toISOString().split('T')[0];
             const { data: attendanceData, error } = await supabase
                 .from('attendance')
-                .select(`
-                    *,
-                    user:users(name, photo_url, email)
-                `)
+                .select(`*, user:users(name, photo_url, email)`)
                 .eq('date', today)
+                .in('user_id', userIds)
                 .order('clock_in', { ascending: false });
 
-            if (error) {
-                console.error('Error fetching attendance:', error);
-                return;
-            }
+            if (error) { console.error('Error fetching attendance:', error); return; }
 
             if (attendanceData) {
-                // Map attendance data to UserLocation format
                 const formattedData = attendanceData.map((att: any) => ({
                     user_id: att.user_id,
                     latitude: att.location_in?.lat || 0,
                     longitude: att.location_in?.lng || 0,
                     updated_at: att.clock_out || att.clock_in,
-                    user: {
-                        name: att.user?.name,
-                        photoURL: att.user?.photo_url
-                    },
+                    user: { name: att.user?.name, photoURL: att.user?.photo_url },
                     attendance: {
                         punch_in: att.clock_in,
                         punch_out: att.clock_out,
@@ -98,8 +95,6 @@ export default function LocationTrackingPage() {
                         punch_out_photo: att.photo_out
                     }
                 }));
-
-                console.log('Formatted locations:', formattedData);
                 setLocations(formattedData);
             }
         } catch (err) {
@@ -118,14 +113,18 @@ export default function LocationTrackingPage() {
     };
 
     const handleExportHistory = async () => {
+        if (!profile?.company_id) return;
         try {
             const XLSX = await import('xlsx');
+            // Scope export to company users
+            const { data: companyUsers } = await supabase
+                .from('users').select('id').eq('company_id', profile.company_id);
+            const userIds = (companyUsers || []).map(u => u.id);
+
             const { data, error } = await supabase
                 .from('attendance')
-                .select(`
-                    *,
-                    user:users(name, department, email)
-                `)
+                .select(`*, user:users(name, department, email)`)
+                .in('user_id', userIds)
                 .gte('date', exportStartDate)
                 .lte('date', exportEndDate)
                 .order('date', { ascending: false });
@@ -140,7 +139,6 @@ export default function LocationTrackingPage() {
                     PunchOut: row.punch_out ? new Date(row.punch_out).toLocaleTimeString() : '-',
                     Hours: row.total_hours || 0
                 }));
-
                 const ws = XLSX.utils.json_to_sheet(dataToExport);
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, "Tracking History");

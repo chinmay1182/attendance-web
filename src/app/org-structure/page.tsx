@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import styles from './org-structure.module.css';
 import toast from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -12,6 +13,7 @@ type Department = {
 };
 
 export default function OrgStructurePage() {
+    const { profile } = useAuth();
     const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,14 +21,16 @@ export default function OrgStructurePage() {
     const [isEditing, setIsEditing] = useState(false);
 
     useEffect(() => {
-        fetchDepartments();
-    }, []);
+        if (profile?.company_id) fetchDepartments();
+    }, [profile]);
 
     const fetchDepartments = async () => {
+        if (!profile?.company_id) { setLoading(false); return; }
         setLoading(true);
         const { data, error } = await supabase
             .from('departments')
             .select('*')
+            .eq('company_id', profile.company_id)
             .order('name', { ascending: true });
 
         if (data) setDepartments(data);
@@ -60,7 +64,7 @@ export default function OrgStructurePage() {
                 // Add
                 const { error } = await supabase
                     .from('departments')
-                    .insert([{ name: currentDept.name }]);
+                    .insert([{ name: currentDept.name, company_id: profile?.company_id }]);
 
                 if (error) throw error;
                 toast.success("Department added");

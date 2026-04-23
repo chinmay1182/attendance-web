@@ -123,9 +123,17 @@ export default function LeavesPage() {
     };
 
     const fetchAllRequests = async () => {
+        if (!profile?.company_id) return;
+        // Get company user IDs
+        const { data: companyUsers } = await supabase
+            .from('users').select('id').eq('company_id', profile.company_id);
+        const userIds = (companyUsers || []).map(u => u.id);
+        if (userIds.length === 0) { setAllRequests([]); return; }
+
         const { data, error } = await supabase
             .from('leave_requests')
             .select('*, user:users(name, email, department)')
+            .in('user_id', userIds)
             .order('created_at', { ascending: false });
 
         if (error) {
