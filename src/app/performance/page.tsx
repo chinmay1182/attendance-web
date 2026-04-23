@@ -69,7 +69,17 @@ export default function PerformancePage() {
     };
 
     const fetchAllGoals = async () => {
-        const { data, error } = await supabase
+        if (!profile?.company_id) return;
+
+        // Get company user IDs first
+        const { data: companyUsers } = await supabase
+            .from('users')
+            .select('id')
+            .eq('company_id', profile.company_id);
+        const userIds = (companyUsers || []).map(u => u.id);
+        if (userIds.length === 0) { setAllGoals([]); return; }
+
+        const { data } = await supabase
             .from('performance_goals')
             .select(`
                 *,
@@ -78,6 +88,7 @@ export default function PerformancePage() {
                     email
                 )
             `)
+            .in('employee_id', userIds)
             .order('created_at', { ascending: false });
 
         if (data) {
@@ -93,9 +104,11 @@ export default function PerformancePage() {
     };
 
     const fetchEmployees = async () => {
+        if (!profile?.company_id) return;
         const { data } = await supabase
             .from('users')
             .select('id, name, email')
+            .eq('company_id', profile.company_id)
             .neq('role', 'admin')
             .neq('role', 'hr')
             .order('name');

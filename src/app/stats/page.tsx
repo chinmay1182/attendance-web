@@ -64,7 +64,7 @@ export default function StatsPage() {
             const { data } = await supabase
                 .from('attendance')
                 .select('*')
-                .eq('user_id', user?.uid)
+                .eq('user_id', user?.id)
                 .order('date', { ascending: true });
 
             if (data) {
@@ -141,25 +141,28 @@ export default function StatsPage() {
     const fetchAdminInitialData = async () => {
         setIsLoadingData(true);
         try {
+            if (!profile?.company_id) { setIsLoadingData(false); return; }
+            const companyId = profile.company_id;
             const today = new Date().toISOString().split('T')[0];
             const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-            // Run requests in parallel
-            const [
-                { data: users },
-                { data: todayLogs },
-                { data: trendData },
-                { data: logs }
-            ] = await Promise.all([
-                supabase.from('users').select('*'),
-                supabase.from('attendance').select('*').eq('date', today),
-                supabase.from('attendance').select('*').gte('date', sevenDaysAgo).order('date', { ascending: true }),
-                supabase.from('attendance').select('*, users(name, department, photoURL)').order('created_at', { ascending: false }).limit(10)
-            ]);
+            // 1. Get company users only
+            const { data: users } = await supabase
+                .from('users')
+                .select('*')
+                .eq('company_id', companyId);
 
+            const userIds = (users || []).map(u => u.id);
             setEmployeesList(users || []);
             const depts = Array.from(new Set(users?.map(u => u.department).filter(Boolean))) as string[];
             setDepartments(['All', ...depts]);
+
+            // 2. Fetch attendance scoped to company users
+            const [{ data: todayLogs }, { data: trendData }, { data: logs }] = await Promise.all([
+                supabase.from('attendance').select('*').eq('date', today).in('user_id', userIds),
+                supabase.from('attendance').select('*').gte('date', sevenDaysAgo).in('user_id', userIds).order('date', { ascending: true }),
+                supabase.from('attendance').select('*, users(name, department, photoURL)').in('user_id', userIds).order('created_at', { ascending: false }).limit(10)
+            ]);
 
             // Pie Chart Data
             const deptCounts: any = {};
@@ -190,7 +193,6 @@ export default function StatsPage() {
                 avgHours: t.Count > 0 ? (t.TotalHours / t.Count).toFixed(1) : 0
             })));
 
-            // 4. Stats
             const lateCount = todayLogs?.filter(l => {
                 if (!l.clock_in) return false;
                 return new Date(l.clock_in).getHours() >= 10;
@@ -206,24 +208,17 @@ export default function StatsPage() {
                 avgHours: presentCount > 0 ? parseFloat((totalHoursToday / presentCount).toFixed(1)) : 0
             });
 
-            // 5. Dept Breakdown (New)
             const deptStats: any = {};
             depts.forEach(d => deptStats[d] = { name: d, Present: 0, Late: 0, Absent: 0 });
-
             users?.forEach(u => {
                 const d = u.department || 'General';
                 if (!deptStats[d]) deptStats[d] = { name: d, Present: 0, Late: 0, Absent: 0 };
-
                 const log = todayLogs?.find(l => l.user_id === u.id);
-                if (!log) {
-                    deptStats[d].Absent++;
-                } else if (log.status === 'present' || log.status === 'half-day') {
+                if (!log) deptStats[d].Absent++;
+                else if (log.status === 'present' || log.status === 'half-day') {
                     const isLate = log.clock_in && new Date(log.clock_in).getHours() >= 10;
-                    if (isLate) deptStats[d].Late++;
-                    else deptStats[d].Present++;
-                } else {
-                    deptStats[d].Absent++;
-                }
+                    if (isLate) deptStats[d].Late++; else deptStats[d].Present++;
+                } else deptStats[d].Absent++;
             });
             setDeptStatusData(Object.values(deptStats));
             setRecentLogs(logs || []);
@@ -236,9 +231,17 @@ export default function StatsPage() {
     };
 
     const fetchReportData = async () => {
+        if (!profile?.company_id) return;
+        // Get company user IDs first
+        const { data: companyUsers } = await supabase
+            .from('users').select('id').eq('company_id', profile.company_id);
+        const userIds = (companyUsers || []).map(u => u.id);
+        if (userIds.length === 0) { setReportData([]); return; }
+
         let query = supabase
             .from('attendance')
             .select('*, users(name, department, email)')
+            .in('user_id', userIds)
             .gte('date', filterDate)
             .lte('date', filterEndDate)
             .order('date', { ascending: false });
@@ -275,7 +278,7 @@ export default function StatsPage() {
         const { data } = await supabase
             .from('attendance')
             .select('*')
-            .eq('user_id', user?.uid)
+            .eq('user_id', user?.id)
             .order('date', { ascending: false });
 
         if (data && data.length > 0) {

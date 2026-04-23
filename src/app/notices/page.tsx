@@ -52,13 +52,17 @@ export default function NoticesPage() {
     }, [user, profile]);
 
     const fetchUsers = async () => {
-        const { data } = await supabase.from('users').select('id, name, email, role');
+        if (!profile?.company_id) return;
+        const { data } = await supabase
+            .from('users')
+            .select('id, name, email, role')
+            .eq('company_id', profile.company_id);
         if (data) setUsersList(data);
     };
 
     const fetchNotices = async () => {
         try {
-            const res = await fetch('/api/notices', { cache: 'no-store' });
+            const res = await fetch(`/api/notices?uid=${user?.id || ''}`, { cache: 'no-store' });
             const data = await res.json();
 
             if (data && profile) {

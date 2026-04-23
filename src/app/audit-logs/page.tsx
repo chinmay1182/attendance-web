@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import { logAudit, AuditActions } from '../../lib/auditLogger';
 import styles from './audit-logs.module.css';
 import toast, { Toaster } from 'react-hot-toast';
@@ -20,6 +21,7 @@ type AuditLog = {
 };
 
 export default function AuditLogsPage() {
+    const { profile } = useAuth();
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [liveUpdate, setLiveUpdate] = useState(false);
@@ -73,12 +75,25 @@ export default function AuditLogsPage() {
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            // 1. Fetch raw logs first
-            const { data: logsData, error: logsError } = await supabase
+            // Scope to company users only
+            let actorFilter: string[] | null = null;
+            if (profile?.company_id) {
+                const { data: companyUsers } = await supabase
+                    .from('users').select('id').eq('company_id', profile.company_id);
+                actorFilter = (companyUsers || []).map(u => u.id);
+            }
+
+            let query = supabase
                 .from('audit_logs')
                 .select('id, created_at, action, details, actor_id, user_id')
                 .order('created_at', { ascending: false })
                 .limit(100);
+
+            if (actorFilter && actorFilter.length > 0) {
+                query = query.in('actor_id', actorFilter) as any;
+            }
+
+            const { data: logsData, error: logsError } = await query;
 
             if (logsError) {
                 console.error('Error fetching logs:', logsError);
@@ -88,26 +103,14 @@ export default function AuditLogsPage() {
             }
 
             if (logsData && logsData.length > 0) {
-                // 2. Extract unique actor IDs and fetch their names
                 const uniqueActorIds = Array.from(new Set(logsData.map(l => l.actor_id).filter(Boolean)));
-                
-                const { data: usersData, error: usersError } = await supabase
-                    .from('users')
-                    .select('id, name')
-                    .in('id', uniqueActorIds);
-
-                if (usersError) {
-                    console.warn('Could not fetch user names for audit logs:', usersError);
-                }
-
-                // 3. Map user names back to logs
+                const { data: usersData } = await supabase
+                    .from('users').select('id, name').in('id', uniqueActorIds);
                 const userMap = new Map((usersData || []).map(u => [u.id, u.name]));
-                
                 const mappedLogs = logsData.map(log => ({
                     ...log,
                     users: userMap.has(log.actor_id) ? { name: userMap.get(log.actor_id) } : null
                 }));
-
                 setLogs(mappedLogs);
             } else {
                 setLogs([]);

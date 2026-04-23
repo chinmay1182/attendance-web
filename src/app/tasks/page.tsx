@@ -72,18 +72,32 @@ export default function TasksPage() {
 
     const fetchTasks = async () => {
         setFetching(true);
-        let query = supabase
-            .from('tasks')
-            .select('*')
-            .order('created_at', { ascending: false });
 
-        // If not admin, filter by own ID
-        if (profile?.role !== 'admin') {
-            query = query.eq('user_id', user?.id);
+        if (profile?.role === 'admin' || profile?.role === 'hr') {
+            // Admin: fetch tasks only for users in the same company
+            if (!profile?.company_id) { setFetching(false); return; }
+            const { data: companyUsers } = await supabase
+                .from('users')
+                .select('id')
+                .eq('company_id', profile.company_id);
+            const userIds = (companyUsers || []).map(u => u.id);
+            if (userIds.length === 0) { setTasks([]); setFetching(false); return; }
+            const { data } = await supabase
+                .from('tasks')
+                .select('*')
+                .in('user_id', userIds)
+                .order('created_at', { ascending: false });
+            if (data) setTasks(data);
+        } else {
+            // Employee: only own tasks
+            const { data } = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('user_id', user?.id)
+                .order('created_at', { ascending: false });
+            if (data) setTasks(data);
         }
 
-        const { data } = await query;
-        if (data) setTasks(data);
         setFetching(false);
     };
 

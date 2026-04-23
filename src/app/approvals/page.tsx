@@ -39,10 +39,26 @@ export default function ApprovalsPage() {
     }, [user, loading, profile]);
 
     const fetchPending = async () => {
+        if (!profile?.company_id) return;
+
+        // First get all user IDs in this company
+        const { data: companyUsers } = await supabase
+            .from('users')
+            .select('id')
+            .eq('company_id', profile.company_id);
+
+        if (!companyUsers || companyUsers.length === 0) {
+            setPending([]);
+            return;
+        }
+
+        const userIds = companyUsers.map(u => u.id);
+
         const { data, error } = await supabase
             .from('attendance')
             .select('*, user:users(name, email, department), site:sites(id, name, address, latitude, longitude, radius_meters)')
             .eq('approval_status', 'Pending')
+            .in('user_id', userIds)
             .order('clock_in', { ascending: true });
 
         if (error) {

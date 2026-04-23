@@ -50,9 +50,11 @@ export default function EmployeeDocsPage() {
     }, [selectedEmp]);
 
     const fetchEmployees = async () => {
+        if (!profile?.company_id) return;
         const { data, error } = await supabase
             .from('users')
             .select('*')
+            .eq('company_id', profile.company_id)
             .order('name');
 
         if (data) setEmployees(data);

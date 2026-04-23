@@ -53,6 +53,10 @@ export default function LeavesPage() {
     const [actionData, setActionData] = useState<{ id: string, type: 'approved' | 'rejected' } | null>(null);
     const [adminNote, setAdminNote] = useState('');
 
+    // Policy Edit State
+    const [editingPolicy, setEditingPolicy] = useState<LeavePolicy | null>(null);
+    const [savingPolicy, setSavingPolicy] = useState(false);
+
     useEffect(() => {
         if (user) {
             fetchPolicies();
@@ -113,9 +117,18 @@ export default function LeavesPage() {
     };
 
     const fetchAllRequests = async () => {
+        if (!profile?.company_id) return;
+        // Only fetch requests from users in the same company
+        const { data: companyUsers } = await supabase
+            .from('users')
+            .select('id')
+            .eq('company_id', profile.company_id);
+        if (!companyUsers) return;
+        const userIds = companyUsers.map(u => u.id);
         const { data } = await supabase
             .from('leave_requests')
             .select('*, user:users(name, email, department)')
+            .in('user_id', userIds)
             .order('created_at', { ascending: false });
         if (data) setAllRequests(data as any);
     };
@@ -177,6 +190,28 @@ export default function LeavesPage() {
             fetchAllRequests();
             setIsActionModalOpen(false);
         }
+    };
+
+    // Policy Update Handler
+    const handleSavePolicy = async () => {
+        if (!editingPolicy) return;
+        setSavingPolicy(true);
+        const { error } = await supabase
+            .from('leave_policies')
+            .update({
+                name: editingPolicy.name,
+                days_per_year: editingPolicy.days_per_year,
+                description: editingPolicy.description,
+            })
+            .eq('id', editingPolicy.id);
+        if (error) {
+            toast.error('Failed to update policy');
+        } else {
+            toast.success('Policy updated!');
+            setEditingPolicy(null);
+            fetchPolicies();
+        }
+        setSavingPolicy(false);
     };
 
     // Derived Stats
@@ -367,15 +402,82 @@ export default function LeavesPage() {
 
                 {activeTab === 'policies' && (
                     <div className={styles.card}>
+                        {isAdminOrHr && (
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px', marginTop: 0 }}>
+                                Click <b>Edit</b> on any policy to update its name, days, or description.
+                            </p>
+                        )}
                         {policies.map(p => (
                             <div key={p.id} className={styles.policyItem}>
-                                <div className={styles.policyInfo}>
-                                    <h3>{p.name}</h3>
-                                    <p>{p.description}</p>
-                                </div>
-                                <span className={styles.allocation}>{p.days_per_year} Days/Year</span>
+                                {editingPolicy?.id === p.id ? (
+                                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                            <div>
+                                                <label className={styles.label} style={{ fontSize: '0.8rem' }}>Policy Name</label>
+                                                <input
+                                                    className={styles.input}
+                                                    value={editingPolicy.name}
+                                                    onChange={e => setEditingPolicy({ ...editingPolicy, name: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className={styles.label} style={{ fontSize: '0.8rem' }}>Days Per Year</label>
+                                                <input
+                                                    type="number"
+                                                    className={styles.input}
+                                                    value={editingPolicy.days_per_year}
+                                                    min={0}
+                                                    onChange={e => setEditingPolicy({ ...editingPolicy, days_per_year: Number(e.target.value) })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className={styles.label} style={{ fontSize: '0.8rem' }}>Description</label>
+                                            <input
+                                                className={styles.input}
+                                                value={editingPolicy.description}
+                                                onChange={e => setEditingPolicy({ ...editingPolicy, description: e.target.value })}
+                                            />
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                onClick={handleSavePolicy}
+                                                disabled={savingPolicy}
+                                                style={{ padding: '8px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                            >
+                                                {savingPolicy ? 'Saving...' : 'Save'}
+                                            </button>
+                                            <button
+                                                onClick={() => setEditingPolicy(null)}
+                                                style={{ padding: '8px 20px', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 600, cursor: 'pointer' }}
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className={styles.policyInfo}>
+                                            <h3>{p.name}</h3>
+                                            <p>{p.description}</p>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span className={styles.allocation}>{p.days_per_year} Days/Year</span>
+                                            {isAdminOrHr && (
+                                                <button
+                                                    onClick={() => setEditingPolicy({ ...p })}
+                                                    style={{ padding: '6px 14px', background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                >
+                                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>edit</span>
+                                                    Edit
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         ))}
+                        {policies.length === 0 && <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>No policies found.</p>}
                     </div>
                 )}
 

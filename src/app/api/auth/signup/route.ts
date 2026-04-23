@@ -42,10 +42,13 @@ export async function POST(request: Request) {
             companyId = companyData.id;
         }
 
-        // Insert into Supabase using the Service Role Key (bypassing RLS)
+        // Use upsert to handle race condition:
+        // Supabase may have a DB trigger that auto-inserts into public.users on auth.signup.
+        // If that trigger fires first, a plain insert would throw a duplicate PK error.
+        // upsert (ON CONFLICT DO UPDATE) safely handles both cases.
         const { data, error } = await supabaseAdmin
             .from('users')
-            .insert([
+            .upsert(
                 {
                     id,
                     email,
@@ -53,13 +56,14 @@ export async function POST(request: Request) {
                     role: role || 'employee',
                     company_id: companyId
                 },
-            ])
+                { onConflict: 'id' }
+            )
             .select()
             .single();
 
         if (error) {
-            console.error('Supabase Insert Error:', error);
-            // Rollback company creation if user creation fails (Manual rollback as no transactions in HTTP API easily)
+            console.error('Supabase Upsert Error:', error);
+            // Rollback company creation if user upsert fails
             if (companyId) {
                 await supabaseAdmin.from('companies').delete().eq('id', companyId);
             }

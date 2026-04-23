@@ -14,6 +14,7 @@ type Job = {
     type: string;
     status: 'open' | 'closed' | 'draft';
     created_at: string;
+    company_id?: string;
     application_count?: number;
 };
 
@@ -33,20 +34,30 @@ type Note = {
     content: string;
     created_at: string;
     author_id: string;
-    author_name?: string; // fetched
+    author_name?: string;
+};
+
+type Department = {
+    id: string;
+    name: string;
 };
 
 export default function RecruitmentPage() {
     const { user, profile } = useAuth();
-    // Only Admin/HR
     const [activeTab, setActiveTab] = useState<'jobs' | 'candidates'>('jobs');
     const [jobs, setJobs] = useState<Job[]>([]);
     const [applications, setApplications] = useState<Application[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
 
     // Create Job Modal
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [newJob, setNewJob] = useState({ title: '', department: '', location: '', type: 'Full-time', description: '', requirements: '' });
     const [submitting, setSubmitting] = useState(false);
+
+    // Edit Job Modal
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editingJob, setEditingJob] = useState<Job | null>(null);
+    const [editJobData, setEditJobData] = useState({ title: '', department: '', location: '', type: 'Full-time', description: '', requirements: '' });
 
     // Candidate Detail Modal
     const [selectedCandidate, setSelectedCandidate] = useState<Application | null>(null);
@@ -55,6 +66,7 @@ export default function RecruitmentPage() {
 
     useEffect(() => {
         if (user) {
+            fetchDepartments();
             fetchJobs();
             fetchApplications();
 
@@ -66,7 +78,6 @@ export default function RecruitmentPage() {
                     (payload) => {
                         const rec = payload.new as Application;
                         if (payload.eventType === 'INSERT') {
-                            // Ideally fetch job details too, or set partial
                             setApplications(prev => [rec, ...prev]);
                         } else if (payload.eventType === 'UPDATE') {
                             setApplications(prev => prev.map(a => a.id === rec.id ? { ...a, ...rec } : a));
@@ -80,36 +91,80 @@ export default function RecruitmentPage() {
         }
     }, [user]);
 
+    const fetchDepartments = async () => {
+        const { data } = await supabase
+            .from('departments')
+            .select('id, name')
+            .order('name', { ascending: true });
+        if (data) setDepartments(data);
+    };
+
     const fetchJobs = async () => {
-        const { data: jobsData, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
+        if (!profile?.company_id) return;
+
+        const { data: jobsData } = await supabase
+            .from('jobs')
+            .select('*')
+            .eq('company_id', profile.company_id)
+            .order('created_at', { ascending: false });
+
         if (jobsData) {
-            // Fetch counts
-            const { data: apps } = await supabase.from('applications').select('job_id');
+            const { data: apps } = await supabase
+                .from('applications')
+                .select('job_id');
             const counts: any = {};
             apps?.forEach((a: any) => counts[a.job_id] = (counts[a.job_id] || 0) + 1);
-
             setJobs(jobsData.map(j => ({ ...j, application_count: counts[j.id] || 0 })));
         }
     };
 
     const fetchApplications = async () => {
+        if (!profile?.company_id) return;
+
+        // Fetch only applications for jobs belonging to this company
+        const { data: companyJobs } = await supabase
+            .from('jobs')
+            .select('id')
+            .eq('company_id', profile.company_id);
+
+        if (!companyJobs || companyJobs.length === 0) {
+            setApplications([]);
+            return;
+        }
+
+        const jobIds = companyJobs.map(j => j.id);
         const { data } = await supabase
             .from('applications')
             .select('*, job:jobs(title)')
+            .in('job_id', jobIds)
             .order('created_at', { ascending: false });
+
         if (data) setApplications(data as any);
     };
+
+    // Wait for profile to be loaded before fetching
+    useEffect(() => {
+        if (user && profile?.company_id) {
+            fetchJobs();
+            fetchApplications();
+        }
+    }, [profile?.company_id]);
 
     const handleCreateJob = async () => {
         if (!newJob.title || !newJob.department) {
             toast.error("Title and Department are required");
             return;
         }
+        if (!profile?.company_id) {
+            toast.error("Company information not found");
+            return;
+        }
         setSubmitting(true);
         const { error } = await supabase.from('jobs').insert({
             ...newJob,
             status: 'open',
-            created_by: user?.id
+            created_by: user?.id,
+            company_id: profile.company_id
         });
 
         if (error) {
@@ -123,6 +178,67 @@ export default function RecruitmentPage() {
         setSubmitting(false);
     };
 
+    const openEditModal = (job: Job) => {
+        setEditingJob(job);
+        setEditJobData({
+            title: job.title,
+            department: job.department,
+            location: job.location,
+            type: job.type,
+            description: (job as any).description || '',
+            requirements: (job as any).requirements || '',
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleEditJob = async () => {
+        if (!editingJob || !editJobData.title || !editJobData.department) {
+            toast.error("Title and Department are required");
+            return;
+        }
+        setSubmitting(true);
+        const { error } = await supabase.from('jobs').update({
+            title: editJobData.title,
+            department: editJobData.department,
+            location: editJobData.location,
+            type: editJobData.type,
+            description: editJobData.description,
+            requirements: editJobData.requirements,
+        }).eq('id', editingJob.id);
+
+        if (error) {
+            toast.error("Failed to update job");
+        } else {
+            toast.success("Job Updated Successfully");
+            setIsEditOpen(false);
+            setEditingJob(null);
+            fetchJobs();
+        }
+        setSubmitting(false);
+    };
+
+    const handleDeleteJob = async (jobId: string) => {
+        if (!confirm("Are you sure you want to delete this job? This cannot be undone.")) return;
+        const { error } = await supabase.from('jobs').delete().eq('id', jobId);
+        if (error) {
+            toast.error("Failed to delete job");
+        } else {
+            toast.success("Job deleted");
+            fetchJobs();
+        }
+    };
+
+    const handleToggleJobStatus = async (job: Job) => {
+        const newStatus = job.status === 'open' ? 'closed' : 'open';
+        const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', job.id);
+        if (error) {
+            toast.error("Failed to update job status");
+        } else {
+            toast.success(`Job ${newStatus === 'open' ? 'Activated' : 'Deactivated'}`);
+            fetchJobs();
+        }
+    };
+
     const copyApplyLink = (jobId: string) => {
         const link = `${window.location.origin}/careers/${jobId}`;
         navigator.clipboard.writeText(link);
@@ -132,14 +248,8 @@ export default function RecruitmentPage() {
     // Candidate Modal Logic
     const openCandidateModal = async (app: Application) => {
         setSelectedCandidate(app);
-        // Fetch Notes
         const { data } = await supabase.from('candidate_notes').select('*').eq('application_id', app.id).order('created_at', { ascending: true });
-
-        // Enrich with author name (simple approach for now)
-        if (data) {
-            // In a real app we would join users table
-            setCandidateNotes(data);
-        }
+        if (data) setCandidateNotes(data);
     };
 
     const handleAddNote = async () => {
@@ -153,7 +263,6 @@ export default function RecruitmentPage() {
             toast.error("Failed to add note");
         } else {
             setNewNote('');
-            // Refetch notes
             const { data } = await supabase.from('candidate_notes').select('*').eq('application_id', selectedCandidate.id).order('created_at', { ascending: true });
             if (data) setCandidateNotes(data);
         }
@@ -163,12 +272,65 @@ export default function RecruitmentPage() {
         if (!selectedCandidate) return;
         await supabase.from('applications').update({ status }).eq('id', selectedCandidate.id);
         setSelectedCandidate({ ...selectedCandidate, status: status as any });
-        fetchApplications(); // Refresh kanban
+        fetchApplications();
         toast.success(`Moved to ${status}`);
     };
 
-    // Kanban Logic
     const columns = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'];
+
+    const JobFormFields = ({ data, onChange }: { data: typeof newJob, onChange: (d: typeof newJob) => void }) => (
+        <>
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Job Title *</label>
+                <input className={styles.input} value={data.title} onChange={e => onChange({ ...data, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+            </div>
+
+            <div className={styles.row}>
+                <div className={styles.inputGroup}>
+                    <label className={styles.label}>Department *</label>
+                    <select className={styles.select} value={data.department} onChange={e => onChange({ ...data, department: e.target.value })}>
+                        <option value="">Select Dept</option>
+                        {departments.length > 0
+                            ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                            : (
+                                <>
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Design">Design</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Sales">Sales</option>
+                                    <option value="HR">HR</option>
+                                </>
+                            )
+                        }
+                    </select>
+                </div>
+                <div className={styles.inputGroup}>
+                    <label className={styles.label}>Job Type</label>
+                    <select className={styles.select} value={data.type} onChange={e => onChange({ ...data, type: e.target.value })}>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Internship">Internship</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Location</label>
+                <input className={styles.input} value={data.location} onChange={e => onChange({ ...data, location: e.target.value })} placeholder="e.g. Remote / New York" />
+            </div>
+
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Description</label>
+                <textarea className={styles.textarea} value={data.description} onChange={e => onChange({ ...data, description: e.target.value })} placeholder="Job responsibilities..." />
+            </div>
+
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Requirements</label>
+                <textarea className={styles.textarea} value={data.requirements} onChange={e => onChange({ ...data, requirements: e.target.value })} placeholder="Skills needed..." />
+            </div>
+        </>
+    );
 
     return (
         <>
@@ -204,7 +366,6 @@ export default function RecruitmentPage() {
                                                 href={`/careers/${job.id}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={styles.liveLink}
                                                 style={{ fontSize: '0.75rem', marginLeft: '12px', color: '#2563eb', textDecoration: 'none', fontWeight: 500, border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '12px', background: '#eff6ff' }}
                                             >
                                                 Live on Careers Page ↗
@@ -221,13 +382,35 @@ export default function RecruitmentPage() {
                                         <span>{new Date(job.created_at).toLocaleDateString()}</span>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                    <div style={{ textAlign: 'center', marginRight: '16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                    <div style={{ textAlign: 'center', marginRight: '8px' }}>
                                         <b style={{ fontSize: '1.5rem', display: 'block' }}>{job.application_count}</b>
                                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Applicants</span>
                                     </div>
                                     <button onClick={() => copyApplyLink(job.id)} className={styles.secondaryBtn}>
                                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>share</span> Share
+                                    </button>
+                                    <button onClick={() => openEditModal(job)} className={styles.secondaryBtn} title="Edit Job">
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleToggleJobStatus(job)}
+                                        className={styles.secondaryBtn}
+                                        title={job.status === 'open' ? 'Deactivate Job' : 'Activate Job'}
+                                        style={{ color: job.status === 'open' ? '#f59e0b' : '#10b981' }}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                            {job.status === 'open' ? 'pause_circle' : 'play_circle'}
+                                        </span>
+                                        {job.status === 'open' ? 'Deactivate' : 'Activate'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteJob(job.id)}
+                                        className={styles.secondaryBtn}
+                                        title="Delete Job"
+                                        style={{ color: '#ef4444' }}
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                                     </button>
                                 </div>
                             </div>
@@ -269,51 +452,28 @@ export default function RecruitmentPage() {
                                 <button onClick={() => setIsCreateOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
                             </div>
 
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Job Title *</label>
-                                <input className={styles.input} value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
-                            </div>
-
-                            <div className={styles.row}>
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Department *</label>
-                                    <select className={styles.select} value={newJob.department} onChange={e => setNewJob({ ...newJob, department: e.target.value })}>
-                                        <option value="">Select Dept</option>
-                                        <option value="Engineering">Engineering</option>
-                                        <option value="Design">Design</option>
-                                        <option value="Marketing">Marketing</option>
-                                        <option value="Sales">Sales</option>
-                                        <option value="HR">HR</option>
-                                    </select>
-                                </div>
-                                <div className={styles.inputGroup}>
-                                    <label className={styles.label}>Job Type</label>
-                                    <select className={styles.select} value={newJob.type} onChange={e => setNewJob({ ...newJob, type: e.target.value })}>
-                                        <option value="Full-time">Full-time</option>
-                                        <option value="Part-time">Part-time</option>
-                                        <option value="Contract">Contract</option>
-                                        <option value="Internship">Internship</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Location</label>
-                                <input className={styles.input} value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} placeholder="e.g. Remote / New York" />
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Description</label>
-                                <textarea className={styles.textarea} value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} placeholder="Job responsibilities..." />
-                            </div>
-
-                            <div className={styles.inputGroup}>
-                                <label className={styles.label}>Requirements</label>
-                                <textarea className={styles.textarea} value={newJob.requirements} onChange={e => setNewJob({ ...newJob, requirements: e.target.value })} placeholder="Skills needed..." />
-                            </div>
+                            <JobFormFields data={newJob} onChange={setNewJob} />
 
                             <button onClick={handleCreateJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
                                 {submitting ? 'Posting...' : 'Publish Job'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Job Modal */}
+                {isEditOpen && editingJob && (
+                    <div className={styles.modalOverlay} onClick={() => setIsEditOpen(false)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                <h2 style={{ margin: 0 }}>Edit Job</h2>
+                                <button onClick={() => setIsEditOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
+                            </div>
+
+                            <JobFormFields data={editJobData} onChange={setEditJobData} />
+
+                            <button onClick={handleEditJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
+                                {submitting ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
                     </div>
