@@ -215,7 +215,8 @@ export default function SitesPage() {
             radius_meters: parseInt(newSite.radius) || 100,
             daily_tasks: newSite.daily_tasks || '',
             entry_policy: newSite.entry_policy || '',
-            is_active: true
+            is_active: true,
+            company_id: profile?.company_id || null
         };
 
         console.log("Submitting payload:", payload);
