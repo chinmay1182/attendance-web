@@ -30,12 +30,12 @@ const productLinks = [
   {
     name: "BizKit Billing",
     description: "Create invoices, manage payments, and track billing. (Available on Web)",
-    href: "https://billing.bizkit.consolegal.com/",
+    href: "https://bizkit.consolegal.com/billing",
   },
   {
     name: "BizKit SMT",
     description: "Handle sales workflows, leads, and business follow-ups. (Available on Web)",
-    href: "https://smt.bizkit.consolegal.com/",
+    href: "https://bizkit.consolegal.com/smt",
   },
 ];
 
@@ -78,13 +78,13 @@ export default function BizKitLandingPage() {
           </button>
 
           <div className={`${styles.headerRight} ${isMobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
-            <Link href="https://billing.bizkit.consolegal.com/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="https://bizkit.consolegal.com/billing" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Billing <span className={styles.newBadge}>New</span>
             </Link>
             <Link href="https://bizkit.consolegal.com/login" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Attendance
             </Link>
-            <Link href="https://smt.bizkit.consolegal.com/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="https://bizkit.consolegal.com/smt" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               SMT
             </Link>
             <div className={styles.supportContact}>

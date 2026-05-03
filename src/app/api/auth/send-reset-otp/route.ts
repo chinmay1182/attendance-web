@@ -33,20 +33,20 @@ export async function POST(req: Request) {
       port: 465,
       secure: true,
       auth: {
-        user: 'noreply@myaccount.asia',
-        pass: 'd0yiDMbKapAE'
+        user: 'no-reply@consolegal.com',
+        pass: 'nqgfuzimlkmjtvgt'
       }
     });
 
     // 5. Send the mail
     try {
       await transporter.sendMail({
-        from: '"Attendance Pro" <noreply@myaccount.asia>',
+        from: '"BizKit" <no-reply@consolegal.com>',
         to: email,
         subject: 'Your Password Reset OTP',
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; color: #333;">
-            <div style="text-align: center; margin-bottom: 20px;"><h2>Attendance Pro</h2></div>
+            <div style="text-align: center; margin-bottom: 20px;"><h2>BizKit</h2></div>
             <p>Hello,</p>
             <p>You have requested a password reset. Use the following OTP to reset your password. This OTP is valid for 10 minutes.</p>
             <h1 style="text-align: center; margin: 30px 0; font-size: 32px; letter-spacing: 4px; color: #1e293b;">${otp}</h1>
@@ -61,17 +61,17 @@ export async function POST(req: Request) {
         port: 465,
         secure: true,
         auth: {
-          user: 'noreply@myaccount.asia',
-          pass: 'd0yiDMbKapAE'
+          user: 'no-reply@consolegal.com',
+          pass: 'nqgfuzimlkmjtvgt'
         }
       });
       await fallbackTransporter.sendMail({
-        from: '"Attendance Pro" <noreply@myaccount.asia>',
+        from: '"BizKit" <no-reply@consolegal.com>',
         to: email,
         subject: 'Your Password Reset OTP',
         html: `
           <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; color: #333;">
-            <div style="text-align: center; margin-bottom: 20px;"><h2>Attendance Pro</h2></div>
+            <div style="text-align: center; margin-bottom: 20px;"><h2>BizKit</h2></div>
             <p>Hello,</p>
             <p>You have requested a password reset. Use the following OTP to reset your password. This OTP is valid for 10 minutes.</p>
             <h1 style="text-align: center; margin: 30px 0; font-size: 32px; letter-spacing: 4px; color: #1e293b;">${otp}</h1>
