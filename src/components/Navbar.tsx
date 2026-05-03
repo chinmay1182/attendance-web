@@ -76,7 +76,7 @@ export const Navbar = () => {
             {/* Logo Section */}
             <div className={styles.logoSection}>
                 <Image
-                    src="/myaccount.svg"
+                    src="/BizKitLogo.svg"
                     alt="Attendance Pross"
                     width={180}
                     height={40}

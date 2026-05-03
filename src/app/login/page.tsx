@@ -62,74 +62,74 @@ export default function LoginPage() {
     setErrorMsg("");
 
     try {
-        // 0. Resolve Email if Username provided
-        let loginEmail = email;
-        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      // 0. Resolve Email if Username provided
+      let loginEmail = email;
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-        if (!isEmail) {
-            const lookupRes = await fetch('/api/auth/lookup-email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: email })
-            });
-
-            const lookupData = await lookupRes.json();
-            if (!lookupRes.ok || !lookupData.email) {
-                throw new Error("Username not found");
-            }
-            loginEmail = lookupData.email;
-        }
-
-        // 1. Authenticate
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: loginEmail,
-            password: password,
+      if (!isEmail) {
+        const lookupRes = await fetch('/api/auth/lookup-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: email })
         });
 
-        if (authError) throw authError;
-        const user = authData.user;
-        if (!user) throw new Error("No user found");
-
-        // 2. Fetch User Profile
-        const profileRes = await fetch('/api/user/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ uid: user.id }),
-            cache: 'no-store'
-        });
-
-        if (!profileRes.ok) throw new Error("Failed to fetch profile");
-        const { user: profileData } = await profileRes.json();
-        setUserProfile(profileData);
-
-        // 3. Fetch Company Details if company_id exists
-        if (profileData?.company_id) {
-            const { data: company, error: companyError } = await supabase
-                .from('companies')
-                .select('*')
-                .eq('id', profileData.company_id)
-                .single();
-
-            if (company) {
-                setCompanyDetails(company);
-                setLoginStep('verification');
-                setIsLoading(false);
-                return;
-            }
+        const lookupData = await lookupRes.json();
+        if (!lookupRes.ok || !lookupData.email) {
+          throw new Error("Username not found");
         }
+        loginEmail = lookupData.email;
+      }
 
-        proceedToDashboard(profileData?.role);
+      // 1. Authenticate
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: password,
+      });
+
+      if (authError) throw authError;
+      const user = authData.user;
+      if (!user) throw new Error("No user found");
+
+      // 2. Fetch User Profile
+      const profileRes = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.id }),
+        cache: 'no-store'
+      });
+
+      if (!profileRes.ok) throw new Error("Failed to fetch profile");
+      const { user: profileData } = await profileRes.json();
+      setUserProfile(profileData);
+
+      // 3. Fetch Company Details if company_id exists
+      if (profileData?.company_id) {
+        const { data: company, error: companyError } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('id', profileData.company_id)
+          .single();
+
+        if (company) {
+          setCompanyDetails(company);
+          setLoginStep('verification');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      proceedToDashboard(profileData?.role);
 
     } catch (err: any) {
-        console.error(err);
-        let msg = err.message || "An unexpected error occurred.";
-        if (msg === "Username not found") msg = "Username not found. Please check or try email.";
-        else if (msg === "Failed to fetch profile") msg = "Server error: Profile setup is incomplete.";
-        
-        toast.error(msg);
-        setErrorMsg(msg);
+      console.error(err);
+      let msg = err.message || "An unexpected error occurred.";
+      if (msg === "Username not found") msg = "Username not found. Please check or try email.";
+      else if (msg === "Failed to fetch profile") msg = "Server error: Profile setup is incomplete.";
+
+      toast.error(msg);
+      setErrorMsg(msg);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -168,7 +168,7 @@ export default function LoginPage() {
         <div className={styles.card}>
           <div className={styles.logoWrap}>
             <Image
-              src="/myaccount.svg"
+              src="/BizKitLogo.svg"
               alt="MyAccount Billing"
               width={220}
               height={60}
@@ -242,54 +242,54 @@ export default function LoginPage() {
             </>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', animation: 'fadeIn 0.5s' }}>
-                <div style={{
-                    width: '100px',
-                    height: '100px',
-                    borderRadius: '50%',
-                    background: '#f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '16px',
-                    overflow: 'hidden',
-                    border: '4px solid white',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}>
-                    {companyDetails?.logo_url ? (
-                        <img src={companyDetails.logo_url} alt="Company Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                        <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#64748b' }}>apartment</span>
-                    )}
+              <div style={{
+                width: '100px',
+                height: '100px',
+                borderRadius: '50%',
+                background: '#f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+                overflow: 'hidden',
+                border: '4px solid white',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}>
+                {companyDetails?.logo_url ? (
+                  <img src={companyDetails.logo_url} alt="Company Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#64748b' }}>apartment</span>
+                )}
+              </div>
+
+              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '8px', color: '#1e293b' }}>
+                {companyDetails?.name || 'Company Name'}
+              </h2>
+              <p style={{ color: '#64748b', marginBottom: '24px' }}>
+                ID: <span style={{ fontFamily: 'monospace', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>{companyDetails?.company_code || 'N/A'}</span>
+              </p>
+
+              <div style={{ width: '100%', padding: '16px', background: '#f8fafc', borderRadius: '12px', marginBottom: '24px', textAlign: 'left' }}>
+                <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '4px' }}>Logged in as</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#111827', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                    {userProfile?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, color: '#334155' }}>{userProfile?.name}</p>
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{email}</p>
+                  </div>
                 </div>
+              </div>
 
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '8px', color: '#1e293b' }}>
-                    {companyDetails?.name || 'Company Name'}
-                </h2>
-                <p style={{ color: '#64748b', marginBottom: '24px' }}>
-                    ID: <span style={{ fontFamily: 'monospace', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>{companyDetails?.company_code || 'N/A'}</span>
-                </p>
-
-                <div style={{ width: '100%', padding: '16px', background: '#f8fafc', borderRadius: '12px', marginBottom: '24px', textAlign: 'left' }}>
-                    <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '4px' }}>Logged in as</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#111827', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                            {userProfile?.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                            <p style={{ fontWeight: 600, color: '#334155' }}>{userProfile?.name}</p>
-                            <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{email}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    className={styles.submitBtn}
-                    onClick={() => proceedToDashboard(userProfile?.role)}
-                    disabled={isLoading}
-                >
-                    Verify & Proceed
-                </button>
+              <button
+                type="button"
+                className={styles.submitBtn}
+                onClick={() => proceedToDashboard(userProfile?.role)}
+                disabled={isLoading}
+              >
+                Verify & Proceed
+              </button>
             </div>
           )}
 

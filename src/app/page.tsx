@@ -64,7 +64,7 @@ export default function MyAccountLandingPage() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.headerLogo}>
-            <Image src="/myaccount.svg" alt="MyAccount Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
+            <Image src="/BizKitLogo.svg" alt="MyAccount Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
           </div>
 
           <button

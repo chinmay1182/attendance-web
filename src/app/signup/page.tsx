@@ -59,45 +59,45 @@ export default function SignupPage() {
     setErrorMsg("");
 
     try {
-        // 1. Create User in Supabase Auth
-        const { data, error: authError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { name },
-            },
-        });
+      // 1. Create User in Supabase Auth
+      const { data, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
 
-        if (authError) throw authError;
-        const user = data.user;
-        if (!user) throw new Error("Signup failed");
+      if (authError) throw authError;
+      const user = data.user;
+      if (!user) throw new Error("Signup failed");
 
-        // 2. Create Profile in Supabase via API
-        const response = await fetch("/api/auth/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                id: user.id,
-                email: email,
-                name: name,
-                role: 'admin',
-                companyName: companyName,
-            }),
-        });
+      // 2. Create Profile in Supabase via API
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: user.id,
+          email: email,
+          name: name,
+          role: 'admin',
+          companyName: companyName,
+        }),
+      });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Failed to create user profile");
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Failed to create user profile");
 
-        toast.success("Account created! Please check your email to confirm.", { duration: 6000 });
-        router.push("/dashboard");
+      toast.success("Account created! Please check your email to confirm.", { duration: 6000 });
+      router.push("/dashboard");
 
     } catch (err: any) {
-        console.error(err);
-        const msg = err.message || "Failed to create account.";
-        toast.error(msg);
-        setErrorMsg(msg);
+      console.error(err);
+      const msg = err.message || "Failed to create account.";
+      toast.error(msg);
+      setErrorMsg(msg);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -132,7 +132,7 @@ export default function SignupPage() {
         <div className={styles.card}>
           <div className={styles.logoWrap}>
             <Image
-              src="/myaccount.svg"
+              src="/BizKitLogo.svg"
               alt="MyAccount"
               width={220}
               height={60}

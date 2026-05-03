@@ -47,7 +47,7 @@ export const NotificationBell = () => {
                         if (Notification && Notification.permission === 'granted') {
                             new Notification(newNotif.title, {
                                 body: newNotif.message,
-                                icon: '/myaccount.svg',
+                                icon: '/BizKitLogo.svg',
                             });
                         }
                     } else if (payload.eventType === 'UPDATE') {
@@ -115,7 +115,7 @@ export const NotificationBell = () => {
             const rect = buttonRef.current.getBoundingClientRect();
             const dropdownWidth = 360;
             let leftPos = rect.left;
-            
+
             // If it's too close to the right edge, align right edge of dropdown to right edge of button
             if (leftPos + dropdownWidth > window.innerWidth - 20) {
                 leftPos = rect.right - dropdownWidth;

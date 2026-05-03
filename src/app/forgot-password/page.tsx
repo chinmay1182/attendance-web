@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { toast } from "react-hot-toast";
-import styles from "../login/login.module.css"; 
+import styles from "../login/login.module.css";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
   const [pin, setPin] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [otpSent, setOtpSent] = useState(false);
@@ -34,7 +34,7 @@ export default function ForgotPasswordPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim().toLowerCase() })
       });
-      
+
       let data;
       const textResponse = await res.text();
       try {
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
             priority
             style={{ maxWidth: "60%", height: "auto", objectFit: "contain", marginBottom: "20px" }}
           />
-          <div className={styles.illustrationText} style={{ color: '#991b1b' }}>Secure <br/> Recovery.</div>
+          <div className={styles.illustrationText} style={{ color: '#991b1b' }}>Secure <br /> Recovery.</div>
           <div className={styles.illustrationSubtitle} style={{ color: '#7f1d1d' }}>
             Choose how you want to securely regain access to your account.
           </div>
@@ -126,21 +126,21 @@ export default function ForgotPasswordPage() {
       <div className={styles.formSide}>
         <div className={styles.card}>
           <div className={styles.logoWrap}>
-            <Image src="/myaccount.svg" alt="MyAccount" width={220} height={60} priority style={{ objectFit: "contain" }} />
+            <Image src="/BizKitLogo.svg" alt="MyAccount" width={220} height={60} priority style={{ objectFit: "contain" }} />
           </div>
 
           <p className={styles.subtitle}>Reset Your Password</p>
 
           <div style={{ display: 'flex', gap: '10px', marginBottom: '24px', background: '#f1f5f9', padding: '6px', borderRadius: '10px' }}>
-            <button 
+            <button
               type="button"
-              onClick={() => { setMethod('email'); setErrorMsg(""); }} 
+              onClick={() => { setMethod('email'); setErrorMsg(""); }}
               style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: method === 'email' ? '#0f172a' : '#64748b', background: method === 'email' ? '#fff' : 'transparent', boxShadow: method === 'email' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
               Via Email OTP
             </button>
-            <button 
+            <button
               type="button"
-              onClick={() => { setMethod('pin'); setErrorMsg(""); }} 
+              onClick={() => { setMethod('pin'); setErrorMsg(""); }}
               style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', color: method === 'pin' ? '#0f172a' : '#64748b', background: method === 'pin' ? '#fff' : 'transparent', boxShadow: method === 'pin' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none' }}>
               Via Security PIN
             </button>

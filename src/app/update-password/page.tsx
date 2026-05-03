@@ -59,7 +59,7 @@ export default function UpdatePasswordPage() {
             <div className={styles.formSide}>
                 <div className={styles.card}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <Image src="/myaccount.svg" alt="Attendance Pro" width={220} height={60} priority style={{ objectFit: 'contain' }} />
+                        <Image src="/BizKitLogo.svg" alt="Attendance Pro" width={220} height={60} priority style={{ objectFit: 'contain' }} />
                     </div>
                     <h2 className={styles.title} style={{ fontSize: '1.5rem' }}>
                         Set New Password

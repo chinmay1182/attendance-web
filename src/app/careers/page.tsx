@@ -33,7 +33,7 @@ export default function CareersPage() {
         <div style={{ minHeight: '100vh', background: '#fff' }}>
             <nav style={{ padding: '20px 40px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src="/myaccount.svg" alt="Company Logo" height={32} />
+                    <img src="/BizKitLogo.svg" alt="Company Logo" height={32} />
                     <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#111' }}>Careers</span>
                 </div>
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
