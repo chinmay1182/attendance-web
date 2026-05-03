@@ -61,13 +61,19 @@ export default function CompaniesPage() {
     };
 
     const fetchCompanies = async () => {
-        if (!profile?.company_id) { setLoading(false); return; }
+        if (!profile || !user) { setLoading(false); return; }
         setLoading(true);
+        
+        // Fetch companies where user is owner OR matches their company_id
         const { data, error } = await supabase
             .from('companies')
             .select('*')
-            .eq('id', profile.company_id)
+            .or(`id.eq.${profile.company_id},owner_id.eq.${user.id}`)
             .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error("Error fetching companies:", error);
+        }
 
         if (data) setCompanies(data);
         setLoading(false);
@@ -121,7 +127,7 @@ export default function CompaniesPage() {
                     setCompanies(prev => prev.map(c => c.id === currentCompany.id ? result.company : c));
                 }
             } else {
-                // Create
+                // Create via API Route
                 const payload = {
                     name: currentCompany.name,
                     company_code: 'COMP' + Date.now().toString(),
@@ -137,29 +143,32 @@ export default function CompaniesPage() {
                     owner_id: user?.id
                 };
                 
-                console.log("Sending insert payload to Supabase:", payload);
+                console.log("Sending insert payload to API:", payload);
 
-                const { data, error } = await supabase
-                    .from('companies')
-                    .insert([payload])
-                    .select();
+                const response = await fetch('/api/company/update', { // We can reuse the same endpoint if we handle POST correctly
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: null, // null ID indicates a new company
+                        updates: payload,
+                        requesterId: user?.id
+                    })
+                });
 
-                if (error) {
-                    console.error("Supabase insert error:", error);
-                    throw error;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Failed to create company");
                 }
                 
-                if (data && data.length > 0) {
-                    setCompanies(prev => [data[0], ...prev]);
+                if (result.company) {
+                    setCompanies(prev => [result.company, ...prev]);
                 }
                 
-                toast.success("Company added");
+                toast.success("Company added successfully");
             }
             setIsModalOpen(false);
             setCurrentCompany({});
-            
-            // Re-fetch to be absolutely sure
-            fetchCompanies();
             
         } catch (error: any) {
             console.error("Operation failed:", error);

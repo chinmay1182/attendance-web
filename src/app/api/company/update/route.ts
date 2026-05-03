@@ -15,7 +15,7 @@ export async function POST(request: Request) {
         }
 
         // 1. Authorization Check: 
-        // Only an Admin from the SAME company should be able to update it
+        // Only an Admin can update/create companies
         if (requesterId) {
              const { data: requesterProfile } = await supabaseAdmin
                 .from('users')
@@ -27,25 +27,40 @@ export async function POST(request: Request) {
                  return NextResponse.json({ error: 'Unauthorized: Admins only' }, { status: 403 });
              }
 
-             if (requesterProfile.company_id !== id) {
-                 // Unless they are a super-admin (which we don't have yet), 
-                 // they can only update their own company.
+             // If UPDATING (id exists), ensure they only update their own company
+             if (id && requesterProfile.company_id !== id) {
                  return NextResponse.json({ error: 'Unauthorized: You can only update your own company' }, { status: 403 });
              }
         } else {
             return NextResponse.json({ error: 'Unauthorized: Requester ID required' }, { status: 401 });
         }
 
-        // 2. Update company using Admin Client (Bypasses RLS)
-        const { data, error } = await supabaseAdmin
-            .from("companies")
-            .update(updates)
-            .eq("id", id)
-            .select()
-            .single();
+        // 2. Perform Operation using Admin Client (Bypasses RLS)
+        let data, error;
+        
+        if (id) {
+            // UPDATE
+            const result = await supabaseAdmin
+                .from("companies")
+                .update(updates)
+                .eq("id", id)
+                .select()
+                .single();
+            data = result.data;
+            error = result.error;
+        } else {
+            // INSERT (Create)
+            const result = await supabaseAdmin
+                .from("companies")
+                .insert([updates])
+                .select()
+                .single();
+            data = result.data;
+            error = result.error;
+        }
 
         if (error) {
-            console.error('Supabase Company Update Error:', error);
+            console.error('Supabase Company Operation Error:', error);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
