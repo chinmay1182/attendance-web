@@ -40,7 +40,7 @@ export default function CompaniesPage() {
                 .on(
                     'postgres_changes',
                     { event: '*', schema: 'public', table: 'companies' },
-                    (payload) => {
+                    (payload: any) => {
                         handleRealtimeUpdate(payload);
                     }
                 )
@@ -79,52 +79,90 @@ export default function CompaniesPage() {
             return;
         }
 
+        console.log("Saving company. isEditing:", isEditing, "ID:", currentCompany.id);
+
         try {
             if (isEditing && currentCompany.id) {
                 // Update
-                const { error } = await supabase
-                    .from('companies')
-                    .update({
-                        name: currentCompany.name,
-                        description: currentCompany.description,
-                        location: currentCompany.location,
-                        address: currentCompany.address,
-                        state: currentCompany.state,
-                        pincode: currentCompany.pincode,
-                        gstin: currentCompany.gstin,
-                        cin: currentCompany.cin,
-                        contact_number: currentCompany.contact_number,
-                        email: currentCompany.email
-                    })
-                    .eq('id', currentCompany.id);
+                const updatePayload = {
+                    name: currentCompany.name,
+                    description: currentCompany.description,
+                    location: currentCompany.location,
+                    address: currentCompany.address,
+                    state: currentCompany.state,
+                    pincode: currentCompany.pincode,
+                    gstin: currentCompany.gstin,
+                    cin: currentCompany.cin,
+                    contact_number: currentCompany.contact_number,
+                    email: currentCompany.email
+                };
 
-                if (error) throw error;
-                toast.success("Company updated");
+                console.log("Update payload:", updatePayload);
+
+                const { data, error, count } = await supabase
+                    .from('companies')
+                    .update(updatePayload)
+                    .eq('id', currentCompany.id)
+                    .select();
+
+                if (error) {
+                    console.error("Supabase update error:", error);
+                    throw error;
+                }
+
+                console.log("Update response data:", data);
+
+                if (!data || data.length === 0) {
+                    console.warn("Update succeeded but no rows were affected. This usually means the ID was not found or RLS blocked the update.");
+                    toast.error("Company not found or access denied.");
+                } else {
+                    toast.success("Company updated");
+                    // Manually update the local state to ensure immediate UI update
+                    setCompanies(prev => prev.map(c => c.id === currentCompany.id ? data[0] : c));
+                }
             } else {
                 // Create
-                const { error } = await supabase
-                    .from('companies')
-                    .insert([{
-                        name: currentCompany.name,
-                        description: currentCompany.description,
-                        location: currentCompany.location,
-                        address: currentCompany.address,
-                        state: currentCompany.state,
-                        pincode: currentCompany.pincode,
-                        gstin: currentCompany.gstin,
-                        cin: currentCompany.cin,
-                        contact_number: currentCompany.contact_number,
-                        email: currentCompany.email,
-                        owner_id: user?.id
-                    }]);
+                const payload = {
+                    name: currentCompany.name,
+                    company_code: 'COMP' + Date.now().toString(),
+                    description: currentCompany.description,
+                    location: currentCompany.location,
+                    address: currentCompany.address,
+                    state: currentCompany.state,
+                    pincode: currentCompany.pincode,
+                    gstin: currentCompany.gstin,
+                    cin: currentCompany.cin,
+                    contact_number: currentCompany.contact_number,
+                    email: currentCompany.email,
+                    owner_id: user?.id
+                };
+                
+                console.log("Sending insert payload to Supabase:", payload);
 
-                if (error) throw error;
+                const { data, error } = await supabase
+                    .from('companies')
+                    .insert([payload])
+                    .select();
+
+                if (error) {
+                    console.error("Supabase insert error:", error);
+                    throw error;
+                }
+                
+                if (data && data.length > 0) {
+                    setCompanies(prev => [data[0], ...prev]);
+                }
+                
                 toast.success("Company added");
             }
             setIsModalOpen(false);
             setCurrentCompany({});
+            
+            // Re-fetch to be absolutely sure
+            fetchCompanies();
+            
         } catch (error: any) {
-            console.error(error);
+            console.error("Operation failed:", error);
             toast.error(error.message || "Operation failed");
         }
     };
@@ -132,15 +170,23 @@ export default function CompaniesPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Are you sure? This action cannot be undone.")) return;
 
-        const { error } = await supabase
-            .from('companies')
-            .delete()
-            .eq('id', id);
+        try {
+            const { error } = await supabase
+                .from('companies')
+                .delete()
+                .eq('id', id);
 
-        if (error) {
-            toast.error("Failed to delete company");
-        } else {
-            toast.success("Company deleted");
+            if (error) {
+                console.error("Delete error:", error);
+                toast.error("Failed to delete company: " + error.message);
+            } else {
+                toast.success("Company deleted");
+                // Manually update the local state for immediate feedback
+                setCompanies(prev => prev.filter(c => c.id !== id));
+            }
+        } catch (err: any) {
+            console.error("Delete operation failed:", err);
+            toast.error("An error occurred during deletion.");
         }
     };
 
@@ -239,7 +285,7 @@ export default function CompaniesPage() {
             {isModalOpen && (
                 <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ marginTop: 0, marginBottom: '24px' }}>{isEditing ? 'Edit Company' : 'Add New Company'}</h2>
+                        <h2 style={{ marginTop: 0, marginBottom: '24px' }}>{isEditing ? 'Edit Company' : 'Add New Company (v2)'}</h2>
 
                         <div className={styles.inputGrid}>
                             <div className={styles.inputGroup}>
