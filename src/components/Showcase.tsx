@@ -78,7 +78,7 @@ export default function Showcase() {
                             <span className={styles.comingSoonBadge}>Coming Soon</span>
                         </div>
                         <p className={styles.showcaseDesc}>
-                            MyAccount Android Application is live on the Google Play Store for a seamless mobile experience. Download now to manage Attendance anytime, anywhere.
+                            BizKit Android Application is live on the Google Play Store for a seamless mobile experience. Download now to manage Attendance anytime, anywhere.
                         </p>
                     </div>
                     <div className={styles.navArrows}>

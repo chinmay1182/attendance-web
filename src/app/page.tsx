@@ -15,31 +15,31 @@ const poppins = Poppins({
 });
 
 const notifications = [
-  "Billing portal is accessible at billing.myaccount.asia →",
-  "Welcome to MyAccount by ConsoLegal - Your Free Public Utility Platform!",
+  "Billing portal is accessible at billing.bizkit.consolegal.com →",
+  "Welcome to BizKit by ConsoLegal - Your Free Public Utility Platform!",
   "Manage Sales, Attendance & Billing in one compliance-ready system.",
   "Free for Startups, MSMEs & Women Founders.",
 ];
 
 const productLinks = [
   {
-    name: "MyAccount Attendance",
+    name: "BizKit Attendance",
     description: "Manage attendance, shifts, and workforce operations. (Available on Web & App)",
-    href: "https://myaccount.asia/login",
+    href: "https://bizkit.consolegal.com/login",
   },
   {
-    name: "MyAccount Billing",
+    name: "BizKit Billing",
     description: "Create invoices, manage payments, and track billing. (Available on Web)",
-    href: "https://billing.myaccount.asia/",
+    href: "https://billing.bizkit.consolegal.com/",
   },
   {
-    name: "MyAccount SMT",
+    name: "BizKit SMT",
     description: "Handle sales workflows, leads, and business follow-ups. (Available on Web)",
-    href: "https://smt.myaccount.asia/",
+    href: "https://smt.bizkit.consolegal.com/",
   },
 ];
 
-export default function MyAccountLandingPage() {
+export default function BizKitLandingPage() {
   const [currentNotif, setCurrentNotif] = React.useState(0);
   const [isPortalModalOpen, setIsPortalModalOpen] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -64,7 +64,7 @@ export default function MyAccountLandingPage() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.headerLogo}>
-            <Image src="/BizKitLogo.svg" alt="MyAccount Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
+            <Image src="/BizKitLogo.svg" alt="BizKit Logo" width={180} height={40} priority style={{ objectFit: 'contain' }} />
           </div>
 
           <button
@@ -78,13 +78,13 @@ export default function MyAccountLandingPage() {
           </button>
 
           <div className={`${styles.headerRight} ${isMobileMenuOpen ? styles.mobileMenuOpen : ""}`}>
-            <Link href="https://billing.myaccount.asia/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="https://billing.bizkit.consolegal.com/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Billing <span className={styles.newBadge}>New</span>
             </Link>
-            <Link href="https://myaccount.asia/login" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="https://bizkit.consolegal.com/login" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               Attendance
             </Link>
-            <Link href="https://smt.myaccount.asia/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
+            <Link href="https://smt.bizkit.consolegal.com/" className={styles.navLink} onClick={() => setIsMobileMenuOpen(false)}>
               SMT
             </Link>
             <div className={styles.supportContact}>
@@ -99,7 +99,7 @@ export default function MyAccountLandingPage() {
         <div className={styles.heroInner}>
           <div className={styles.heroLeft}>
             <h1 className={styles.heroTitle}>
-              Welcome to MyAccount
+              Welcome to BizKit
               <div className={styles.heroSubTitleRow}>
                 <span className={styles.heroPoweredBy}>by</span>
                 <div className={styles.heroLogoPill}>
@@ -197,13 +197,13 @@ export default function MyAccountLandingPage() {
           <h2 className={styles.sectionTitle}>Frequently Asked Questions</h2>
           <div className={styles.faqGrid}>
             <div className={styles.faqCard}>
-              <h3 className={styles.faqCardTitle}>Is MyAccount completely free?</h3>
+              <h3 className={styles.faqCardTitle}>Is BizKit completely free?</h3>
               <p className={styles.faqCardDesc}>Yes. Core modules including SMT, Attendance and Billing are provided free as a public utility platform.</p>
             </div>
 
             <div className={styles.faqCard}>
-              <h3 className={styles.faqCardTitle}>Who can use MyAccount?</h3>
-              <p className={styles.faqCardDesc}>Startups, MSMEs, professionals, agencies, and women entrepreneurs across India can use MyAccount.</p>
+              <h3 className={styles.faqCardTitle}>Who can use BizKit?</h3>
+              <p className={styles.faqCardDesc}>Startups, MSMEs, professionals, agencies, and women entrepreneurs across India can use BizKit.</p>
             </div>
 
             <div className={styles.faqCard}>
@@ -261,8 +261,8 @@ export default function MyAccountLandingPage() {
             <h3 className={styles.escalationTitle}>Escalation & Feedback Support</h3>
             <p className={styles.escalationDesc}>
               In case your support ticket remains unresolved beyond the committed resolution timeline, or if you wish to share suggestions or service feedback, you may escalate the matter by writing to
-              <a href="mailto:support@myaccount.asia" className={styles.supportMail}>
-                {" "}support@myaccount.asia
+              <a href="mailto:support@consolegal.com" className={styles.supportMail}>
+                {" "}support@consolegal.com
               </a>.
             </p>
             <p className={styles.escalationDesc}>
@@ -277,10 +277,10 @@ export default function MyAccountLandingPage() {
         <div className={styles.footerLinks}>
           <Link href="/privacy-policy" className={styles.footerLink}>Privacy Policy</Link>
           <Link href="/terms-of-use" className={styles.footerLink}>Terms of Use</Link>
-          <a href="mailto:support@myaccount.asia" className={styles.footerLink}>Contact Us</a>
+          <a href="mailto:support@consolegal.com" className={styles.footerLink}>Contact Us</a>
           <Link href="/delete-account" className={styles.footerLink}>Delete Account</Link>
         </div>
-        <p className={styles.footerText}>© {new Date().getFullYear()} MyAccount. All rights reserved.</p>
+        <p className={styles.footerText}>© {new Date().getFullYear()} BizKit by ConsoLegal. All rights reserved.</p>
         <div className={styles.poweredBy}>
           Powered by
           <div className={styles.pillLogo}>
@@ -300,7 +300,7 @@ export default function MyAccountLandingPage() {
           >
             <div className={styles.modalHeader}>
               <div>
-                <h3 className={styles.modalTitle}>Choose your MyAccount product</h3>
+                <h3 className={styles.modalTitle}>Choose your BizKit product</h3>
                 <p className={styles.modalSubtitle}>
                   Select the portal you want to open.
                 </p>

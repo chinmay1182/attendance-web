@@ -22,10 +22,10 @@ jobs:
             set -e # Exit on error
 
             # Configuration based on CloudPanel settings
-            APP_DIR="/home/myaccount/htdocs/myaccount.asia"
-            CONTAINER_NAME="attendance-web"
-            IMAGE_NAME="attendance-web"
-            PORT=3001
+            APP_DIR="/home/consolegal-bizkit/htdocs/bizkit.consolegal.com"
+            CONTAINER_NAME="bizkit-web"
+            IMAGE_NAME="bizkit-web"
+            PORT=3012
 
             echo "Starting deployment to $APP_DIR..."
 

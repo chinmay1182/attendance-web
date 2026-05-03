@@ -2,13 +2,13 @@ version: "3.8"
 
 services:
   app:
-    container_name: attendance-web
+    container_name: bizkit-web
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3001:3000"
+      - "3012:3012"
     environment:
       - NODE_ENV=production
       - REDIS_URL=redis://redis:6379

@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
                     <div className={styles.section}>
                         <p className={styles.text}>
-                            This privacy policy applies to the myaccount.id app (hereby referred to as "Application") for mobile devices that was created by Consolegal Private Limited (hereby referred to as "Service Provider") as a Commercial service. This service is intended for use "AS IS".
+                            This privacy policy applies to the BizKit app (hereby referred to as "Application") for mobile devices that was created by Consolegal Private Limited (hereby referred to as "Service Provider") as a Commercial service. This service is intended for use "AS IS".
                         </p>
                     </div>
 
@@ -110,7 +110,7 @@ export default function PrivacyPolicyPage() {
                     <div className={styles.section}>
                         <h2 className={styles.sectionTitle}>Data Retention Policy</h2>
                         <p className={styles.text}>
-                            The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at support@myaccount.asia and they will respond in a reasonable time.
+                            The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at support@consolegal.com and they will respond in a reasonable time.
                         </p>
                     </div>
 
@@ -120,7 +120,7 @@ export default function PrivacyPolicyPage() {
                             The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13.
                         </p>
                         <p className={styles.text} style={{ marginTop: '8px' }}>
-                            The Application does not address anyone under the age of 13. The Service Provider does not knowingly collect personally identifiable information from children under 13 years of age. In the case the Service Provider discover that a child under 13 has provided personal information, the Service Provider will immediately delete this from their servers. If you are a parent or guardian and you are aware that your child has provided us with personal information, please contact the Service Provider (support@myaccount.asia) so that they will be able to take the necessary actions.
+                            The Application does not address anyone under the age of 13. The Service Provider does not knowingly collect personally identifiable information from children under 13 years of age. In the case the Service Provider discover that a child under 13 has provided personal information, the Service Provider will immediately delete this from their servers. If you are a parent or guardian and you are aware that your child has provided us with personal information, please contact the Service Provider (support@consolegal.com) so that they will be able to take the necessary actions.
                         </p>
                     </div>
 
@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
                     <div className={styles.section}>
                         <h2 className={styles.sectionTitle}>Contact Us</h2>
                         <p className={styles.text}>
-                            If you have any questions regarding privacy while using the Application, or have questions about the practices, please contact the Service Provider via email at support@myaccount.asia.
+                            If you have any questions regarding privacy while using the Application, or have questions about the practices, please contact the Service Provider via email at support@consolegal.com.
                         </p>
                     </div>
                 </div>

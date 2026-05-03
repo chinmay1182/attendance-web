@@ -133,7 +133,7 @@ export default function SignupPage() {
           <div className={styles.logoWrap}>
             <Image
               src="/BizKitLogo.svg"
-              alt="MyAccount"
+              alt="BizKit"
               width={220}
               height={60}
               priority

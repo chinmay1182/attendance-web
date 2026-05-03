@@ -37,7 +37,7 @@ export default function CareersPage() {
                     <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#111' }}>Careers</span>
                 </div>
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                    <a href="http://myaccount.asia" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#666', fontWeight: 500, fontSize: '0.95rem' }}>
+                    <a href="https://bizkit.consolegal.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#666', fontWeight: 500, fontSize: '0.95rem' }}>
                         Go to Main Site ↗
                     </a>
                     <Link href="/login" style={{ textDecoration: 'none', color: '#111', fontWeight: 600, padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>

@@ -41,7 +41,7 @@ export default function DeleteAccountPage() {
                             If you are unable to access the app or prefer to request deletion manually, you can contact our support team:
                         </p>
                         <div className={styles.bulletPoints}>
-                            <span className={styles.bulletPoint}>• Email us at: <a href="mailto:support@myaccount.asia" style={{ color: 'var(--primary)' }}>support@myaccount.asia</a></span>
+                            <span className={styles.bulletPoint}>• Email us at: <a href="mailto:support@consolegal.com" style={{ color: 'var(--primary)' }}>support@consolegal.com</a></span>
                             <span className={styles.bulletPoint}>• Use the subject line: "Request for Account Deletion"</span>
                             <span className={styles.bulletPoint}>• Include your registered email address or username for verification.</span>
                         </div>

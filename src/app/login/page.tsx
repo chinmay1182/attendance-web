@@ -169,7 +169,7 @@ export default function LoginPage() {
           <div className={styles.logoWrap}>
             <Image
               src="/BizKitLogo.svg"
-              alt="MyAccount Billing"
+              alt="BizKit"
               width={220}
               height={60}
               priority

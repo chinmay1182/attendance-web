@@ -126,7 +126,7 @@ export default function ForgotPasswordPage() {
       <div className={styles.formSide}>
         <div className={styles.card}>
           <div className={styles.logoWrap}>
-            <Image src="/BizKitLogo.svg" alt="MyAccount" width={220} height={60} priority style={{ objectFit: "contain" }} />
+            <Image src="/BizKitLogo.svg" alt="BizKit" width={220} height={60} priority style={{ objectFit: "contain" }} />
           </div>
 
           <p className={styles.subtitle}>Reset Your Password</p>

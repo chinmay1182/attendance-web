@@ -20,7 +20,7 @@ export default function TermsOfUsePage() {
       <div className={styles.content}>
         <div className={styles.section}>
           <p className={styles.text}>
-            These Terms of Use govern your access to and use of MyAccount
+            These Terms of Use govern your access to and use of BizKit
             products, including Attendance, Billing, and SMT.
           </p>
         </div>
@@ -28,7 +28,7 @@ export default function TermsOfUsePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Acceptance of Terms</h2>
           <p className={styles.text}>
-            By accessing or using any MyAccount portal, you agree to comply
+            By accessing or using any BizKit portal, you agree to comply
             with these terms and all applicable laws.
           </p>
         </div>
@@ -70,8 +70,8 @@ export default function TermsOfUsePage() {
         <div className={styles.section}>
           <h2 className={styles.sectionTitle}>Limitation of Liability</h2>
           <p className={styles.text}>
-            MyAccount is provided on an &quot;as available&quot; basis. To the
-            fullest extent permitted by law, MyAccount and its operators are not
+            BizKit is provided on an &quot;as available&quot; basis. To the
+            fullest extent permitted by law, BizKit and its operators are not
             liable for indirect, incidental, or consequential damages arising
             from use of the platform.
           </p>
@@ -81,7 +81,7 @@ export default function TermsOfUsePage() {
           <h2 className={styles.sectionTitle}>Contact</h2>
           <p className={styles.text}>
             For questions related to these terms, contact{" "}
-            <a href="mailto:support@myaccount.asia">support@myaccount.asia</a>.
+            <a href="mailto:support@consolegal.com">support@consolegal.com</a>.
           </p>
         </div>
       </div>

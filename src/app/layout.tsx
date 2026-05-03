@@ -13,8 +13,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "MyAccount | Your Small Management Tool",
-  description: "A free public utility platform built for Startups, MSMEs & Women Founders.",
+  title: "BizKit | Your Business Management Tool",
+  description: "BizKit by ConsoLegal — A free public utility platform built for Startups, MSMEs & Women Founders.",
 };
 
 export default function RootLayout({
