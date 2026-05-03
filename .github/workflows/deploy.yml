@@ -37,15 +37,17 @@ jobs:
 
             cd $APP_DIR
 
-            # Pull latest changes 
+            # Pull latest changes
             echo "Pulling latest changes..."
             if [ -d ".git" ]; then
               git fetch origin master || git fetch --all
               git reset --hard origin/master
             else
-              echo "Initializing git and cloning..."
-              # Clone current directory . if empty, or else warn
-              git clone git@github.com:chinmay1182/attendance-web.git .
+              echo "Directory exists but no git repo found. Initializing in-place..."
+              git init
+              git remote add origin git@github.com:chinmay1182/attendance-web.git
+              git fetch origin master
+              git reset --hard origin/master
             fi
 
             # Build and Start with Docker Compose
