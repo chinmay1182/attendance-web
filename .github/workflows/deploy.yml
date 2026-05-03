@@ -40,16 +40,24 @@ jobs:
             # Pull latest changes
             echo "Pulling latest changes..."
             git config --global --add safe.directory $APP_DIR
-            if [ -d ".git" ]; then
-              git fetch origin master || git fetch --all
-              git reset --hard origin/master
-            else
-              echo "Directory exists but no git repo found. Initializing in-place..."
+
+            REMOTE_URL="git@github.com:chinmay1182/attendance-web.git"
+
+            if [ ! -d ".git" ]; then
+              echo "No git repo found. Initializing in-place..."
               git init
-              git remote add origin git@github.com:chinmay1182/attendance-web.git
-              git fetch origin master
-              git reset --hard origin/master
             fi
+
+            # Ensure remote origin is set correctly (handles partial/failed previous runs)
+            if git remote get-url origin > /dev/null 2>&1; then
+              echo "Remote origin already set."
+            else
+              echo "Adding remote origin..."
+              git remote add origin $REMOTE_URL
+            fi
+
+            git fetch origin master
+            git reset --hard origin/master
 
             # Build and Start with Docker Compose
             echo "Starting Docker Compose..."
