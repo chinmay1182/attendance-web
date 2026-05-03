@@ -83,7 +83,7 @@ export default function CompaniesPage() {
 
         try {
             if (isEditing && currentCompany.id) {
-                // Update
+                // Update via API Route to bypass RLS issues
                 const updatePayload = {
                     name: currentCompany.name,
                     description: currentCompany.description,
@@ -97,28 +97,28 @@ export default function CompaniesPage() {
                     email: currentCompany.email
                 };
 
-                console.log("Update payload:", updatePayload);
+                console.log("Sending update to API:", updatePayload);
 
-                const { data, error, count } = await supabase
-                    .from('companies')
-                    .update(updatePayload)
-                    .eq('id', currentCompany.id)
-                    .select();
+                const response = await fetch('/api/company/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: currentCompany.id,
+                        updates: updatePayload,
+                        requesterId: user?.id
+                    })
+                });
 
-                if (error) {
-                    console.error("Supabase update error:", error);
-                    throw error;
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Failed to update company via API");
                 }
 
-                console.log("Update response data:", data);
-
-                if (!data || data.length === 0) {
-                    console.warn("Update succeeded but no rows were affected. This usually means the ID was not found or RLS blocked the update.");
-                    toast.error("Company not found or access denied.");
-                } else {
-                    toast.success("Company updated");
-                    // Manually update the local state to ensure immediate UI update
-                    setCompanies(prev => prev.map(c => c.id === currentCompany.id ? data[0] : c));
+                toast.success("Company updated successfully");
+                // Manually update local state
+                if (result.company) {
+                    setCompanies(prev => prev.map(c => c.id === currentCompany.id ? result.company : c));
                 }
             } else {
                 // Create
