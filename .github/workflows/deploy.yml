@@ -39,6 +39,7 @@ jobs:
 
             # Pull latest changes
             echo "Pulling latest changes..."
+            git config --global --add safe.directory $APP_DIR
             if [ -d ".git" ]; then
               git fetch origin master || git fetch --all
               git reset --hard origin/master
