@@ -14,6 +14,7 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
+          envs: ENV_FILE
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }} ##  use pass
@@ -62,10 +63,12 @@ jobs:
             # Build and Start with Docker Compose
             echo "Starting Docker Compose..."
 
-            # Ensure .env exists (or created from secrets if you were using secrets manager, 
-            # but current script assumes file exists on server).
-            if [ ! -f .env ]; then
-              echo "Warning: .env file not found. App might fail."
+            # Write .env file from GitHub Secret (safe — overwrites with latest on every deploy)
+            if [ -n "$ENV_FILE" ]; then
+              echo "Writing .env from GitHub Secret..."
+              echo "$ENV_FILE" > .env
+            else
+              echo "Warning: ENV_FILE secret not set. App may fail if .env is missing."
             fi
 
             # Force cleanup old containers if they exist to prevent name conflicts
