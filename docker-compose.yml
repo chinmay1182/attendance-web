@@ -17,21 +17,21 @@ services:
     depends_on:
       - redis
     networks:
-      - attendance_net
+      - bizkit_net
 
   redis:
     image: redis:alpine
-    container_name: attendance-redis
+    container_name: bizkit-redis
     restart: always
     command: redis-server --save 60 1 --loglevel warning
     volumes:
-      - redis_data:/data
+      - bizkit_redis_data:/data
     networks:
-      - attendance_net
+      - bizkit_net
 
 networks:
-  attendance_net:
+  bizkit_net:
     driver: bridge
 
 volumes:
-  redis_data:
+  bizkit_redis_data:
