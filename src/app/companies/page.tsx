@@ -248,7 +248,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.name || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, name: e.target.value })}
-                                    placeholder="e.g. Acme Corp"
+                                    placeholder="e.g. Reliance Industries"
                                 />
                             </div>
 
@@ -258,7 +258,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.location || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, location: e.target.value })}
-                                    placeholder="e.g. New York, USA"
+                                    placeholder="e.g. Mumbai, Maharashtra"
                                 />
                             </div>
                         </div>
@@ -280,7 +280,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.state || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, state: e.target.value })}
-                                    placeholder="e.g. California"
+                                    placeholder="e.g. Maharashtra"
                                 />
                             </div>
 
@@ -290,7 +290,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.pincode || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, pincode: e.target.value })}
-                                    placeholder="e.g. 123456"
+                                    placeholder="e.g. 400001"
                                 />
                             </div>
                         </div>
@@ -302,7 +302,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.gstin || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, gstin: e.target.value })}
-                                    placeholder="GST Number"
+                                    placeholder="e.g. 27AAAAA0000A1Z5"
                                 />
                             </div>
 
@@ -312,7 +312,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.cin || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, cin: e.target.value })}
-                                    placeholder="Corporate ID Number"
+                                    placeholder="e.g. L12345MH2000PLC123456"
                                 />
                             </div>
                         </div>
@@ -324,7 +324,7 @@ export default function CompaniesPage() {
                                     className={styles.input}
                                     value={currentCompany.contact_number || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, contact_number: e.target.value })}
-                                    placeholder="Phone number"
+                                    placeholder="e.g. +91 98765 43210"
                                 />
                             </div>
 
@@ -335,7 +335,7 @@ export default function CompaniesPage() {
                                     type="email"
                                     value={currentCompany.email || ''}
                                     onChange={e => setCurrentCompany({ ...currentCompany, email: e.target.value })}
-                                    placeholder="company@email.com"
+                                    placeholder="contact@company.in"
                                 />
                             </div>
                         </div>

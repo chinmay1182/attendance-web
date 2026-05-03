@@ -33,7 +33,7 @@ export default function PollsPage() {
             }]);
         } else {
             // Ensure options are parsed if stored as JSON string
-            const parsedData = data.map(p => ({
+            const parsedData = data.map((p: { options: string; }) => ({
                 ...p,
                 options: typeof p.options === 'string' ? JSON.parse(p.options) : p.options
             }));
@@ -106,7 +106,7 @@ export default function PollsPage() {
         if (!selectedOption) return toast.error("Please select an option!");
 
         const { error } = await supabase.from('poll_votes').insert([
-            { poll_id: pollId, user_id: user.uid, option_selected: selectedOption }
+            { poll_id: pollId, user_id: user.id, option_selected: selectedOption }
         ]);
 
         if (error) {

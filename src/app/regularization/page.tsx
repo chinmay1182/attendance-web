@@ -27,7 +27,7 @@ export default function RegularizationPage() {
             const channel = supabase.channel('regularization_realtime')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'regularization_requests', filter: `user_id=eq.${user.uid}` },
+                    { event: '*', schema: 'public', table: 'regularization_requests', filter: `user_id=eq.${user.id}` },
                     () => fetchRequests()
                 )
                 .subscribe();
@@ -40,7 +40,7 @@ export default function RegularizationPage() {
         const { data } = await supabase
             .from('regularization_requests')
             .select('*')
-            .eq('user_id', user?.uid)
+            .eq('user_id', user?.id)
             .order('created_at', { ascending: false });
         if (data) setRequests(data);
     };
@@ -55,7 +55,7 @@ export default function RegularizationPage() {
         const clockOut = new Date(`${date}T${outTime}`).toISOString();
 
         const { error } = await supabase.from('regularization_requests').insert([{
-            user_id: user.uid,
+            user_id: user.id,
             date,
             clock_in: clockIn,
             clock_out: clockOut,

@@ -39,7 +39,7 @@ export default function ShiftsPage() {
         const { data, error } = await supabase
             .from('shifts')
             .select('*')
-            .eq('user_id', user?.uid)
+            .eq('user_id', user?.id)
             .gte('start_time', start)
             .lte('start_time', end);
 
@@ -51,7 +51,7 @@ export default function ShiftsPage() {
             const channel = supabase.channel('my_shifts')
                 .on(
                     'postgres_changes',
-                    { event: '*', schema: 'public', table: 'shifts', filter: `user_id=eq.${user.uid}` },
+                    { event: '*', schema: 'public', table: 'shifts', filter: `user_id=eq.${user.id}` },
                     (payload: any) => {
                         if (payload.eventType === 'INSERT') {
                             setShifts(prev => [...prev, payload.new]);
