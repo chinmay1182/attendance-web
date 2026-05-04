@@ -1,13 +1,187 @@
 .container {
     padding: 0;
-    max-width: 800px;
+    max-width: 860px;
+}
+
+.pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .title {
     color: var(--text-main);
     font-size: 1.5rem;
     font-weight: 500;
+    margin: 0;
+}
+
+.raiseTicketBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #212121;
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.raiseTicketBtn:hover {
+    background: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Tab Bar */
+.tabBar {
+    display: flex;
+    gap: 4px;
     margin-bottom: 24px;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: var(--radius-md);
+}
+
+.tabBtn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: calc(var(--radius-md) - 4px);
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tabBtn:hover {
+    background: rgba(255,255,255,0.6);
+    color: var(--text-main);
+}
+
+.tabActive {
+    background: white;
+    color: var(--text-main);
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+.badge {
+    background: #ef4444;
+    color: white;
+    border-radius: 99px;
+    font-size: 0.7rem;
+    padding: 1px 6px;
+    font-weight: 700;
+}
+
+/* FAQ */
+.faqSectionTabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.faqSectionTab {
+    padding: 8px 20px;
+    border: 1px solid var(--glass-border);
+    background: white;
+    color: var(--text-muted);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.faqSectionActive {
+    background: #212121;
+    color: white;
+    border-color: #212121;
+}
+
+.faqList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.faqItem {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.faqItem:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.faqQuestion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    gap: 12px;
+}
+
+.faqAnswer {
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+    padding-top: 12px;
+    border-top: 1px solid var(--glass-border);
+}
+
+.faqFooter {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    color: #0369a1;
+    font-size: 0.9rem;
+}
+
+.linkBtn {
+    background: none;
+    border: none;
+    color: #0369a1;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-size: inherit;
+}
+
+/* Contact Card */
+.contactCard {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
 }
 
 /* FAB */
@@ -117,6 +291,8 @@
     font-size: 1rem;
     background: #f8fafc;
     outline: none;
+    box-sizing: border-box;
+    font-family: inherit;
 }
 
 .primaryBtn {
@@ -129,12 +305,37 @@
     font-weight: 600;
     cursor: pointer;
     margin-top: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
 }
 
-.primaryBtn:hover {
+.primaryBtn:hover:not(:disabled) {
     background: #333;
 }
 
+.primaryBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Empty State */
+.emptyState {
+    text-align: center;
+    padding: 48px;
+    color: #64748b;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.emptyState span {
+    font-size: 48px;
+    color: #cbd5e1;
+}
 
 /* Ticket List */
 .ticketsList {
@@ -150,11 +351,17 @@
     transition: var(--transition-fast);
 }
 
+.ticketCard:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
 .ticketHeader {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .ticketCategory {
@@ -166,13 +373,13 @@
     font-weight: 600;
     text-transform: uppercase;
     display: inline-block;
-    margin-bottom: 8px;
 }
 
 .actions {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-left: auto;
 }
 
 .statusSelect {
@@ -194,6 +401,11 @@
 .statusSelect[data-status="Resolved"] {
     background: #dcfce7;
     color: #16a34a;
+}
+
+.statusSelect[data-status="In Progress"] {
+    background: #fef3c7;
+    color: #d97706;
 }
 
 .statusSelect[data-status="Closed"] {

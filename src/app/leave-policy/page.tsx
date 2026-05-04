@@ -57,6 +57,12 @@ export default function LeavesPage() {
     const [editingPolicy, setEditingPolicy] = useState<LeavePolicy | null>(null);
     const [savingPolicy, setSavingPolicy] = useState(false);
 
+    // Holiday Management State (Admin)
+    const [isAddHolidayOpen, setIsAddHolidayOpen] = useState(false);
+    const [newHoliday, setNewHoliday] = useState({ name: '', date: '', type: 'Public Holiday' });
+    const [addingHoliday, setAddingHoliday] = useState(false);
+
+
     useEffect(() => {
         if (user) {
             fetchPolicies();
@@ -213,6 +219,45 @@ export default function LeavesPage() {
         }
         setSavingPolicy(false);
     };
+
+    // Admin Holiday Handlers
+    const handleAddHoliday = async () => {
+        if (!newHoliday.name || !newHoliday.date) return toast.error('Name and date are required');
+        setAddingHoliday(true);
+        try {
+            const res = await fetch('/api/company/holidays', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...newHoliday, requesterId: user?.id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            toast.success('Holiday added!');
+            setIsAddHolidayOpen(false);
+            setNewHoliday({ name: '', date: '', type: 'Public Holiday' });
+            fetchHolidays();
+        } catch (err: any) {
+            toast.error(err.message || 'Failed to add holiday');
+        } finally {
+            setAddingHoliday(false);
+        }
+    };
+
+    const handleDeleteHoliday = async (id: string) => {
+        if (!confirm('Delete this holiday?')) return;
+        const res = await fetch('/api/company/holidays', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, requesterId: user?.id }),
+        });
+        if (res.ok) {
+            toast.success('Holiday removed');
+            fetchHolidays();
+        } else {
+            toast.error('Failed to delete holiday');
+        }
+    };
+
 
     // Derived Stats
     const pendingCount = allRequests.filter(r => r.status === 'pending').length;
@@ -483,22 +528,75 @@ export default function LeavesPage() {
 
                 {activeTab === 'holidays' && (
                     <div className={styles.card}>
-                        <h3 style={{ marginTop: 0, marginBottom: '24px' }}>Public Holidays (2025)</h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <h3 style={{ margin: 0 }}>Public Holidays ({new Date().getFullYear()})</h3>
+                            {isAdminOrHr && (
+                                <button
+                                    onClick={() => setIsAddHolidayOpen(true)}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#212121', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+                                    Add Holiday
+                                </button>
+                            )}
+                        </div>
                         {holidays.map(h => (
                             <div key={h.id} className={styles.holidayItem}>
                                 <div className={styles.holidayDate}>
                                     <span className={styles.holidayDay}>{new Date(h.date).getDate()}</span>
                                     <span className={styles.holidayMonth}>{new Date(h.date).toLocaleString('default', { month: 'short' })}</span>
                                 </div>
-                                <div>
+                                <div style={{ flex: 1 }}>
                                     <h4 className={styles.holidayName}>{h.name}</h4>
                                     <span className={styles.holidayType}>{h.type}</span>
                                 </div>
+                                {isAdminOrHr && (
+                                    <button
+                                        onClick={() => handleDeleteHoliday(h.id)}
+                                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '4px', borderRadius: '4px' }}
+                                        title="Delete holiday"
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                                    </button>
+                                )}
                             </div>
                         ))}
-                        {holidays.length === 0 && <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>No holidays found.</p>}
+                        {holidays.length === 0 && <p style={{ color: 'var(--text-muted)', textAlign: 'center' }}>No holidays found. {isAdminOrHr && 'Click "Add Holiday" to create one.'}</p>}
                     </div>
                 )}
+
+                {/* Add Holiday Modal */}
+                {isAddHolidayOpen && (
+                    <div className={styles.modalOverlay} onClick={() => setIsAddHolidayOpen(false)}>
+                        <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                            <h2 style={{ marginTop: 0 }}>Add Public Holiday</h2>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Holiday Name</label>
+                                <input className={styles.input} value={newHoliday.name} onChange={e => setNewHoliday({ ...newHoliday, name: e.target.value })} placeholder="e.g., Republic Day" />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Date</label>
+                                <input type="date" className={styles.input} value={newHoliday.date} onChange={e => setNewHoliday({ ...newHoliday, date: e.target.value })} />
+                            </div>
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Type</label>
+                                <select className={styles.select} value={newHoliday.type} onChange={e => setNewHoliday({ ...newHoliday, type: e.target.value })}>
+                                    <option>Public Holiday</option>
+                                    <option>Optional Holiday</option>
+                                    <option>Restricted Holiday</option>
+                                    <option>Company Holiday</option>
+                                </select>
+                            </div>
+                            <div className={styles.modalActions}>
+                                <button onClick={() => setIsAddHolidayOpen(false)} className={`${styles.modalBtn} ${styles.cancelBtn}`}>Cancel</button>
+                                <button onClick={handleAddHoliday} disabled={addingHoliday} className={`${styles.modalBtn} ${styles.primaryBtn}`}>
+                                    {addingHoliday ? 'Adding...' : 'Add Holiday'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
 
                 {/* Action Modal */}
                 {isActionModalOpen && actionData && (

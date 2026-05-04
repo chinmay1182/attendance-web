@@ -43,15 +43,38 @@ export default function CompanyPage() {
     }, [user, profile]);
 
     const fetchCompany = async () => {
-        if (!profile?.company_id) return;
+        if (!profile?.company_id || !user?.id) return;
 
-        const { data, error } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('id', profile.company_id)
-            .single();
+        try {
+            // Use the admin-authenticated endpoint to bypass RLS
+            const res = await fetch(`/api/company/details?companyId=${profile.company_id}&uid=${user.id}`, {
+                cache: 'no-store'
+            });
 
-        if (data) setCompany(data);
+            if (res.ok) {
+                const data = await res.json();
+                setCompany(data);
+            } else {
+                // Fallback: try direct Supabase query
+                const { data, error } = await supabase
+                    .from('companies')
+                    .select('*')
+                    .eq('id', profile.company_id)
+                    .single();
+
+                if (data) setCompany(data);
+                if (error) console.error('Company fetch error:', error);
+            }
+        } catch (err) {
+            console.error('Company fetch failed:', err);
+            // Final fallback
+            const { data } = await supabase
+                .from('companies')
+                .select('*')
+                .eq('id', profile.company_id)
+                .single();
+            if (data) setCompany(data);
+        }
         setLoading(false);
     };
 

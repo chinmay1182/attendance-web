@@ -13,10 +13,14 @@ type Document = {
     year?: string;
 };
 
+// Generate years from current year back 5 years
+const currentYear = new Date().getFullYear();
+const AVAILABLE_YEARS = Array.from({ length: 6 }, (_, i) => String(currentYear - i));
+
 export default function DocumentsPage() {
     const [documents, setDocuments] = useState<Document[]>([]);
     const [selectedMonth, setSelectedMonth] = useState('All');
-    const [selectedYear, setSelectedYear] = useState('2024');
+    const [selectedYear, setSelectedYear] = useState(String(currentYear));
 
     useEffect(() => {
         fetchDocuments();
@@ -112,8 +116,9 @@ export default function DocumentsPage() {
                             value={selectedYear}
                             onChange={(e) => setSelectedYear(e.target.value)}
                         >
-                            <option value="2024">2024</option>
-                            <option value="2023">2023</option>
+                            {AVAILABLE_YEARS.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
                         </select>
                     </div>
                 </div>

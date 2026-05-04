@@ -34,6 +34,11 @@ export default function SettingsPage() {
     const [passwordError, setPasswordError] = useState('');
     const [changingPassword, setChangingPassword] = useState(false);
 
+    // Delete Account State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deleteReason, setDeleteReason] = useState('');
+    const [deletingAccount, setDeletingAccount] = useState(false);
+
     useEffect(() => {
         if (profile) {
             updateLocalState(profile);
@@ -193,6 +198,45 @@ export default function SettingsPage() {
             toast.error(error.message || "Failed to update password");
         } finally {
             setChangingPassword(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        if (!user) return;
+        if (!deleteReason.trim()) {
+            toast.error("Please provide a reason for account deletion");
+            return;
+        }
+        setDeletingAccount(true);
+        try {
+            // Always require admin approval regardless of who created the account.
+            // Insert a deletion request record for admin to review.
+            const { error } = await supabase
+                .from('deletion_requests')
+                .insert([{
+                    user_id: user.id,
+                    reason: deleteReason,
+                    status: 'pending',
+                    requested_at: new Date().toISOString(),
+                }]);
+
+            if (error) {
+                // If the table doesn't exist yet, we fall back to a helpful message
+                if (error.code === '42P01') {
+                    toast.error("Deletion requests table not found. Please contact your administrator directly.");
+                } else {
+                    throw error;
+                }
+            } else {
+                toast.success("Account deletion request submitted. An admin will review and approve it.");
+                setIsDeleteModalOpen(false);
+                setDeleteReason('');
+            }
+        } catch (err: any) {
+            console.error(err);
+            toast.error(err.message || "Failed to submit deletion request");
+        } finally {
+            setDeletingAccount(false);
         }
     };
 
@@ -388,6 +432,28 @@ export default function SettingsPage() {
                                 </div>
                             </>
                         )}
+
+                        {/* Danger Zone — Delete Account */}
+                        <h2 className={styles.sectionTitle} style={{ marginTop: '32px', color: '#ef4444', borderBottomColor: '#fee2e2' }}>Danger Zone</h2>
+                        <div className={styles.settingItem}>
+                            <div>
+                                <div className={styles.settingLabel} style={{ color: '#ef4444' }}>Delete Account</div>
+                                <div className={styles.settingDesc}>
+                                    Request account deletion. Admin approval is required before your account is permanently removed.
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsDeleteModalOpen(true)}
+                                style={{
+                                    padding: '8px 16px', background: '#fff', color: '#ef4444',
+                                    border: '1.5px solid #ef4444', borderRadius: '8px',
+                                    fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                Delete Account
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -436,6 +502,61 @@ export default function SettingsPage() {
                                 <Button onClick={handleChangePassword} isLoading={changingPassword}>
                                     Update Password
                                 </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Account Modal */}
+                {isDeleteModalOpen && (
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+                        background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000
+                    }} onClick={() => setIsDeleteModalOpen(false)}>
+                        <div style={{
+                            background: 'white', padding: '32px', borderRadius: '16px', width: '460px', maxWidth: '90%'
+                        }} onClick={e => e.stopPropagation()}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: '28px', color: '#ef4444' }}>warning</span>
+                                <h2 style={{ margin: 0, color: '#ef4444' }}>Request Account Deletion</h2>
+                            </div>
+
+                            <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', fontSize: '0.9rem', color: '#c2410c' }}>
+                                ⚠️ This request will be sent to your admin for approval. Once approved, your account and all associated data will be permanently deleted. This action cannot be undone.
+                            </div>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600 }}>Reason for Deletion</label>
+                                <textarea
+                                    value={deleteReason}
+                                    onChange={e => setDeleteReason(e.target.value)}
+                                    placeholder="Please provide a reason for deleting your account..."
+                                    rows={4}
+                                    style={{
+                                        width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0',
+                                        fontSize: '14px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                <button
+                                    onClick={() => setIsDeleteModalOpen(false)}
+                                    style={{ padding: '10px 16px', borderRadius: '8px', border: 'none', background: '#f1f5f9', cursor: 'pointer', fontWeight: 500 }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={deletingAccount}
+                                    style={{
+                                        padding: '10px 20px', borderRadius: '8px', border: 'none',
+                                        background: '#ef4444', color: 'white', cursor: 'pointer',
+                                        fontWeight: 600, opacity: deletingAccount ? 0.6 : 1
+                                    }}
+                                >
+                                    {deletingAccount ? 'Submitting...' : 'Submit Deletion Request'}
+                                </button>
                             </div>
                         </div>
                     </div>
