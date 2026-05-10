@@ -57,6 +57,17 @@ export default function OrgStructurePage() {
             return;
         }
 
+        // Client-side duplicate check
+        const isDuplicate = departments.some(dept => 
+            dept.name.toLowerCase() === currentDept.name?.toLowerCase() && 
+            dept.id !== currentDept.id
+        );
+
+        if (isDuplicate) {
+            toast.error("A department with this name already exists in your company");
+            return;
+        }
+
         try {
             if (isEditing && currentDept.id) {
                 // Update
@@ -73,7 +84,12 @@ export default function OrgStructurePage() {
                     .from('departments')
                     .insert([{ name: currentDept.name, company_id: profile?.company_id }]);
 
-                if (error) throw error;
+                if (error) {
+                    if (error.code === '23505') {
+                        throw new Error("A department with this name already exists");
+                    }
+                    throw error;
+                }
                 toast.success("Department added");
             }
             setIsModalOpen(false);
@@ -82,7 +98,7 @@ export default function OrgStructurePage() {
 
         } catch (error: any) {
             console.error(error);
-            toast.error("Operation failed");
+            toast.error(error.message || "Operation failed");
         }
     };
 

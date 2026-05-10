@@ -100,6 +100,7 @@ export async function POST(request: Request) {
         // 5. Record in history
         const { error: historyErr } = await supabaseAdmin.from('shift_history').insert({
             admin_id: adminId,
+            company_id: companyId || (targetCompanyIds.length === 1 ? targetCompanyIds[0] : null),
             shift_start: shiftStart,
             shift_end: shiftEnd,
             applied_to_count: count,
