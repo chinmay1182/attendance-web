@@ -154,7 +154,7 @@ export default function SignupPage() {
                 id="companyName"
                 type="text"
                 className={styles.input}
-                placeholder="Acme Corp"
+                placeholder="Enter your company name"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
@@ -170,7 +170,7 @@ export default function SignupPage() {
                 id="fullName"
                 type="text"
                 className={styles.input}
-                placeholder="Jane Doe"
+                placeholder="Enter your full name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -186,7 +186,7 @@ export default function SignupPage() {
                 id="email"
                 type="email"
                 className={styles.input}
-                placeholder="jane@example.com"
+                placeholder="yourname@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -202,7 +202,7 @@ export default function SignupPage() {
                 id="password"
                 type="password"
                 className={styles.input}
-                placeholder="Create a strong password"
+                placeholder="Choose a secure password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

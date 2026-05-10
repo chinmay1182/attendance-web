@@ -54,7 +54,7 @@ export default function JobApplyPage() {
             const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(fileName);
 
             // Insert Application
-            const { error: dbError } = await supabase.from('applications').insert({
+            const applicationData = {
                 job_id: job.id,
                 company_id: job.company_id,
                 candidate_name: form.name,
@@ -63,7 +63,10 @@ export default function JobApplyPage() {
                 linkedin_profile: form.linkedin,
                 resume_url: publicUrl,
                 status: 'new'
-            });
+            };
+            console.log('Submitting Application Data:', applicationData);
+
+            const { error: dbError } = await supabase.from('applications').insert(applicationData);
 
             if (dbError) throw dbError;
 
@@ -126,19 +129,19 @@ export default function JobApplyPage() {
                     <form onSubmit={handleSubmit}>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Full Name *</label>
-                            <input className={styles.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" required />
+                            <input className={styles.input} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Enter your full name" required />
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Email Address *</label>
-                            <input type="email" className={styles.input} value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" required />
+                            <input type="email" className={styles.input} value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="yourname@example.com" required />
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Phone Number</label>
-                            <input className={styles.input} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+1 234 567 890" />
+                            <input className={styles.input} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Enter phone number" />
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>LinkedIn Profile URL</label>
-                            <input className={styles.input} value={form.linkedin} onChange={e => setForm({ ...form, linkedin: e.target.value })} placeholder="https://linkedin.com/in/..." />
+                            <input className={styles.input} value={form.linkedin} onChange={e => setForm({ ...form, linkedin: e.target.value })} placeholder="https://linkedin.com/in/yourprofile" />
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Resume / CV *</label>

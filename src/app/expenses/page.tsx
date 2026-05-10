@@ -101,16 +101,22 @@ export default function ExpensesPage() {
     }, [dailyAllowance, travelAllowance, medicalAllowance, otherAllowance]);
 
     useEffect(() => {
+        let cleanup: (() => void) | undefined;
+
         if (profile) {
             if (profile.role === 'admin' || profile.role === 'hr') {
                 setActiveTab('all-expenses');
                 fetchAdminData();
-                subscribeToAllExpenses();
+                cleanup = subscribeToAllExpenses();
             } else {
                 fetchMyExpenses();
-                subscribeToMyExpenses();
+                cleanup = subscribeToMyExpenses();
             }
         }
+
+        return () => {
+            if (cleanup) cleanup();
+        };
     }, [profile, user]);
 
     const subscribeToAllExpenses = () => {
@@ -277,6 +283,20 @@ export default function ExpensesPage() {
         setReviewAmount(expense.amount.toString());
         setReviewComment('');
         setReviewModalOpen(true);
+    };
+
+    const handleQuickStatusUpdate = async (id: string, newStatus: string) => {
+        const { error } = await supabase
+            .from('expenses')
+            .update({ status: newStatus })
+            .eq('id', id);
+
+        if (error) {
+            toast.error("Failed to update status");
+        } else {
+            toast.success(`Status updated to ${newStatus}`);
+            fetchAdminData();
+        }
     };
 
     const handleProcessReview = async (status: 'Approved' | 'Partial' | 'Rejected') => {
@@ -577,7 +597,19 @@ export default function ExpensesPage() {
                                                 }
                                             </td>
                                             <td>
-                                                <span className={`${styles.statusBadge} ${getStatusClass(exp.status)}`}>{exp.status}</span>
+                                                <select 
+                                                     className={`${styles.statusBadge} ${getStatusClass(exp.status)}`}
+                                                     style={{ border: 'none', cursor: 'pointer', outline: 'none', textAlign: 'center', width: '100px', fontWeight: 'inherit', padding: '4px 8px' }}
+                                                     value={exp.status}
+                                                     onChange={(e) => handleQuickStatusUpdate(exp.id, e.target.value)}
+                                                     disabled={(exp as any).is_paid}
+                                                 >
+                                                     <option value="Pending">Pending</option>
+                                                     <option value="Approved">Approved</option>
+                                                     <option value="Partial">Partial</option>
+                                                     <option value="Rejected">Rejected</option>
+                                                 </select>
+
                                                 {exp.is_paid && <div style={{ fontSize: '0.7rem', color: '#0284c7', marginTop: 4, fontWeight: 600 }}>PAID</div>}
                                             </td>
                                             <td>

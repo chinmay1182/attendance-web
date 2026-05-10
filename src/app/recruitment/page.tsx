@@ -248,6 +248,13 @@ export default function RecruitmentPage() {
         toast.success("Application Link Copied!");
     };
 
+    const copyCompanyCareersLink = () => {
+        if (!profile?.company_id) return;
+        const link = `${window.location.origin}/careers?company_id=${profile.company_id}`;
+        navigator.clipboard.writeText(link);
+        toast.success("Company Careers Page Link Copied!");
+    };
+
     // Candidate Modal Logic
     const openCandidateModal = async (app: Application) => {
         setSelectedCandidate(app);
@@ -291,11 +298,17 @@ export default function RecruitmentPage() {
                         <h1 className={styles.title}>Recruitment (ATS)</h1>
                         <p style={{ color: 'var(--text-muted)' }}>Manage jobs and track candidates</p>
                     </div>
-                    {activeTab === 'jobs' && (
-                        <button onClick={() => setIsCreateOpen(true)} className={styles.primaryBtn}>
-                            Post New Job
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button onClick={copyCompanyCareersLink} className={styles.secondaryBtn} style={{ background: '#fff' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>link</span>
+                            Copy Careers Page Link
                         </button>
-                    )}
+                        {activeTab === 'jobs' && (
+                            <button onClick={() => setIsCreateOpen(true)} className={styles.primaryBtn}>
+                                Post New Job
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 <div className={styles.tabs}>
@@ -404,7 +417,7 @@ export default function RecruitmentPage() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Job Title *</label>
-                                <input className={styles.input} value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+                                <input className={styles.input} value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} placeholder="Enter job title (e.g. Senior Frontend Developer)" />
                             </div>
 
                             <div className={styles.row}>
@@ -439,17 +452,17 @@ export default function RecruitmentPage() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Location</label>
-                                <input className={styles.input} value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} placeholder="e.g. Remote / New York" />
+                                <input className={styles.input} value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} placeholder="e.g. Remote / New York / City Name" />
                             </div>
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Description</label>
-                                <textarea className={styles.textarea} value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} placeholder="Job responsibilities..." />
+                                <textarea className={styles.textarea} value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} placeholder="Describe the job responsibilities and company culture..." />
                             </div>
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Requirements</label>
-                                <textarea className={styles.textarea} value={newJob.requirements} onChange={e => setNewJob({ ...newJob, requirements: e.target.value })} placeholder="Skills needed..." />
+                                <textarea className={styles.textarea} value={newJob.requirements} onChange={e => setNewJob({ ...newJob, requirements: e.target.value })} placeholder="Enter required skills, experience, and qualifications..." />
                             </div>
 
                             <button onClick={handleCreateJob} className={styles.primaryBtn} style={{ width: '100%', marginTop: '20px' }} disabled={submitting}>
@@ -470,7 +483,7 @@ export default function RecruitmentPage() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Job Title *</label>
-                                <input className={styles.input} value={editJobData.title} onChange={e => setEditJobData({ ...editJobData, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+                                <input className={styles.input} value={editJobData.title} onChange={e => setEditJobData({ ...editJobData, title: e.target.value })} placeholder="Enter job title (e.g. Senior Frontend Developer)" />
                             </div>
 
                             <div className={styles.row}>
@@ -505,17 +518,17 @@ export default function RecruitmentPage() {
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Location</label>
-                                <input className={styles.input} value={editJobData.location} onChange={e => setEditJobData({ ...editJobData, location: e.target.value })} placeholder="e.g. Remote / New York" />
+                                <input className={styles.input} value={editJobData.location} onChange={e => setEditJobData({ ...editJobData, location: e.target.value })} placeholder="e.g. Remote / New York / City Name" />
                             </div>
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Description</label>
-                                <textarea className={styles.textarea} value={editJobData.description} onChange={e => setEditJobData({ ...editJobData, description: e.target.value })} placeholder="Job responsibilities..." />
+                                <textarea className={styles.textarea} value={editJobData.description} onChange={e => setEditJobData({ ...editJobData, description: e.target.value })} placeholder="Describe the job responsibilities and company culture..." />
                             </div>
 
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Requirements</label>
-                                <textarea className={styles.textarea} value={editJobData.requirements} onChange={e => setEditJobData({ ...editJobData, requirements: e.target.value })} placeholder="Skills needed..." />
+                                <textarea className={styles.textarea} value={editJobData.requirements} onChange={e => setEditJobData({ ...editJobData, requirements: e.target.value })} placeholder="Enter required skills, experience, and qualifications..." />
                             </div>
 
                             <button onClick={handleEditJob} className={styles.primaryBtn} style={{ width: '100%', marginTop: '20px' }} disabled={submitting}>

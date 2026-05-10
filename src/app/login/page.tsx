@@ -193,7 +193,7 @@ export default function LoginPage() {
                     type="text"
                     name="email"
                     className={styles.input}
-                    placeholder="john@example.com or john_doe"
+                    placeholder="Enter your email or username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -210,7 +210,7 @@ export default function LoginPage() {
                     type="password"
                     name="password"
                     className={styles.input}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

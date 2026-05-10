@@ -3,41 +3,68 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 import styles from './careers.module.css';
 import Link from 'next/link';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CareersPage() {
+    const { profile } = useAuth();
     const [jobs, setJobs] = useState<any[]>([]);
+    const [company, setCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchJobs();
-    }, []);
+        const searchParams = new URLSearchParams(window.location.search);
+        const companyId = searchParams.get('company_id') || searchParams.get('c') || profile?.company_id;
+        if (companyId) {
+            fetchCompany(companyId);
+            fetchJobs(companyId);
+        } else {
+            // If truly no company is identified, we shouldn't show global data
+            setLoading(false);
+        }
+    }, [profile?.company_id]);
 
-    const fetchJobs = async () => {
+    const fetchCompany = async (id: string) => {
+        const { data } = await supabase.from('companies').select('*').eq('id', id).single();
+        if (data) setCompany(data);
+    };
+
+    const fetchJobs = async (companyId: string) => {
         const { data } = await supabase
             .from('jobs')
             .select('*')
             .eq('status', 'open')
+            .eq('company_id', companyId)
             .order('created_at', { ascending: false });
+        
         if (data) setJobs(data);
         setLoading(false);
     };
 
     useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const companyId = searchParams.get('company_id') || searchParams.get('c') || profile?.company_id;
+        
+        if (!companyId) return;
+
         const channel = supabase.channel('career_jobs_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => fetchJobs())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => fetchJobs(companyId))
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, []);
+    }, [profile?.company_id]);
 
     return (
         <div style={{ minHeight: '100vh', background: '#fff' }}>
             <nav style={{ padding: '20px 40px', borderBottom: '1px solid #f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)', zIndex: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <img src="/BizKitLogo.svg" alt="Company Logo" height={32} />
-                    <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#111' }}>Careers</span>
+                    {company?.logo_url ? (
+                        <img src={company.logo_url} alt={company.name} height={32} />
+                    ) : (
+                        <img src="/BizKitLogo.svg" alt="Company Logo" height={32} />
+                    )}
+                    <span style={{ fontWeight: 600, fontSize: '1.2rem', color: '#111' }}>{company?.name || 'Careers'}</span>
                 </div>
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
-                    <a href="https://bizkit.consolegal.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#666', fontWeight: 500, fontSize: '0.95rem' }}>
+                    <a href={company?.website || "https://bizkit.consolegal.com"} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: '#666', fontWeight: 500, fontSize: '0.95rem' }}>
                         Go to Main Site ↗
                     </a>
                     <Link href="/login" style={{ textDecoration: 'none', color: '#111', fontWeight: 600, padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
