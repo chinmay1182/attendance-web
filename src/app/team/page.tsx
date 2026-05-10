@@ -22,6 +22,7 @@ type Employee = {
     address?: string;
     salary?: number;
     corporate_id?: number;
+    photo_url?: string;
 };
 
 type Department = { id: string, name: string };
@@ -60,8 +61,39 @@ export default function TeamPage() {
         bio: '',
         idProof: '',
         address: '',
-        salary: ''
+        salary: '',
+        photo_url: ''
     });
+    const [uploading, setUploading] = useState(false);
+
+    const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploading(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `profiles/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('profiles')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('profiles')
+                .getPublicUrl(filePath);
+
+            setFormData(prev => ({ ...prev, photo_url: publicUrl }));
+            toast.success("Photo uploaded successfully");
+        } catch (error: any) {
+            toast.error("Error uploading photo: " + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const canManage = profile?.role === 'admin' || profile?.role === 'hr';
 
@@ -252,6 +284,7 @@ export default function TeamPage() {
                             id_proof: formData.idProof,
                             address: formData.address,
                             salary: formData.salary ? parseFloat(formData.salary) : null,
+                            photo_url: formData.photo_url || null,
                             created_at: formData.joiningDate ? new Date(formData.joiningDate).toISOString() : undefined
                         }
                     })
@@ -293,7 +326,8 @@ export default function TeamPage() {
                         id_proof: formData.idProof,
                         address: formData.address,
                         salary: formData.salary,
-                        joiningDate: formData.joiningDate
+                        joiningDate: formData.joiningDate,
+                        photo_url: formData.photo_url
                     })
                 });
 
@@ -361,7 +395,8 @@ export default function TeamPage() {
             bio: emp.bio || '',
             idProof: emp.id_proof || '',
             address: emp.address || '',
-            salary: emp.salary ? emp.salary.toString() : ''
+            salary: emp.salary ? emp.salary.toString() : '',
+            photo_url: emp.photo_url || ''
         });
         setIsEditing(true);
         setIsModalOpen(true);
@@ -383,7 +418,8 @@ export default function TeamPage() {
             bio: '',
             idProof: '',
             address: '',
-            salary: ''
+            salary: '',
+            photo_url: ''
         });
     };
 
@@ -428,8 +464,12 @@ export default function TeamPage() {
                                             <td>
                                                 <div className={styles.userInfo}>
                                                     <div className={styles.avatarWrapper}>
-                                                        <div className={styles.avatar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: '#e2e8f0', color: '#64748b' }}>
-                                                            {emp.name.charAt(0).toUpperCase()}
+                                                        <div className={styles.avatar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', background: '#e2e8f0', color: '#64748b', overflow: 'hidden' }}>
+                                                            {emp.photo_url ? (
+                                                                <img src={emp.photo_url} alt={emp.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            ) : (
+                                                                emp.name.charAt(0).toUpperCase()
+                                                            )}
                                                         </div>
                                                         {onlineUserIds.has(emp.id) && <div className={styles.statusOnline} title="Online"></div>}
                                                     </div>
@@ -498,6 +538,45 @@ export default function TeamPage() {
                 <div className={styles.modalOverlay} onClick={() => setIsModalOpen(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <h2 style={{ marginTop: 0, marginBottom: '24px' }}>{isEditing ? 'Edit Employee' : 'Add New Employee'}</h2>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                            <div className={styles.photoUploadWrapper} style={{ textAlign: 'center' }}>
+                                <div className={styles.avatarLarge} style={{ 
+                                    width: '100px', 
+                                    height: '100px', 
+                                    borderRadius: '50%', 
+                                    background: '#f1f5f9', 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    margin: '0 auto 12px',
+                                    overflow: 'hidden',
+                                    border: '2px dashed #cbd5e1',
+                                    position: 'relative'
+                                }}>
+                                    {formData.photo_url ? (
+                                        <img src={formData.photo_url} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <span className="material-symbols-outlined" style={{ fontSize: '48px', color: '#94a3b8' }}>person</span>
+                                    )}
+                                    {uploading && (
+                                        <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div className={styles.loaderSmall}></div>
+                                        </div>
+                                    )}
+                                </div>
+                                <label className={styles.uploadLabel} style={{ 
+                                    cursor: 'pointer', 
+                                    color: '#2563eb', 
+                                    fontSize: '0.85rem', 
+                                    fontWeight: 600,
+                                    textDecoration: 'underline'
+                                }}>
+                                    {uploading ? 'Uploading...' : 'Choose Photo'}
+                                    <input type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} disabled={uploading} />
+                                </label>
+                            </div>
+                        </div>
 
                         <div className={styles.grid}>
                             {/* Name */}

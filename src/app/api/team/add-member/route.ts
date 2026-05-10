@@ -7,7 +7,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { 
             name, email, password, role, companyId, username, siteId,
-            department, phone, bio, id_proof, address, salary, joiningDate 
+            department, phone, bio, id_proof, address, salary, joiningDate, photo_url
         } = body;
 
         // Validation
@@ -57,7 +57,8 @@ export async function POST(request: Request) {
             bio: bio || null,
             id_proof: id_proof || null,
             address: address || null,
-            salary: salary ? parseFloat(salary) : null
+            salary: salary ? parseFloat(salary) : null,
+            photo_url: photo_url || null
         };
 
         if (joiningDate) {

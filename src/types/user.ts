@@ -6,6 +6,7 @@ export interface UserProfile {
     name: string;
     role: UserRole;
     photoURL?: string;
+    photo_url?: string;
     phone?: string;
     bio?: string;
     shift_start?: string; // '09:00:00'

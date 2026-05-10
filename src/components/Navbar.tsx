@@ -258,8 +258,12 @@ export const Navbar = () => {
             <div className={styles.bottomActions}>
                 {/* User Profile / Logout */}
                 <div className={styles.userProfile}>
-                    <div className={styles.avatar}>
-                        {profile?.name?.charAt(0) || 'U'}
+                    <div className={styles.avatar} style={{ overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {profile?.photo_url ? (
+                            <img src={profile.photo_url} alt={profile.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            profile?.name?.charAt(0) || 'U'
+                        )}
                     </div>
                     <div className={styles.userInfo}>
                         <div className={styles.userName}>
