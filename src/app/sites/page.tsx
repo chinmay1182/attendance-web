@@ -272,6 +272,12 @@ export default function SitesPage() {
         }
         setSubmitting(true);
 
+        if (!profile?.company_id) {
+            toast.error("Your company ID is missing. Please refresh the page or ensure your company is set up.");
+            setSubmitting(false);
+            return;
+        }
+
         const payload = {
             name: newSite.name,
             address: newSite.address || '',
@@ -282,7 +288,7 @@ export default function SitesPage() {
             daily_tasks: newSite.daily_tasks || '',
             entry_policy: newSite.entry_policy || '',
             is_active: true,
-            company_id: profile?.company_id || null
+            company_id: profile.company_id
         };
 
         console.log("Submitting payload:", payload);

@@ -80,9 +80,13 @@ export default function OrgStructurePage() {
                 toast.success("Department updated");
             } else {
                 // Add
+                if (!profile?.company_id) {
+                    toast.error("Your company ID is missing. Please refresh the page or ensure your company is set up.");
+                    return;
+                }
                 const { error } = await supabase
                     .from('departments')
-                    .insert([{ name: currentDept.name, company_id: profile?.company_id }]);
+                    .insert([{ name: currentDept.name, company_id: profile.company_id }]);
 
                 if (error) {
                     if (error.code === '23505') {

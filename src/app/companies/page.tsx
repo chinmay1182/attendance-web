@@ -64,7 +64,7 @@ export default function CompaniesPage() {
     const fetchCompanies = async () => {
         if (!profile || !user) { setLoading(false); return; }
         setLoading(true);
-        
+
         // Fetch companies where user is owner OR matches their company_id
         const { data, error } = await supabase
             .from('companies')
@@ -143,7 +143,7 @@ export default function CompaniesPage() {
                     email: currentCompany.email,
                     owner_id: user?.id
                 };
-                
+
                 console.log("Sending insert payload to API:", payload);
 
                 const response = await fetch('/api/company/update', { // We can reuse the same endpoint if we handle POST correctly
@@ -161,16 +161,18 @@ export default function CompaniesPage() {
                 if (!response.ok) {
                     throw new Error(result.error || "Failed to create company");
                 }
-                
+
                 if (result.company) {
                     setCompanies(prev => [result.company, ...prev]);
+                    // Refresh profile to update company_id in AuthContext
+                    await refreshProfile();
                 }
-                
+
                 toast.success("Company added successfully");
             }
             setIsModalOpen(false);
             setCurrentCompany({});
-            
+
         } catch (error: any) {
             console.error("Operation failed:", error);
             toast.error(error.message || "Operation failed");
@@ -423,3 +425,7 @@ export default function CompaniesPage() {
         </>
     );
 }
+function refreshProfile() {
+    throw new Error('Function not implemented.');
+}
+

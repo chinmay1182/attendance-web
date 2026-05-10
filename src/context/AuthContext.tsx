@@ -9,6 +9,7 @@ interface AuthContextType {
     profile: UserProfile | null; // Supabase Profile
     loading: boolean;
     logout: () => Promise<void>;
+    refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
     profile: null,
     loading: true,
     logout: async () => { },
+    refreshProfile: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -59,6 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
         } catch (err) {
             console.error("Error fetching user profile:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const refreshProfile = async () => {
+        if (user?.id) {
+            await fetchProfile(user.id);
         }
     };
 
@@ -113,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, profile, loading, logout }}>
+        <AuthContext.Provider value={{ user, profile, loading, logout, refreshProfile }}>
             {children}
         </AuthContext.Provider>
     );
