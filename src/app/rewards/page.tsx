@@ -51,13 +51,17 @@ export default function RewardsPage() {
     }, [user, isAdmin]);
 
     const fetchRewards = async () => {
+        if (!profile?.company_id) return;
         const { data, error } = await supabase
             .from('rewards')
             .select('*')
+            .eq('company_id', profile.company_id)
             .order('points', { ascending: false });
 
         if (data && data.length > 0) {
             setRewards(data);
+        } else {
+            setRewards([]);
         }
     };
 
@@ -104,7 +108,8 @@ export default function RewardsPage() {
             title: formData.title,
             description: formData.description,
             points: formData.points,
-            icon: formData.icon
+            icon: formData.icon,
+            company_id: profile?.company_id
         });
 
         if (error) {

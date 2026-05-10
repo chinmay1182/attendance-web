@@ -17,9 +17,39 @@ export async function GET(req: Request) {
             }
         });
         
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Get user's company_id from users table
+        const { data: userProfile } = await supabase
+            .from('users')
+            .select('company_id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        let companyId = userProfile?.company_id;
+
+        // Fallback to check if they are a company owner
+        if (!companyId) {
+            const { data: ownedCompany } = await supabase
+                .from('companies')
+                .select('id')
+                .eq('owner_id', user.id)
+                .maybeSingle();
+            companyId = ownedCompany?.id;
+        }
+
+        if (!companyId) {
+            return NextResponse.json({ error: 'No company found for user' }, { status: 404 });
+        }
+
         const { data: users, error } = await supabase
             .from('users')
             .select('*')
+            .eq('company_id', companyId)
             .order('name');
 
         if (error) throw error;

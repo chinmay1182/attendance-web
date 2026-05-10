@@ -195,10 +195,15 @@ export default function SitesPage() {
 
     const fetchUserCompanies = async () => {
         if (!user) return;
+        let orQuery = `owner_id.eq.${user.id}`;
+        if (profile?.company_id) {
+            orQuery += `,id.eq.${profile.company_id}`;
+        }
+
         const { data, error } = await supabase
             .from('companies')
             .select('id, name')
-            .or(`owner_id.eq.${user.id},id.eq.${profile?.company_id}`);
+            .or(orQuery);
 
         if (error) {
             console.error("Fetch Companies Error:", error.message);

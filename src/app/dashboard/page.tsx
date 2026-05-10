@@ -117,10 +117,15 @@ export default function EmployeeDashboard() {
     };
 
     const fetchUserCompanies = async () => {
+        let orQuery = `owner_id.eq.${user?.id}`;
+        if (profile?.company_id) {
+            orQuery += `,id.eq.${profile.company_id}`;
+        }
+        
         const { data } = await supabase
             .from('companies')
             .select('id, name')
-            .or(`id.eq.${profile?.company_id},owner_id.eq.${user?.id}`);
+            .or(orQuery);
         if (data) {
             setUserCompanies(data);
             if (!selectedCompanyId) setSelectedCompanyId(profile?.company_id || data[0]?.id || '');
@@ -140,9 +145,11 @@ export default function EmployeeDashboard() {
     };
 
     const fetchShiftHistory = async () => {
+        if (!user?.id) return;
         const { data } = await supabase
             .from('shift_history')
             .select('*')
+            .eq('admin_id', user.id)
             .order('created_at', { ascending: false })
             .limit(5);
         if (data) setShiftHistory(data);
@@ -260,7 +267,7 @@ export default function EmployeeDashboard() {
                                         <button onClick={() => router.push('/team')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span className="material-symbols-outlined">group</span> Manage Team
                                         </button>
-                                        <button onClick={() => router.push('/attendance')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <button onClick={() => router.push('/stats')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span className="material-symbols-outlined">calendar_month</span> View Attendance
                                         </button>
                                         <button onClick={() => router.push('/documents')} style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
