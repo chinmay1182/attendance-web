@@ -8,6 +8,8 @@ import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+// IMPORTANT: libraries must be defined outside the component to keep a stable reference.
+// Defining it inside the component causes @react-google-maps/api to re-init on every render.
 
 import { useAuth } from '../../context/AuthContext';
 import styles from './sites.module.css';
@@ -98,7 +100,7 @@ export default function SitesPage() {
 
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
         libraries
     });
 
@@ -197,7 +199,7 @@ export default function SitesPage() {
             .from('companies')
             .select('id, name')
             .or(`owner_id.eq.${user.id},id.eq.${profile?.company_id}`);
-        
+
         if (error) {
             console.error("Fetch Companies Error:", error.message);
             return;
@@ -528,6 +530,8 @@ export default function SitesPage() {
                                 </div>
                                 <div className={styles.mapPreview}>
                                     <GoogleMap
+                                        isLoaded={isLoaded}
+                                        loadError={loadError}
                                         center={{ lat: myAssignment.site.latitude, lng: myAssignment.site.longitude }}
                                         zoom={15}
                                         sites={[myAssignment.site]}
@@ -618,6 +622,8 @@ export default function SitesPage() {
                                         </div>
                                         <div className={styles.mapPreview}>
                                             <GoogleMap
+                                                isLoaded={isLoaded}
+                                                loadError={loadError}
                                                 center={{ lat: site.latitude || 0, lng: site.longitude || 0 }}
                                                 zoom={14}
                                                 sites={[site]}
@@ -658,6 +664,8 @@ export default function SitesPage() {
                                         </div>
                                         <div className={styles.mapPreview} style={{ height: '120px' }}>
                                             <GoogleMap
+                                                isLoaded={isLoaded}
+                                                loadError={loadError}
                                                 center={{ lat: assign.site?.latitude || 0, lng: assign.site?.longitude || 0 }}
                                                 zoom={15}
                                                 sites={assign.site ? [assign.site] : []}
@@ -829,11 +837,11 @@ export default function SitesPage() {
                                             <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
                                         ))
                                     }
-                                    
+
                                     {users.length > 0 && users.filter(u => u.company_id?.toString() === selectedCompanyId?.toString() && u.role?.toLowerCase() !== 'admin').length === 0 && (
                                         <option disabled>No employees found for this company</option>
                                     )}
-                                    
+
                                     {users.length === 0 && (
                                         <option disabled>Loading data...</option>
                                     )}
@@ -854,7 +862,7 @@ export default function SitesPage() {
                                             <option key={s.id} value={s.id}>{s.name}</option>
                                         ))
                                     }
-                                    
+
                                     {/* Fallback: All Sites if no direct matches */}
                                     {sites.length > 0 && sites.filter(s => s.company_id?.toString() === selectedCompanyId?.toString()).length === 0 && (
                                         <>

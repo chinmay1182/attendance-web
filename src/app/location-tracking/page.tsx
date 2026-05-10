@@ -13,6 +13,9 @@ const Map = dynamic(() => import('../../components/GoogleMap'), {
     loading: () => <p>Loading Map...</p>
 });
 
+import { useJsApiLoader } from '@react-google-maps/api';
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+
 type UserLocation = {
     user_id: string;
     latitude: number;
@@ -39,6 +42,12 @@ export default function LocationTrackingPage() {
     const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchQuery, setSearchQuery] = useState('');
 
+
+    const { isLoaded, loadError } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        libraries
+    });
 
     useEffect(() => {
         if (!loading && profile?.role !== 'admin' && profile?.role !== 'hr') {
@@ -177,6 +186,8 @@ export default function LocationTrackingPage() {
 
                 <div className={styles.mapContainer}>
                     <Map
+                        isLoaded={isLoaded}
+                        loadError={loadError}
                         markers={locations
                             .filter(loc => loc.latitude !== 0 && loc.longitude !== 0)
                             .filter(loc => loc.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()))

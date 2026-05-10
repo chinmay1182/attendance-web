@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, Circle, InfoWindow } from '@react-google-maps/api';
+import React, { useEffect, useState } from 'react';
+import { GoogleMap, Marker, Circle, InfoWindow } from '@react-google-maps/api';
 
 type Site = {
     id: string;
@@ -18,6 +18,8 @@ type MarkerData = {
 };
 
 interface GoogleMapProps {
+    isLoaded: boolean;
+    loadError?: Error | undefined;
     sites?: Site[];
     markers?: MarkerData[];
     center?: { lat: number, lng: number };
@@ -33,9 +35,9 @@ const containerStyle = {
     borderRadius: 'inherit'
 };
 
-const libraries: ("places" | "geometry")[] = ["places", "geometry"];
-
 const MapsComponent: React.FC<GoogleMapProps> = ({
+    isLoaded,
+    loadError,
     sites = [],
     markers = [],
     center = { lat: 19.0760, lng: 72.8777 },
@@ -44,13 +46,6 @@ const MapsComponent: React.FC<GoogleMapProps> = ({
     className,
     onLocationSelect
 }) => {
-    const { isLoaded, loadError } = useJsApiLoader({
-        id: 'google-map-script',
-        googleMapsApiKey: "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
-        libraries
-    });
-
-
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
 
@@ -69,8 +64,7 @@ const MapsComponent: React.FC<GoogleMapProps> = ({
     }, [center, map]);
 
     if (loadError) return <div style={{ color: 'red', padding: '10px' }}>Error loading Google Maps. Check console for details.</div>;
-    if (!isLoaded) return <div>Loading Maps...</div>;
-
+    if (!isLoaded) return <div style={{ padding: '10px', color: '#64748b' }}>Loading Maps...</div>;
 
     return (
         <div className={className} style={{ width: '100%', height: '100%' }}>

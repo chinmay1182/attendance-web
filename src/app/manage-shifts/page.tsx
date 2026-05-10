@@ -42,13 +42,28 @@ export default function ManageShiftsPage() {
 
     const fetchShiftTypes = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('shift_types')
-            .select('*')
-            .order('name');
-        
-        if (data) setShiftTypes(data);
-        setLoading(false);
+        try {
+            // Fetch shifts that are either global OR belong to user's company
+            const { data, error } = await supabase
+                .from('shift_types')
+                .select('*')
+                .or(`is_global.eq.true,company_id.eq.${profile?.company_id}`)
+                .order('name');
+
+            console.log('Shift Types fetched:', data, 'Error:', error);
+
+            if (error) {
+                console.error('Fetch shift types error:', error);
+                toast.error(`Failed to load shifts: ${error.message}`);
+            } else {
+                setShiftTypes(data || []);
+            }
+        } catch (err: any) {
+            console.error('Unexpected error:', err);
+            toast.error('Failed to load shift templates');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const fetchCompanies = async () => {
@@ -194,8 +209,11 @@ export default function ManageShiftsPage() {
                                     </td>
                                 </tr>
                             ))}
+                            {loading && (
+                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>⏳ Loading shift templates...</td></tr>
+                            )}
                             {shiftTypes.length === 0 && !loading && (
-                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '24px' }}>No shift templates found.</td></tr>
+                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>No shift templates found. Create one above ☝️</td></tr>
                             )}
                         </tbody>
                     </table>

@@ -10,6 +10,9 @@ import styles from './approvals.module.css';
 
 const GoogleMap = dynamic(() => import('../../components/GoogleMap'), { ssr: false });
 
+import { useJsApiLoader } from '@react-google-maps/api';
+const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+
 type Approval = {
     id: string;
     user_id: string;
@@ -27,6 +30,12 @@ export default function ApprovalsPage() {
     const router = useRouter();
     const [pending, setPending] = useState<Approval[]>([]);
     const [processing, setProcessing] = useState<string | null>(null);
+
+    const { isLoaded, loadError } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        libraries
+    });
 
     useEffect(() => {
         if (!loading && !user) {
@@ -143,6 +152,8 @@ export default function ApprovalsPage() {
                                 <div style={{ height: '120px', margin: '16px 0', borderRadius: '8px', overflow: 'hidden' }}>
                                     {item.location_in ? (
                                         <GoogleMap
+                                            isLoaded={isLoaded}
+                                            loadError={loadError}
                                             center={{ lat: item.location_in.lat, lng: item.location_in.lng }}
                                             zoom={14}
                                             markers={[{ id: '1', lat: item.location_in.lat, lng: item.location_in.lng, title: 'Check-In' }]}

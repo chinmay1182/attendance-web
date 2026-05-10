@@ -120,7 +120,7 @@ export default function OrgStructurePage() {
             <Navbar />
             <Toaster position="top-right" />
             <div className={styles.container}>
-                <h1 className={styles.title}>Organization Structure</h1>
+                <h1 className={styles.title}>Departments</h1>
                 <div className={styles.grid}>
                     <div className={styles.card}>
                         <h3 className={styles.cardTitle}>Departments</h3>

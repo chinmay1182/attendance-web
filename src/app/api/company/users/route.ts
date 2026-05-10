@@ -15,17 +15,29 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'UID is required' }, { status: 400 });
         }
 
-        const { data: currentUser, error: currentUserError } = await supabaseAdmin
+        const { data: currentUser } = await supabaseAdmin
             .from('users')
             .select('company_id')
             .eq('id', uid)
-            .single();
+            .maybeSingle();
 
-        if (currentUserError || !currentUser?.company_id) {
+        let companyId = currentUser?.company_id;
+
+        // Fallback: check if user is a company owner
+        if (!companyId) {
+            const { data: ownedCompany } = await supabaseAdmin
+                .from('companies')
+                .select('id')
+                .eq('owner_id', uid)
+                .maybeSingle();
+            companyId = ownedCompany?.id || null;
+        }
+
+        if (!companyId) {
             return NextResponse.json({ error: 'User company not found' }, { status: 404 });
         }
 
-        const cacheKey = `company:users:${currentUser.company_id}`;
+        const cacheKey = `company:users:${companyId}`;
 
         // 1. Try Cache
         try {
@@ -41,7 +53,7 @@ export async function GET(request: Request) {
         const { data, error } = await supabaseAdmin
             .from('users')
             .select('*')
-            .eq('company_id', currentUser.company_id)
+            .eq('company_id', companyId)
             .order('name');
 
         if (error) {

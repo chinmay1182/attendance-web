@@ -13,18 +13,47 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'companyId and uid are required' }, { status: 400 });
         }
 
-        // Verify user belongs to this company
+        // Verify user belongs to this company (or is the owner)
         const { data: userRecord, error: userError } = await supabaseAdmin
             .from('users')
-            .select('company_id')
+            .select('company_id, role')
             .eq('id', uid)
-            .single();
+            .maybeSingle(); // Use maybeSingle() so null doesn't throw an error
 
-        if (userError || !userRecord) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        // If user record not found in users table, check if they're a company owner
+        if (!userRecord) {
+            // Fallback: check if user is owner of the company directly
+            const { data: company, error: companyError } = await supabaseAdmin
+                .from('companies')
+                .select('*')
+                .eq('id', companyId)
+                .eq('owner_id', uid)
+                .maybeSingle();
+
+            if (companyError) {
+                console.error('Company owner check error:', companyError);
+                return NextResponse.json({ error: 'Company not found' }, { status: 404 });
+            }
+
+            if (company) {
+                return NextResponse.json(company);
+            }
+
+            return NextResponse.json({ error: 'User not found or unauthorized' }, { status: 404 });
         }
 
-        if (userRecord.company_id !== companyId) {
+        // Allow if user's company_id matches, OR if user is an admin/owner of this company
+        const isOwner = await supabaseAdmin
+            .from('companies')
+            .select('id')
+            .eq('id', companyId)
+            .eq('owner_id', uid)
+            .maybeSingle();
+
+        const belongsToCompany = userRecord.company_id === companyId;
+        const isCompanyOwner = !!isOwner.data;
+
+        if (!belongsToCompany && !isCompanyOwner) {
             return NextResponse.json({ error: 'Unauthorized: You do not belong to this company' }, { status: 403 });
         }
 
@@ -36,6 +65,7 @@ export async function GET(request: Request) {
             .single();
 
         if (error) {
+            console.error('Company fetch error:', error);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 

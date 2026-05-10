@@ -234,7 +234,7 @@ export const Navbar = () => {
 
                                 <Link href="/org-structure" className={`${styles.navLink} ${pathname.startsWith('/org-structure') ? styles.navLinkActive : styles.navLinkInactive}`}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>account_tree</span>
-                                    Organization
+                                    Departments
                                 </Link>
                                 <Link href="/audit-logs" className={`${styles.navLink} ${pathname.startsWith('/audit-logs') ? styles.navLinkActive : styles.navLinkInactive}`}>
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>history</span>

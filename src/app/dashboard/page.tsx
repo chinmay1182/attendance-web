@@ -41,6 +41,7 @@ export default function EmployeeDashboard() {
     const [updatingShift, setUpdatingShift] = useState(false);
     const [currentShift, setCurrentShift] = useState({ start: '', end: '' });
     const [allSites, setAllSites] = useState<any[]>([]);
+    const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
 
     const [shiftTypes, setShiftTypes] = useState<any[]>([]);
     const [selectedSiteId, setSelectedSiteId] = useState<string>('all');
@@ -401,6 +402,32 @@ export default function EmployeeDashboard() {
                         <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '0.9rem' }}>Set standard shift timings for employees.</p>
 
 
+                        {shiftTypes.length > 0 && (
+                            <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                <label className={styles.label} style={{ color: '#4f46e5', fontWeight: 600 }}>Load from Saved Template</label>
+                                <select 
+                                    className={styles.input} 
+                                    style={{ appearance: 'auto', border: '1px solid #cbd5e1' }}
+                                    value={selectedTemplateId}
+                                    onChange={(e) => {
+                                        setSelectedTemplateId(e.target.value);
+                                        const template = shiftTypes.find(t => t.id === e.target.value);
+                                        if (template) {
+                                            setShiftStart(template.start_time);
+                                            setShiftEnd(template.end_time);
+                                        }
+                                    }}
+                                >
+                                    <option value="">-- Custom / Manual Entry --</option>
+                                    {shiftTypes.map(template => (
+                                        <option key={template.id} value={template.id}>
+                                            Template: {template.name} | Shift: {template.start_time} to {template.end_time}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
                         <div style={{ marginBottom: '20px' }}>
                             <label className={styles.label}>Target Scope</label>
                             <select
@@ -447,26 +474,30 @@ export default function EmployeeDashboard() {
                             </>
                         )}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                                <label className={styles.label}>Shift Start</label>
-                                <input
-                                    type="time"
-                                    className={styles.input}
-                                    value={shiftStart}
-                                    onChange={e => setShiftStart(e.target.value)}
-                                />
+
+
+                        {!selectedTemplateId && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div>
+                                    <label className={styles.label}>Shift Start</label>
+                                    <input
+                                        type="time"
+                                        className={styles.input}
+                                        value={shiftStart}
+                                        onChange={e => setShiftStart(e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={styles.label}>Shift End</label>
+                                    <input
+                                        type="time"
+                                        className={styles.input}
+                                        value={shiftEnd}
+                                        onChange={e => setShiftEnd(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                            <div>
-                                <label className={styles.label}>Shift End</label>
-                                <input
-                                    type="time"
-                                    className={styles.input}
-                                    value={shiftEnd}
-                                    onChange={e => setShiftEnd(e.target.value)}
-                                />
-                            </div>
-                        </div>
+                        )}
 
 
                         <div className={styles.modalActions}>

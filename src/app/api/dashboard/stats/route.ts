@@ -16,32 +16,58 @@ export async function GET(request: Request) {
 
         const { data: currentUser, error: currentUserError } = await supabaseAdmin
             .from('users')
-            .select('company_id')
+            .select('company_id, role')
             .eq('id', uid)
-            .single();
+            .maybeSingle(); // use maybeSingle so missing records don't throw
 
-        if (currentUserError || !currentUser?.company_id) {
+        let companyId = currentUser?.company_id;
+
+        // Fallback: if user not in users table or has no company_id, check if they're a company owner
+        if (!companyId) {
+            const { data: ownedCompany } = await supabaseAdmin
+                .from('companies')
+                .select('id')
+                .eq('owner_id', uid)
+                .maybeSingle();
+
+            companyId = ownedCompany?.id || null;
+        }
+
+        if (!companyId) {
             return NextResponse.json({ error: 'User company not found' }, { status: 404 });
         }
 
-        const companyId = currentUser.company_id;
         const today = new Date().toISOString().split('T')[0];
 
         const [docsRes, sitesRes, totalUsersRes, pendingLeavesRes, onLeaveTodayRes] = await Promise.all([
             // 1. Recent Documents
-            supabaseAdmin
-                .from('documents')
-                .select('*, users!inner(company_id)')
-                .eq('users.company_id', companyId)
-                .limit(3)
-                .order('created_at', { ascending: false }),
+            currentUser?.role === 'admin'
+                ? supabaseAdmin
+                    .from('documents')
+                    .select('*, users!inner(company_id)')
+                    .eq('users.company_id', companyId)
+                    .limit(3)
+                    .order('created_at', { ascending: false })
+                : supabaseAdmin
+                    .from('documents')
+                    .select('*')
+                    .eq('user_id', uid)
+                    .limit(3)
+                    .order('created_at', { ascending: false }),
 
             // 2. Sites
-            supabaseAdmin
-                .from('sites')
-                .select('*, site_assignments!inner(user:users!inner(company_id))')
-                .eq('site_assignments.user.company_id', companyId)
-                .limit(2),
+            currentUser?.role === 'admin'
+                ? supabaseAdmin
+                    .from('sites')
+                    .select('*')
+                    .eq('company_id', companyId)
+                    .limit(2)
+                : supabaseAdmin
+                    .from('sites')
+                    .select('*, site_assignments!inner(user_id, status)')
+                    .eq('site_assignments.user_id', uid)
+                    .eq('site_assignments.status', 'active')
+                    .limit(2),
 
             // 3. Total Active Users
             supabaseAdmin

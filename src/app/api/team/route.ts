@@ -20,14 +20,20 @@ export async function GET(request: Request) {
             .from('users')
             .select('company_id, role')
             .eq('id', uid)
-            .single();
-
-        if (adminError) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
-        }
+            .maybeSingle();
 
         // Use param if provided, otherwise default to user's company
-        let companyId = companyIdParam || adminUser.company_id;
+        let companyId = companyIdParam || adminUser?.company_id;
+
+        // Fallback: if no company_id found, check if user is a company owner
+        if (!companyId) {
+            const { data: ownedCompany } = await supabaseAdmin
+                .from('companies')
+                .select('id')
+                .eq('owner_id', uid)
+                .maybeSingle();
+            companyId = ownedCompany?.id || null;
+        }
 
         if (!companyId) {
             return NextResponse.json({ error: 'No company associated' }, { status: 400 });
