@@ -285,6 +285,7 @@ export default function TeamPage() {
                         password: formData.password,
                         role: formData.role,
                         companyId: formData.companyId || profile?.company_id,
+                        siteId: formData.siteId,
                         username: formData.username || formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
                         department: formData.department,
                         phone: formData.phone,
@@ -298,16 +299,6 @@ export default function TeamPage() {
 
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || "Failed to create user");
-
-                const newUserId = data.userId;
-
-                if (formData.siteId) {
-                    await supabase.from('site_assignments').insert({
-                        user_id: newUserId,
-                        site_id: formData.siteId,
-                        status: 'active'
-                    });
-                }
 
                 toast.success("Employee added successfully");
             }

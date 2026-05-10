@@ -70,6 +70,15 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
         }
 
+        // 0. Fetch user info to get company_id for cache invalidation
+        const { data: userData } = await supabaseAdmin
+            .from('users')
+            .select('company_id')
+            .eq('id', id)
+            .single();
+
+        const companyId = userData?.company_id;
+
         // 1. Delete from all potential related tables to handle FK constraints
         const tablesWithUserId = [
             'attendance',
@@ -108,6 +117,17 @@ export async function DELETE(request: Request) {
         
         if (authError) {
             console.warn('Auth user deletion failed or user already gone:', authError.message);
+        }
+
+        // 4. Invalidate Redis Cache for the company
+        if (companyId) {
+            try {
+                const { redis } = await import('@/lib/redis');
+                const cacheKey = `company:users:${companyId}`;
+                await redis.del(cacheKey);
+            } catch (e) {
+                console.warn('Redis cache invalidation failed:', e);
+            }
         }
 
         return NextResponse.json({ success: true });

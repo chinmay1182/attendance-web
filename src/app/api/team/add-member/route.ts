@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { 
-            name, email, password, role, companyId, username,
+            name, email, password, role, companyId, username, siteId,
             department, phone, bio, id_proof, address, salary, joiningDate 
         } = body;
 
@@ -75,6 +75,24 @@ export async function POST(request: Request) {
             // but for safety in this flow, we delete if it's a fresh attempt
             // await supabaseAdmin.auth.admin.deleteUser(userId); 
             return NextResponse.json({ error: dbError.message }, { status: 500 });
+        }
+
+        // 4. Handle Site Assignment if provided
+        if (siteId) {
+            await supabaseAdmin.from('site_assignments').insert({
+                user_id: userId,
+                site_id: siteId,
+                status: 'active'
+            });
+        }
+
+        // 5. Invalidate Redis Cache for the company
+        try {
+            const { redis } = await import('@/lib/redis');
+            const cacheKey = `company:users:${companyId}`;
+            await redis.del(cacheKey);
+        } catch (cacheErr) {
+            console.warn('Redis cache invalidation failed:', cacheErr);
         }
 
         return NextResponse.json({ success: true, userId });
