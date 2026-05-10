@@ -21,6 +21,7 @@ type Company = {
     email?: string;
     created_at: string;
     owner_id: string; // admin who created it
+    corporate_id?: number; // numeric id
 };
 
 export default function CompaniesPage() {
@@ -238,6 +239,7 @@ export default function CompaniesPage() {
                             <thead>
                                 <tr>
                                     <th>Company Details</th>
+                                    <th>Corp ID</th>
                                     <th>Description</th>
                                     <th>Location / Address</th>
                                     <th>Tax / Identity</th>
@@ -258,6 +260,9 @@ export default function CompaniesPage() {
                                                 <td>
                                                     <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{comp.name}</div>
                                                     <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>ID: {comp.id.substring(0, 8)}...</div>
+                                                </td>
+                                                <td>
+                                                    <span className={styles.corpBadge}>{comp.corporate_id || 'N/A'}</span>
                                                 </td>
                                                 <td style={{ fontSize: '0.85rem', color: '#64748b', maxWidth: '200px' }}>{comp.description || '-'}</td>
                                                 <td>

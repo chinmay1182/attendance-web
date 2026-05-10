@@ -64,6 +64,22 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        // 3. Link creator to company if they don't have one
+        if (!id && data && requesterId) {
+            const { data: profile } = await supabaseAdmin
+                .from('users')
+                .select('company_id')
+                .eq('id', requesterId)
+                .single();
+            
+            if (profile && !profile.company_id) {
+                await supabaseAdmin
+                    .from('users')
+                    .update({ company_id: data.id })
+                    .eq('id', requesterId);
+            }
+        }
+
         return NextResponse.json({ success: true, company: data });
 
     } catch (err: any) {

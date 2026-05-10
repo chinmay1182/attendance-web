@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import styles from './geo-fencing.module.css';
 import toast from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import { useAuth } from '../../context/AuthContext';
 
 // Define types first so dynamic can use them
 // Define types first so dynamic can use them
@@ -23,6 +24,7 @@ const MapWithNoSSR = dynamic(
 );
 
 export default function GeoFencingPage() {
+    const { profile } = useAuth();
     const [sites, setSites] = useState<Site[]>([]);
     const [name, setName] = useState('');
     const [radius, setRadius] = useState('');
@@ -30,13 +32,15 @@ export default function GeoFencingPage() {
     const [lng, setLng] = useState(0);
 
     useEffect(() => {
-        fetchSites();
-    }, []);
+        if (profile?.company_id) fetchSites();
+    }, [profile]);
 
     const fetchSites = async () => {
+        if (!profile?.company_id) return;
         const { data } = await supabase
             .from('sites')
             .select('*')
+            .eq('company_id', profile.company_id)
             .order('created_at', { ascending: false });
         if (data) setSites(data);
     };
@@ -56,7 +60,8 @@ export default function GeoFencingPage() {
             name,
             radius_meters: parseInt(radius),
             latitude: lat,
-            longitude: lng
+            longitude: lng,
+            company_id: profile?.company_id
         }]);
 
         if (error) {

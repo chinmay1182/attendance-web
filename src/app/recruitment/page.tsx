@@ -92,9 +92,11 @@ export default function RecruitmentPage() {
     }, [user]);
 
     const fetchDepartments = async () => {
+        if (!profile?.company_id) return;
         const { data } = await supabase
             .from('departments')
             .select('id, name')
+            .eq('company_id', profile.company_id)
             .order('name', { ascending: true });
         if (data) setDepartments(data);
     };

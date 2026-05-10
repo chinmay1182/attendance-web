@@ -34,13 +34,23 @@ export async function POST(request: Request) {
 
         const userId = authData.user.id;
 
-        // 2. Create User Profile in DB
+        // 2. Fetch Corporate ID for the company
+        const { data: companyData } = await supabaseAdmin
+            .from('companies')
+            .select('corporate_id')
+            .eq('id', companyId)
+            .single();
+
+        const corporate_id = companyData?.corporate_id || null;
+
+        // 3. Create User Profile in DB
         const insertData: any = {
             id: userId,
             name,
             email,
             role,
             company_id: companyId,
+            corporate_id,
             username: username || null,
             department: department || null,
             phone: phone || null,

@@ -39,6 +39,8 @@ export default function EmployeeDashboard() {
     const [shiftEnd, setShiftEnd] = useState('');
     const [shiftHistory, setShiftHistory] = useState<any[]>([]);
     const [updatingShift, setUpdatingShift] = useState(false);
+    const [allSites, setAllSites] = useState<any[]>([]);
+    const [selectedSiteId, setSelectedSiteId] = useState<string>('all');
 
     useEffect(() => {
         if (!loading && !user) {
@@ -83,8 +85,19 @@ export default function EmployeeDashboard() {
     const handleOpenShiftModal = () => {
         setIsShiftModalOpen(true);
         fetchShiftHistory();
+        fetchAllSites();
         if (profile?.shift_start) setShiftStart(profile.shift_start);
         if (profile?.shift_end) setShiftEnd(profile.shift_end);
+    };
+
+    const fetchAllSites = async () => {
+        if (!profile?.company_id) return;
+        const { data } = await supabase
+            .from('sites')
+            .select('id, name')
+            .eq('company_id', profile.company_id)
+            .order('name');
+        if (data) setAllSites(data);
     };
 
     const fetchShiftHistory = async () => {
@@ -116,7 +129,8 @@ export default function EmployeeDashboard() {
                     adminId: user.id,
                     companyId: profile.company_id,
                     shiftStart,
-                    shiftEnd
+                    shiftEnd,
+                    siteId: selectedSiteId === 'all' ? null : selectedSiteId
                 })
             });
 
@@ -335,7 +349,27 @@ export default function EmployeeDashboard() {
                 <div className={styles.modalOverlay} onClick={() => setIsShiftModalOpen(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <h2 style={{ marginTop: 0, fontSize: '1.5rem', fontWeight: 700 }}>Manage Shifts</h2>
-                        <p style={{ color: '#64748b', marginBottom: '24px' }}>Set standard shift timings for all employees.</p>
+                        <p style={{ color: '#64748b', marginBottom: '24px' }}>Set standard shift timings for employees.</p>
+
+                        <div style={{ marginBottom: '20px' }}>
+                            <label className={styles.label}>Select Site</label>
+                            <select
+                                className={styles.input}
+                                value={selectedSiteId}
+                                onChange={e => setSelectedSiteId(e.target.value)}
+                                style={{ appearance: 'auto' }}
+                            >
+                                <option value="all">All Employees (Company-wide)</option>
+                                {allSites.map(site => (
+                                    <option key={site.id} value={site.id}>{site.name}</option>
+                                ))}
+                            </select>
+                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
+                                {selectedSiteId === 'all' 
+                                    ? "This will update the shift for every employee in the company." 
+                                    : `This will only update employees assigned to ${allSites.find(s => s.id === selectedSiteId)?.name}.`}
+                            </p>
+                        </div>
 
                         <div>
                             <label className={styles.label}>Shift Start</label>
@@ -362,7 +396,7 @@ export default function EmployeeDashboard() {
                                 Cancel
                             </button>
                             <button className={`${styles.modalBtn} ${styles.primaryBtn}`} onClick={handleUpdateShift} disabled={updatingShift}>
-                                {updatingShift ? 'Updating...' : 'Update Everyone'}
+                                {updatingShift ? 'Updating...' : selectedSiteId === 'all' ? 'Update Everyone' : 'Update Site Staff'}
                             </button>
                         </div>
 
@@ -377,7 +411,7 @@ export default function EmployeeDashboard() {
                                         <div>
                                             <div style={{ fontWeight: 500, color: 'var(--text-main)' }}>{h.shift_start} - {h.shift_end}</div>
                                             <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                                                Updated {new Date(h.created_at).toLocaleDateString()}
+                                                {h.site_id ? `Site: ${allSites.find(s => s.id === h.site_id)?.name || 'Unknown Site'}` : 'Company-wide'} • Updated {new Date(h.created_at).toLocaleDateString()}
                                             </div>
                                         </div>
                                         <div style={{ fontSize: '0.8rem', color: '#64748b' }}>

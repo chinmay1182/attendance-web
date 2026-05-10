@@ -21,10 +21,12 @@ type Employee = {
     id_proof?: string;
     address?: string;
     salary?: number;
+    corporate_id?: number;
 };
 
 type Department = { id: string, name: string };
 type Site = { id: string, name: string };
+type Company = { id: string, name: string, corporate_id: number };
 
 import { RoleGuard } from '../../components/RoleGuard';
 
@@ -33,6 +35,7 @@ export default function TeamPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [departments, setDepartments] = useState<Department[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
@@ -49,6 +52,7 @@ export default function TeamPage() {
         password: '', // Only for creation
         role: 'employee',
         department: '',
+        companyId: '',
         siteId: '',
         joiningDate: '', // YYYY-MM-DD
         username: '',
@@ -70,7 +74,7 @@ export default function TeamPage() {
 
     const fetchData = async () => {
         setLoading(true);
-        await Promise.all([fetchEmployees(), fetchDepartments(), fetchSites(), fetchOnlineStatus()]);
+        await Promise.all([fetchEmployees(), fetchDepartments(), fetchSites(), fetchCompanies(), fetchOnlineStatus()]);
         setLoading(false);
     };
 
@@ -113,13 +117,33 @@ export default function TeamPage() {
     };
 
     const fetchDepartments = async () => {
-        const { data } = await supabase.from('departments').select('*').order('name');
+        if (!profile?.company_id) return;
+        const { data } = await supabase
+            .from('departments')
+            .select('*')
+            .eq('company_id', profile.company_id)
+            .order('name');
         if (data) setDepartments(data);
     };
 
     const fetchSites = async () => {
-        const { data } = await supabase.from('sites').select('id, name').order('name');
+        if (!profile?.company_id) return;
+        const { data } = await supabase
+            .from('sites')
+            .select('id, name')
+            .eq('company_id', profile.company_id)
+            .order('name');
         if (data) setSites(data);
+    };
+    
+    const fetchCompanies = async () => {
+        if (!profile?.id) return;
+        const { data } = await supabase
+            .from('companies')
+            .select('id, name, corporate_id')
+            .or(`id.eq.${profile?.company_id},owner_id.eq.${user?.id}`)
+            .order('name');
+        if (data) setCompanies(data);
     };
 
     const fetchOnlineStatus = async () => {
@@ -260,7 +284,7 @@ export default function TeamPage() {
                         email: formData.email,
                         password: formData.password,
                         role: formData.role,
-                        companyId: profile?.company_id,
+                        companyId: formData.companyId || profile?.company_id,
                         username: formData.username || formData.email.split('@')[0] + Math.floor(Math.random() * 1000),
                         department: formData.department,
                         phone: formData.phone,
@@ -321,6 +345,7 @@ export default function TeamPage() {
 
     const openAdd = () => {
         resetForm();
+        setFormData(prev => ({ ...prev, companyId: profile?.company_id || '' }));
         setIsEditing(false);
         setIsModalOpen(true);
     };
@@ -337,6 +362,7 @@ export default function TeamPage() {
             password: '',
             role: emp.role,
             department: emp.department || '',
+            companyId: emp.company_id || '',
             siteId: siteId,
             joiningDate: emp.created_at ? new Date(emp.created_at).toISOString().split('T')[0] : '',
             username: '',
@@ -358,6 +384,7 @@ export default function TeamPage() {
             password: '',
             role: 'employee',
             department: '',
+            companyId: profile?.company_id || '',
             siteId: '',
             joiningDate: new Date().toISOString().split('T')[0],
             username: '',
@@ -388,6 +415,7 @@ export default function TeamPage() {
                             <tr>
                                 <th>Name / Email</th>
                                 <th>Role</th>
+                                <th>Corp ID</th>
                                 <th>Department</th>
                                 <th>Phone</th>
                                 <th>Salary</th>
@@ -424,6 +452,11 @@ export default function TeamPage() {
                                             <td>
                                                 <span className={`${styles.roleBadge} ${styles['role' + emp.role]}`}>
                                                     {emp.role.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569' }}>
+                                                    {emp.corporate_id || '-'}
                                                 </span>
                                             </td>
                                             <td>{emp.department || '-'}</td>
@@ -616,6 +649,21 @@ export default function TeamPage() {
                                     <option value="employee">Employee</option>
                                     <option value="hr">HR</option>
                                     <option value="admin">Admin</option>
+                                </select>
+                            </div>
+
+                            {/* Company Selection */}
+                            <div>
+                                <label className={styles.label}>Company *</label>
+                                <select
+                                    className={styles.select}
+                                    value={formData.companyId}
+                                    onChange={e => setFormData({ ...formData, companyId: e.target.value })}
+                                >
+                                    <option value="">-- Select Company --</option>
+                                    {companies.map(comp => (
+                                        <option key={comp.id} value={comp.id}>{comp.name} ({comp.corporate_id})</option>
+                                    ))}
                                 </select>
                             </div>
 

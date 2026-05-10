@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { adminId, companyId, shiftStart, shiftEnd } = body;
+        const { adminId, companyId, shiftStart, shiftEnd, siteId } = body;
 
         if (!adminId || !companyId || !shiftStart || !shiftEnd) {
             return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
@@ -23,15 +23,42 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Unauthorized. Admin privileges required.' }, { status: 403 });
         }
 
-        // 2. Perform the bulk update
-        const { data: updatedUsers, error: updateErr } = await supabaseAdmin
+        let userIdsToUpdate: string[] | null = null;
+
+        // 2. If siteId is provided, get the list of users assigned to that site
+        if (siteId) {
+            const { data: assignments, error: assignErr } = await supabaseAdmin
+                .from('site_assignments')
+                .select('user_id')
+                .eq('site_id', siteId)
+                .eq('status', 'active');
+
+            if (assignErr) {
+                console.error('Fetch Site Assignments Error:', assignErr);
+                return NextResponse.json({ error: 'Failed to fetch site assignments' }, { status: 500 });
+            }
+
+            userIdsToUpdate = assignments?.map(a => a.user_id) || [];
+            
+            if (userIdsToUpdate.length === 0) {
+                return NextResponse.json({ success: true, updatedCount: 0, message: 'No active staff found for this site.' });
+            }
+        }
+
+        // 3. Perform the bulk update
+        let query = supabaseAdmin
             .from('users')
             .update({
                 shift_start: shiftStart,
                 shift_end: shiftEnd
             })
-            .eq('company_id', companyId)
-            .select('id');
+            .eq('company_id', companyId);
+
+        if (userIdsToUpdate) {
+            query = query.in('id', userIdsToUpdate);
+        }
+
+        const { data: updatedUsers, error: updateErr } = await query.select('id');
 
         if (updateErr) {
             console.error('Bulk Shift Update Error:', updateErr);
@@ -40,12 +67,13 @@ export async function POST(request: Request) {
 
         const count = updatedUsers?.length || 0;
 
-        // 3. Record in history
+        // 4. Record in history
         await supabaseAdmin.from('shift_history').insert({
             admin_id: adminId,
             shift_start: shiftStart,
             shift_end: shiftEnd,
-            applied_to_count: count
+            applied_to_count: count,
+            site_id: siteId || null
         });
 
         return NextResponse.json({ success: true, updatedCount: count });
