@@ -7,9 +7,9 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { id, updates, requesterId } = body;
 
-        if (!id || !updates) {
+        if (!updates || !requesterId) {
             return NextResponse.json(
-                { error: 'Missing ID or updates' },
+                { error: 'Missing updates or requester ID' },
                 { status: 400 }
             );
         }

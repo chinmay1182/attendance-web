@@ -132,7 +132,8 @@ export default function PerformancePage() {
         });
 
         if (error) {
-            toast.error('Failed to assign goal');
+            console.error('Assign Goal Error:', error);
+            toast.error(error.message || 'Failed to assign goal');
         } else {
             toast.success('Goal assigned successfully! 🎯');
             setIsAssignModalOpen(false);
@@ -150,7 +151,8 @@ export default function PerformancePage() {
             .eq('id', goalId);
 
         if (error) {
-            toast.error('Failed to update progress');
+            console.error('Update Progress Error:', error);
+            toast.error(error.message || 'Failed to update progress');
         } else {
             toast.success('Progress updated! 📈');
             fetchAllGoals();
@@ -166,7 +168,8 @@ export default function PerformancePage() {
             .eq('id', goalId);
 
         if (error) {
-            toast.error('Failed to delete goal');
+            console.error('Delete Goal Error:', error);
+            toast.error(error.message || 'Failed to delete goal');
         } else {
             toast.success('Goal deleted!');
             fetchAllGoals();
