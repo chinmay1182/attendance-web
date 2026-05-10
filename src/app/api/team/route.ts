@@ -70,29 +70,49 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: 'Missing ID' }, { status: 400 });
         }
 
-        // 1. Delete Attendance Logs First (FK Constraint)
-        const { error: attendanceError } = await supabaseAdmin
-            .from('attendance')
-            .delete()
-            .eq('user_id', id);
+        // 1. Delete from all potential related tables to handle FK constraints
+        const tablesWithUserId = [
+            'attendance',
+            'site_assignments',
+            'shift_history',
+            'leave_requests',
+            'candidate_notes',
+            'overtime_requests',
+            'expense_claims'
+        ];
 
-        if (attendanceError) {
-            console.error('Failed to delete attendance logs', attendanceError);
-            return NextResponse.json({ error: 'Failed to delete user attendance data' }, { status: 500 });
+        for (const table of tablesWithUserId) {
+            const { error: tableErr } = await supabaseAdmin
+                .from(table)
+                .delete()
+                .eq('user_id', id);
+            
+            if (tableErr) {
+                console.warn(`Non-critical error deleting from ${table}:`, tableErr.message);
+            }
         }
 
-        // 2. Delete User Profile
-        const { error } = await supabaseAdmin
+        // 2. Delete User Profile from public.users
+        const { error: profileError } = await supabaseAdmin
             .from('users')
             .delete()
             .eq('id', id);
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        if (profileError) {
+            console.error('Profile deletion error:', profileError);
+            return NextResponse.json({ error: 'Failed to delete user profile: ' + profileError.message }, { status: 500 });
+        }
+
+        // 3. Delete from Supabase Auth
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+        
+        if (authError) {
+            console.warn('Auth user deletion failed or user already gone:', authError.message);
         }
 
         return NextResponse.json({ success: true });
     } catch (err: any) {
+        console.error('Delete API Error:', err);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

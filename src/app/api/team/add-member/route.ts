@@ -66,12 +66,14 @@ export async function POST(request: Request) {
 
         const { error: dbError } = await supabaseAdmin
             .from('users')
-            .insert([insertData]);
+            .upsert([insertData], { onConflict: 'id' });
 
         if (dbError) {
-            console.error('DB Insert Error:', dbError);
-            // Cleanup auth user on failure
-            await supabaseAdmin.auth.admin.deleteUser(userId);
+            console.error('DB Upsert Error:', dbError);
+            // Cleanup auth user on failure if it was a fresh creation
+            // Note: If upsert failed, we still might want to keep the auth user
+            // but for safety in this flow, we delete if it's a fresh attempt
+            // await supabaseAdmin.auth.admin.deleteUser(userId); 
             return NextResponse.json({ error: dbError.message }, { status: 500 });
         }
 

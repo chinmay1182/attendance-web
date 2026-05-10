@@ -158,3 +158,15 @@ button {
     padding: 16px !important;
   }
 }
+
+/* Hide scrollbars for all modals while maintaining scrollability */
+[class*="modal"], 
+[class*="Modal"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+[class*="modal"]::-webkit-scrollbar,
+[class*="Modal"]::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
