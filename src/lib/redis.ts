@@ -6,45 +6,61 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const client = createClient({
     url: redisUrl,
     socket: {
-        connectTimeout: 2000,
+        connectTimeout: 1000, // Reduced timeout
+        reconnectStrategy: (retries) => Math.min(retries * 50, 500) // Aggressive retry limit
     }
 });
 
+let isConnecting = false;
+
 client.on('error', (err) => {
-    // Suppress logs to avoid noise if not running
-    if (process.env.NODE_ENV === 'development') return;
-    console.error('Redis Client Error', err);
+    // Only log errors in production to avoid cluttering dev logs
+    if (process.env.NODE_ENV === 'production') {
+        console.error('Redis Client Error', err.message);
+    }
 });
 
-// Attempt connection non-blocking
-if (!client.isOpen) {
-    client.connect().catch((err) => {
-        console.warn('⚠️ Redis not available, using in-memory fallback or database directly.');
-    });
+async function ensureConnected() {
+    if (client.isOpen) return true;
+    if (isConnecting) return false;
+
+    isConnecting = true;
+    try {
+        await client.connect();
+        return true;
+    } catch (err) {
+        // Fail silently
+        return false;
+    } finally {
+        isConnecting = false;
+    }
 }
 
 // Singleton for Next.js HMR
 const globalForRedis = global as unknown as { redis: any };
 
-// Safe Wrapper
+// Safe Wrapper Proxy
 const safeRedis = new Proxy(client, {
     get(target, prop: any) {
         // Intercept standard commands to check connection status first
         if (prop === 'get') {
             return async (key: string) => {
-                if (!target.isOpen) return null;
+                const connected = await ensureConnected();
+                if (!connected) return null;
                 try { return await target.get(key); } catch (e) { return null; }
             };
         }
         if (prop === 'set') {
             return async (key: string, value: string, options?: any) => {
-                if (!target.isOpen) return; // Fail silently
+                const connected = await ensureConnected();
+                if (!connected) return; 
                 try { return await target.set(key, value, options); } catch (e) { }
             };
         }
         if (prop === 'del') {
             return async (key: string | string[]) => {
-                if (!target.isOpen) return;
+                const connected = await ensureConnected();
+                if (!connected) return;
                 try { return await target.del(key); } catch (e) { }
             };
         }
@@ -65,4 +81,3 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export const redis = (globalForRedis.redis || safeRedis) as typeof client;
-

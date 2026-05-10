@@ -83,7 +83,7 @@ export default function PerformancePage() {
             .from('performance_goals')
             .select(`
                 *,
-                users!performance_goals_employee_id_fkey (
+                users (
                     name,
                     email
                 )
