@@ -13,18 +13,26 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'UID is required' }, { status: 400 });
         }
 
-        // 1. Get Admin's Company ID
+        const companyIdParam = searchParams.get('companyId');
+
+        // 1. Get Admin's Company ID and Role
         const { data: adminUser, error: adminError } = await supabaseAdmin
             .from('users')
-            .select('company_id')
+            .select('company_id, role')
             .eq('id', uid)
             .single();
 
-        if (adminError || !adminUser?.company_id) {
-            return NextResponse.json({ error: 'User company not found' }, { status: 404 });
+        if (adminError) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        const companyId = adminUser.company_id;
+        // Use param if provided, otherwise default to user's company
+        let companyId = companyIdParam || adminUser.company_id;
+
+        if (!companyId) {
+            return NextResponse.json({ error: 'No company associated' }, { status: 400 });
+        }
+
         const cacheKey = `company:users:${companyId}`;
 
         // 2. Try Cache

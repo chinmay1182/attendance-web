@@ -11,7 +11,8 @@ import toast from 'react-hot-toast';
 export default function SettingsPage() {
     const { user, profile } = useAuth();
     const [loading, setLoading] = useState(false);
-    const isAdmin = profile?.role === 'admin';
+    const isPowerUser = profile?.role === 'admin' || profile?.role === 'hr';
+
 
     // Profile fields
     const [name, setName] = useState('');
@@ -22,6 +23,8 @@ export default function SettingsPage() {
     const [bio, setBio] = useState('');
     const [photoURL, setPhotoURL] = useState('');
     const [recoveryPin, setRecoveryPin] = useState('');
+    const [companyName, setCompanyName] = useState('');
+
 
     // App preferences
     const [emailNotif, setEmailNotif] = useState(true);
@@ -40,8 +43,19 @@ export default function SettingsPage() {
     const [deletingAccount, setDeletingAccount] = useState(false);
 
     useEffect(() => {
+        const fetchCompany = async () => {
+            if (profile?.company_id) {
+                const { data } = await supabase
+                    .from('companies')
+                    .select('name')
+                    .eq('id', profile.company_id)
+                    .single();
+                if (data) setCompanyName(data.name);
+            }
+        };
         if (profile) {
             updateLocalState(profile);
+            fetchCompany();
 
             // Real-time sync for profile updates
             const channel = supabase.channel(`settings_profile_${user?.id}`)
@@ -255,27 +269,32 @@ export default function SettingsPage() {
                                 <div className={styles.avatar} style={{ backgroundImage: photoURL ? `url(${photoURL})` : 'none' }}>
                                     {!photoURL && name.charAt(0).toUpperCase()}
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    <label className={styles.uploadBtn}>
-                                        {uploading ? 'Uploading...' : 'Change Photo'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handlePhotoUpload}
-                                            style={{ display: 'none' }}
-                                            disabled={uploading}
-                                        />
-                                    </label>
-                                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Max 2MB. JPG, PNG</span>
-                                </div>
+                                {(profile?.role === 'admin' || profile?.role === 'hr') && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        <label className={styles.uploadBtn}>
+                                            {uploading ? 'Uploading...' : 'Change Photo'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handlePhotoUpload}
+                                                style={{ display: 'none' }}
+                                                disabled={uploading}
+                                            />
+                                        </label>
+                                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Max 2MB. JPG, PNG</span>
+                                    </div>
+                                )}
                             </div>
+
 
                             <Input
                                 label="Full Name"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 required
+                                disabled={!isPowerUser}
                             />
+
 
                             <Input
                                 label="Email"
@@ -285,24 +304,38 @@ export default function SettingsPage() {
                             />
 
                             <Input
+                                label="Company"
+                                value={companyName}
+                                disabled
+                                placeholder="Company Name"
+                            />
+
+
+                            <Input
                                 label="Phone Number"
                                 value={phone}
                                 onChange={e => setPhone(e.target.value)}
+                                disabled={!isPowerUser}
                             />
+
 
                             <Input
                                 label="Department"
                                 value={department}
                                 onChange={e => setDepartment(e.target.value)}
                                 placeholder="e.g., Engineering, HR, Sales"
+                                disabled={!isPowerUser}
                             />
+
 
                             <Input
                                 label="Position"
                                 value={position}
                                 onChange={e => setPosition(e.target.value)}
                                 placeholder="e.g., Software Engineer, Manager"
+                                disabled={!isPowerUser}
                             />
+
 
                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>Bio</label>
@@ -311,18 +344,22 @@ export default function SettingsPage() {
                                     onChange={e => setBio(e.target.value)}
                                     placeholder="Tell us about yourself..."
                                     rows={3}
+                                    disabled={!isPowerUser}
                                     style={{
                                         width: '100%',
                                         padding: '12px',
                                         borderRadius: '8px',
                                         border: '1px solid #e2e8f0',
                                         fontSize: '14px',
-                                        fontFamily: 'inherit'
+                                        fontFamily: 'inherit',
+                                        backgroundColor: !isPowerUser ? '#f8fafc' : 'white'
                                     }}
                                 />
+
                             </div>
 
-                            <Button type="submit" isLoading={loading}>Save Changes</Button>
+                            {isPowerUser && <Button type="submit" isLoading={loading}>Save Changes</Button>}
+
                         </form>
                     </div>
 
@@ -373,34 +410,40 @@ export default function SettingsPage() {
                             </select>
                         </div>
 
-                        <h2 className={styles.sectionTitle} style={{ marginTop: '32px' }}>Security</h2>
+                        {isPowerUser && (
+                            <>
+                                <h2 className={styles.sectionTitle} style={{ marginTop: '32px' }}>Security</h2>
 
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel}>Password</div>
-                                <div className={styles.settingDesc}>Update your password to keep your account secure</div>
-                            </div>
-                            <Button variant="secondary" onClick={() => setIsPasswordModalOpen(true)}>
-                                Change
-                            </Button>
-                        </div>
-
-                        <div className={styles.settingItem} style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px', marginTop: '24px' }}>
-                            <div style={{ flex: 1 }}>
-                                <div className={styles.settingLabel}>Security PIN (Recovery Code)</div>
-                                <div className={styles.settingDesc}>6-digit code used to reset password if email is inaccessible</div>
-                                <div style={{ marginTop: '12px', maxWidth: '200px' }}>
-                                    <Input
-                                        placeholder="000000"
-                                        value={recoveryPin}
-                                        onChange={e => setRecoveryPin(e.target.value.replace(/\D/g, '').substring(0, 6))}
-                                        maxLength={6}
-                                    />
+                                <div className={styles.settingItem}>
+                                    <div>
+                                        <div className={styles.settingLabel}>Password</div>
+                                        <div className={styles.settingDesc}>Update your password to keep your account secure</div>
+                                    </div>
+                                    <Button variant="secondary" onClick={() => setIsPasswordModalOpen(true)}>
+                                        Change
+                                    </Button>
                                 </div>
-                            </div>
-                        </div>
 
-                        {isAdmin && (
+                                <div className={styles.settingItem} style={{ borderTop: '1px solid #f1f5f9', paddingTop: '24px', marginTop: '24px' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <div className={styles.settingLabel}>Security PIN (Recovery Code)</div>
+                                        <div className={styles.settingDesc}>6-digit code used to reset password if email is inaccessible</div>
+                                        <div style={{ marginTop: '12px', maxWidth: '200px' }}>
+                                            <Input
+                                                placeholder="000000"
+                                                value={recoveryPin}
+                                                onChange={e => setRecoveryPin(e.target.value.replace(/\D/g, '').substring(0, 6))}
+                                                maxLength={6}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+
+                        {profile?.role === 'admin' && (
+
                             <>
                                 <h2 className={styles.sectionTitle} style={{ marginTop: '32px' }}>Admin Settings</h2>
 
@@ -434,28 +477,33 @@ export default function SettingsPage() {
                         )}
 
                         {/* Danger Zone — Delete Account */}
-                        <h2 className={styles.sectionTitle} style={{ marginTop: '32px', color: '#ef4444', borderBottomColor: '#fee2e2' }}>Danger Zone</h2>
-                        <div className={styles.settingItem}>
-                            <div>
-                                <div className={styles.settingLabel} style={{ color: '#ef4444' }}>Delete Account</div>
-                                <div className={styles.settingDesc}>
-                                    Request account deletion. Admin approval is required before your account is permanently removed.
+                        {isPowerUser && (
+                            <>
+                                <h2 className={styles.sectionTitle} style={{ marginTop: '32px', color: '#ef4444', borderBottomColor: '#fee2e2' }}>Danger Zone</h2>
+                                <div className={styles.settingItem}>
+                                    <div>
+                                        <div className={styles.settingLabel} style={{ color: '#ef4444' }}>Delete Account</div>
+                                        <div className={styles.settingDesc}>
+                                            Request account deletion. Admin approval is required before your account is permanently removed.
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setIsDeleteModalOpen(true)}
+                                        style={{
+                                            padding: '8px 16px', background: '#fff', color: '#ef4444',
+                                            border: '1.5px solid #ef4444', borderRadius: '8px',
+                                            fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        Delete Account
+                                    </button>
                                 </div>
-                            </div>
-                            <button
-                                onClick={() => setIsDeleteModalOpen(true)}
-                                style={{
-                                    padding: '8px 16px', background: '#fff', color: '#ef4444',
-                                    border: '1.5px solid #ef4444', borderRadius: '8px',
-                                    fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                Delete Account
-                            </button>
-                        </div>
+                            </>
+                        )}
                     </div>
                 </div>
+
 
                 {/* Password Change Modal */}
                 {isPasswordModalOpen && (

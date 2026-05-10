@@ -15,18 +15,16 @@ type Department = {
 export default function OrgStructurePage() {
     const { profile } = useAuth();
     const [departments, setDepartments] = useState<Department[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [initialFetchDone, setInitialFetchDone] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentDept, setCurrentDept] = useState<Partial<Department>>({});
     const [isEditing, setIsEditing] = useState(false);
 
-    useEffect(() => {
-        if (profile?.company_id) fetchDepartments();
-    }, [profile]);
+    const fetchDepartments = async (isBackground = false) => {
+        if (!profile?.company_id) return;
+        if (!isBackground) setLoading(true);
 
-    const fetchDepartments = async () => {
-        if (!profile?.company_id) { setLoading(false); return; }
-        setLoading(true);
         const { data, error } = await supabase
             .from('departments')
             .select('*')
@@ -35,14 +33,23 @@ export default function OrgStructurePage() {
 
         if (data) setDepartments(data);
         setLoading(false);
+        setInitialFetchDone(true);
     };
 
     useEffect(() => {
+        if (profile?.company_id && !initialFetchDone) {
+            fetchDepartments();
+        }
+    }, [profile, initialFetchDone]);
+
+
+    useEffect(() => {
         const channel = supabase.channel('org_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'departments' }, () => fetchDepartments())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'departments' }, () => fetchDepartments(true))
             .subscribe();
         return () => { supabase.removeChannel(channel); };
-    }, []);
+    }, [profile?.company_id]);
+
 
     const handleSave = async () => {
         if (!currentDept.name) {
@@ -71,6 +78,8 @@ export default function OrgStructurePage() {
             }
             setIsModalOpen(false);
             setCurrentDept({});
+            fetchDepartments(true); // Immediate refresh
+
         } catch (error: any) {
             console.error(error);
             toast.error("Operation failed");
@@ -89,7 +98,9 @@ export default function OrgStructurePage() {
             toast.error("Failed to delete department");
         } else {
             toast.success("Department deleted");
+            fetchDepartments(true); // Immediate refresh
         }
+
     };
 
     const openAdd = () => {

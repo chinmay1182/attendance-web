@@ -8,11 +8,13 @@ import { Navbar } from '../../components/Navbar';
 import { supabase } from '../../lib/supabaseClient';
 
 const libraries: ("places" | "geometry")[] = ["places", "geometry"];
+
 import { useAuth } from '../../context/AuthContext';
 import styles from './sites.module.css';
 import toast from 'react-hot-toast';
 
 type Site = {
+    company_id: string;
     id: string;
     name: string;
     address: string;
@@ -68,6 +70,9 @@ export default function SitesPage() {
     const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
     const [broadcastMessage, setBroadcastMessage] = useState('');
     const [selectedSiteId, setSelectedSiteId] = useState('');
+    const [selectedCompanyId, setSelectedCompanyId] = useState('');
+    const [userCompanies, setUserCompanies] = useState<any[]>([]);
+
 
     // Address Search State
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -91,17 +96,21 @@ export default function SitesPage() {
     const [newAssign, setNewAssign] = useState({ user_id: '', site_id: '' });
     const [submitting, setSubmitting] = useState(false);
 
-    const { isLoaded } = useJsApiLoader({
+    const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        googleMapsApiKey: "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
         libraries
     });
+
+    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
 
     useEffect(() => {
         if (canManage) {
             fetchSites();
             fetchUsers();
             fetchAssignments();
+            fetchUserCompanies();
 
             const channel = supabase.channel('sites_admin_realtime')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'sites' }, () => fetchSites())
@@ -109,6 +118,7 @@ export default function SitesPage() {
                 .subscribe();
             return () => { supabase.removeChannel(channel); };
         } else if (user) {
+
             fetchMyAssignment();
 
             const channel = supabase.channel('sites_user_realtime')
@@ -140,27 +150,66 @@ export default function SitesPage() {
     // --- Data Fetching ---
 
     const fetchSites = async () => {
-        if (!profile?.company_id) return;
-        const { data } = await supabase
-            .from('sites')
-            .select('*')
-            .eq('company_id', profile.company_id)
-            .order('created_at', { ascending: false });
-        if (data) setSites(data);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/admin/sites', {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                console.log("Admin API: Total Sites Fetched:", data?.length);
+                if (Array.isArray(data)) setSites(data);
+            }
+        } catch (err) {
+            console.error("Fetch Sites API Error:", err);
+            toast.error("Failed to load sites via API");
+        }
     };
 
+
+
     const fetchUsers = async () => {
-        let query = supabase.from('users').select('*');
-        if (profile?.company_id) {
-            query = query.eq('company_id', profile.company_id);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch('/api/admin/users', {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                console.log("Admin API: Total Users Fetched:", data?.length);
+                if (Array.isArray(data)) setUsers(data);
+            }
+        } catch (err) {
+            console.error("Fetch Users API Error:", err);
+            toast.error("Failed to load users via API");
         }
-        const { data } = await query;
-        if (data) setUsers(data);
+    };
+
+
+
+    const fetchUserCompanies = async () => {
+        if (!user) return;
+        const { data, error } = await supabase
+            .from('companies')
+            .select('id, name')
+            .or(`owner_id.eq.${user.id},id.eq.${profile?.company_id}`);
+        
+        if (error) {
+            console.error("Fetch Companies Error:", error.message);
+            return;
+        }
+
+        if (data) {
+            setUserCompanies(data);
+            if (!selectedCompanyId) setSelectedCompanyId(profile?.company_id || data[0]?.id || '');
+        }
     };
 
     const fetchAssignments = async () => {
-        if (!profile?.company_id) return;
-
         const { data, error } = await supabase
             .from('site_assignments')
             .select(`
@@ -168,20 +217,21 @@ export default function SitesPage() {
                 user:users!inner(name, email, role, company_id),
                 site:sites!site_id(name, address, latitude, longitude, radius_meters)
             `)
-            .eq('user.company_id', profile.company_id)
             .eq('status', 'active');
 
-        console.log("Fetch Assignments Response:", { data, error });
         if (error) {
-            console.error("Fetch Assignments Error:", error);
+            console.error("Fetch Assignments Error Message:", error.message);
+            console.error("Fetch Assignments Error Code:", error.code);
         }
 
         if (data) setAssignments(data as any);
     };
 
+
+
     const fetchMyAssignment = async () => {
         if (!user) return;
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('site_assignments')
             .select(`
                 *,
@@ -190,12 +240,21 @@ export default function SitesPage() {
             .eq('user_id', user.id)
             .eq('status', 'active')
             .single();
+
+        if (error || !data) {
+            setMyAssignment(null);
+            setGeoDistance(null);
+            setCanCheckIn(false);
+            return;
+        }
+
         if (data) {
             setMyAssignment(data as any);
             // Verify location immediately
             verifyLocation(data.site);
         }
     };
+
 
     // --- Actions ---
 
@@ -437,9 +496,10 @@ export default function SitesPage() {
                     <h1 className={styles.title}>{canManage ? 'Site Management' : 'My Site'}</h1>
                     {canManage && (
                         <div style={{ display: 'flex', gap: '12px' }}>
-                            <button onClick={() => setIsAssignOpen(true)} className={styles.tabBtn} style={{ background: '#212121', color: 'white', borderColor: '#212121' }}>
+                            <button onClick={() => { fetchUsers(); fetchUserCompanies(); setIsAssignOpen(true); }} className={styles.tabBtn} style={{ background: '#212121', color: 'white', borderColor: '#212121' }}>
                                 Assign User
                             </button>
+
                             <button onClick={() => setIsAddSiteOpen(true)} className={styles.tabBtn}>
                                 Add Site
                             </button>
@@ -629,16 +689,14 @@ export default function SitesPage() {
                             </div>
                             <div className={styles.inputGroup} style={{ position: 'relative' }}>
                                 <label className={styles.label}>Address</label>
-                                {isLoaded && (
+                                {isLoaded ? (
                                     <Autocomplete
                                         onLoad={(autocomplete) => {
-                                            // Store autocomplete instance if needed
-                                            (window as any).autocomplete = autocomplete;
+                                            autocompleteRef.current = autocomplete;
                                         }}
                                         onPlaceChanged={() => {
-                                            const autocomplete = (window as any).autocomplete;
-                                            if (autocomplete !== null) {
-                                                const place = autocomplete.getPlace();
+                                            if (autocompleteRef.current !== null) {
+                                                const place = autocompleteRef.current.getPlace();
                                                 if (place.geometry && place.geometry.location) {
                                                     setNewSite({
                                                         ...newSite,
@@ -647,8 +705,6 @@ export default function SitesPage() {
                                                         longitude: place.geometry.location.lng().toString()
                                                     });
                                                 }
-                                            } else {
-                                                console.log('Autocomplete is not loaded yet!');
                                             }
                                         }}
                                     >
@@ -659,6 +715,18 @@ export default function SitesPage() {
                                             placeholder="Search or enter full address"
                                         />
                                     </Autocomplete>
+                                ) : loadError ? (
+                                    <div style={{ color: 'red', fontSize: '0.8rem', marginTop: '4px' }}>
+                                        Error loading Google Maps. Please check your API key and permissions.
+                                    </div>
+                                ) : (
+                                    <input
+                                        className={styles.input}
+                                        value={newSite.address}
+                                        onChange={e => setNewSite({ ...newSite, address: e.target.value })}
+                                        placeholder="Loading address search..."
+                                        disabled
+                                    />
                                 )}
 
                             </div>
@@ -732,24 +800,79 @@ export default function SitesPage() {
                             <h3 style={{ marginTop: 0, marginBottom: '24px' }}>Assign User to Site</h3>
 
                             <div className={styles.inputGroup}>
-                                <label className={styles.label}>Select User</label>
-                                <select className={styles.select} value={newAssign.user_id} onChange={e => setNewAssign({ ...newAssign, user_id: e.target.value })}>
-                                    <option value="">-- Choose User --</option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                <label className={styles.label}>Select Company</label>
+                                <select
+                                    className={styles.select}
+                                    value={selectedCompanyId}
+                                    onChange={e => setSelectedCompanyId(e.target.value)}
+                                >
+                                    <option value="">-- Choose Company --</option>
+                                    {userCompanies.map(comp => (
+                                        <option key={comp.id} value={comp.id}>{comp.name}</option>
                                     ))}
                                 </select>
                             </div>
 
                             <div className={styles.inputGroup}>
+                                <label className={styles.label}>Select User</label>
+                                <select className={styles.select} value={newAssign.user_id} onChange={e => setNewAssign({ ...newAssign, user_id: e.target.value })}>
+                                    <option value="">-- Choose User --</option>
+                                    {/* Show only matches for the selected company */}
+                                    {users
+                                        .filter(u => {
+                                            const uCompId = u.company_id?.toString();
+                                            const sCompId = selectedCompanyId?.toString();
+                                            const isNotAdmin = u.role?.toLowerCase() !== 'admin';
+                                            return uCompId === sCompId && isNotAdmin;
+                                        })
+                                        .map(u => (
+                                            <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+                                        ))
+                                    }
+                                    
+                                    {users.length > 0 && users.filter(u => u.company_id?.toString() === selectedCompanyId?.toString() && u.role?.toLowerCase() !== 'admin').length === 0 && (
+                                        <option disabled>No employees found for this company</option>
+                                    )}
+                                    
+                                    {users.length === 0 && (
+                                        <option disabled>Loading data...</option>
+                                    )}
+
+
+                                </select>
+                            </div>
+
+
+                            <div className={styles.inputGroup}>
                                 <label className={styles.label}>Select Site</label>
                                 <select className={styles.select} value={newAssign.site_id} onChange={e => setNewAssign({ ...newAssign, site_id: e.target.value })}>
                                     <option value="">-- Choose Site --</option>
-                                    {sites.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
+                                    {/* Direct Matches */}
+                                    {sites
+                                        .filter(s => s.company_id?.toString() === selectedCompanyId?.toString())
+                                        .map(s => (
+                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                        ))
+                                    }
+                                    
+                                    {/* Fallback: All Sites if no direct matches */}
+                                    {sites.length > 0 && sites.filter(s => s.company_id?.toString() === selectedCompanyId?.toString()).length === 0 && (
+                                        <>
+                                            <option disabled>--- All Available Sites ---</option>
+                                            {sites.map(s => (
+                                                <option key={s.id} value={s.id}>{s.name} ({s.address || 'No Address'})</option>
+                                            ))}
+                                        </>
+                                    )}
+
+                                    {sites.length === 0 && (
+                                        <option disabled>No sites found or loading...</option>
+                                    )}
+
+
                                 </select>
                             </div>
+
 
                             <button onClick={handleAssignUser} className={styles.primaryBtn}>
                                 Assign Now

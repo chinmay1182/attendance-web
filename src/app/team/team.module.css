@@ -20,9 +20,10 @@
     font-size: 1.5rem;
     font-weight: 500;
     color: var(--text-main);
-    margin-bottom: 24px;
+    margin: 0;
     letter-spacing: -0.5px;
 }
+
 
 .headerActions {
     display: flex;

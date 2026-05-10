@@ -1,6 +1,6 @@
-
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { redis } from '@/lib/redis';
 
 export async function POST(request: Request) {
     try {
@@ -88,13 +88,11 @@ export async function POST(request: Request) {
         }
 
         // 5. Invalidate Redis Cache for the company
-        try {
-            const { redis } = await import('@/lib/redis');
+        if (companyId) {
             const cacheKey = `company:users:${companyId}`;
             await redis.del(cacheKey);
-        } catch (cacheErr) {
-            console.warn('Redis cache invalidation failed:', cacheErr);
         }
+
 
         return NextResponse.json({ success: true, userId });
     } catch (err: any) {

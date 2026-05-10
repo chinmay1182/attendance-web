@@ -15,22 +15,19 @@ type Ticket = {
     created_at: string;
     notes?: string;
     user_id: string;
+    users?: { name: string, email: string } | { name: string, email: string }[];
 };
 
-const FAQ_SMT = [
-    { q: 'What is the SMT (Sales Management Tool)?', a: 'SMT is a module within BizKit designed to help your sales team track leads, manage pipelines, and monitor deal progress in real time.' },
-    { q: 'How do I add a new lead in SMT?', a: 'Navigate to BizKit SMT, click "New Lead", fill in the contact details and pipeline stage, then click Save.' },
-    { q: 'Can I export SMT reports?', a: 'Yes. Go to Reports inside SMT, select a date range, and use the Export button to download a CSV or PDF.' },
-    { q: 'Who can access SMT?', a: 'SMT access is role-based. Admins can configure team access under Settings → SMT Permissions.' },
+
+
+const FAQ_ATTENDANCE = [
+    { q: 'How do I mark my attendance?', a: 'Navigate to the Dashboard or "My Site" section, and click on "Start Verified Check-in". You will need to allow location and camera access.' },
+    { q: 'What if I forget to check out?', a: 'If you forget to check out, please contact your HR or Manager immediately so they can manually update your records.' },
+    { q: 'Why is my location showing "Too Far"?', a: 'This happens if you are outside the designated radius for your assigned site. Ensure you are physically at the site and your GPS is enabled with high accuracy.' },
+    { q: 'How can I see my past attendance records?', a: 'Go to the "Attendance" section from the sidebar to view your history, including check-in/out times and locations.' },
+    { q: 'Can I mark attendance without internet?', a: 'No, an active internet connection is required to sync your location and photo with the server for verification.' },
 ];
 
-const FAQ_BILLING = [
-    { q: 'How do I view my current subscription plan?', a: 'Go to BizKit Billing → Subscription tab to see your active plan, renewal date, and usage limits.' },
-    { q: 'How do I update my payment method?', a: 'In BizKit Billing, click "Payment Methods" and then "Add New Card" or remove an existing card.' },
-    { q: 'What happens if my payment fails?', a: 'You will receive an email notification. Your account will remain active for a grace period of 7 days, after which access may be restricted.' },
-    { q: 'Can I get an invoice for my payments?', a: 'Yes. Go to Billing → Invoices to view and download all invoices.' },
-    { q: 'How do I cancel my subscription?', a: 'Contact support@consolegal.com with subject "Subscription Cancellation Request" at least 5 business days before the renewal date.' },
-];
 
 type FaqItemProps = { q: string; a: string };
 function FaqItem({ q, a }: FaqItemProps) {
@@ -50,11 +47,12 @@ export default function HelpPage() {
     const { user, profile } = useAuth();
     const [activeTab, setActiveTab] = useState<'faq' | 'tickets' | 'contact'>('faq');
     const [tickets, setTickets] = useState<Ticket[]>([]);
-    const [category, setCategory] = useState('IT Support');
+    const [targetType, setTargetType] = useState<'admin' | 'system'>('admin');
     const [subject, setSubject] = useState('');
+
     const [description, setDescription] = useState('');
     const [loading, setLoading] = useState(false);
-    const [activeFaqSection, setActiveFaqSection] = useState<'smt' | 'billing'>('smt');
+
 
     // Modal & Action State
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -84,10 +82,14 @@ export default function HelpPage() {
                         if (!isRelevant) return;
 
                         if (payload.eventType === 'INSERT') {
-                            setTickets(prev => [newTicket, ...prev]);
+                            setTickets(prev => {
+                                if (prev.some(t => t.id === newTicket.id)) return prev;
+                                return [newTicket, ...prev];
+                            });
                         } else if (payload.eventType === 'UPDATE') {
                             setTickets(prev => prev.map(t => t.id === newTicket.id ? newTicket : t));
                         }
+
                     }
                 )
                 .subscribe();
@@ -97,19 +99,61 @@ export default function HelpPage() {
     }, [user, profile]);
 
     const fetchTickets = async () => {
-        // FIX #7: Always filter by user_id for non-admins to prevent unrelated data
+        if (!user || !profile) return;
+        
+        console.log("Fetching tickets for role:", profile.role, "Company:", profile.company_id);
+
         let query = supabase
             .from('tickets')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (profile?.role !== 'admin') {
-            query = query.eq('user_id', user?.id);
+        if (profile.role === 'admin' || profile.role === 'hr') {
+            if (profile.company_id) {
+                query = query.or(`and(target_type.eq.admin,company_id.eq.${profile.company_id}),user_id.eq.${user.id}`);
+            } else {
+                query = query.eq('user_id', user.id);
+            }
+        } else {
+            query = query.eq('user_id', user.id);
         }
 
-        const { data } = await query;
-        if (data) setTickets(data);
+        const { data: ticketsData, error: ticketsError } = await query;
+        
+        if (ticketsError) {
+            console.error("Fetch Tickets Error:", ticketsError);
+            return toast.error("Failed to fetch tickets: " + ticketsError.message);
+        }
+
+        if (ticketsData && ticketsData.length > 0) {
+            // Fetch user names manually to avoid join errors
+            const userIds = Array.from(new Set(ticketsData.map(t => t.user_id)));
+            const { data: usersData } = await supabase
+                .from('users')
+                .select('id, name, email')
+                .in('id', userIds);
+
+            const usersMap = (usersData || []).reduce((acc: any, u) => {
+                acc[u.id] = u;
+                return acc;
+            }, {});
+
+            const mappedTickets = ticketsData.map(t => ({
+                ...t,
+                users: usersMap[t.user_id] || { name: 'Unknown User', email: '' }
+            }));
+
+            console.log("Mapped Tickets Data:", mappedTickets);
+            setTickets(mappedTickets);
+        } else {
+            setTickets([]);
+        }
     };
+
+
+
+
+
 
     const handleSubmit = async () => {
         if (!description) return toast.error("Please enter a description");
@@ -117,13 +161,23 @@ export default function HelpPage() {
         setLoading(true);
 
         const { error } = await supabase.from('tickets').insert([
-            { user_id: user?.id, category, subject, description, status: 'Open' }
+            { 
+                user_id: user?.id, 
+                category: targetType === 'admin' ? 'Admin Support' : 'BizKit Developer Support',
+                target_type: targetType,
+                company_id: profile?.company_id,
+                subject, 
+                description, 
+                status: 'Open' 
+            }
         ]);
 
+
         if (error) {
-            console.error(error);
-            toast.error("Failed to submit ticket");
+            console.error("Ticket Submission Error Detail:", error);
+            toast.error(`Failed to submit ticket: ${error.message || "Unknown error"}`);
         } else {
+
             toast.success("Ticket submitted successfully!");
             setDescription('');
             setSubject('');
@@ -184,13 +238,15 @@ export default function HelpPage() {
     return (
         <>
             <Navbar />
-            <div className={styles.container}>
+            <div className="help-page-content">
+                <div className={styles.container}>
+
                 <div className={styles.pageHeader}>
                     <h1 className={styles.title}>Help & Support</h1>
                     <button className={styles.raiseTicketBtn} onClick={() => { setIsCreateOpen(true); setActiveTab('tickets'); }}>
-                        <span className="material-symbols-outlined">confirmation_number</span>
                         Raise a Ticket
                     </button>
+
                 </div>
 
                 {/* Tabs */}
@@ -199,36 +255,24 @@ export default function HelpPage() {
                         <span className="material-symbols-outlined">quiz</span> FAQ
                     </button>
                     <button className={`${styles.tabBtn} ${activeTab === 'tickets' ? styles.tabActive : ''}`} onClick={() => { setActiveTab('tickets'); fetchTickets(); }}>
-                        <span className="material-symbols-outlined">confirmation_number</span> My Tickets {tickets.filter(t => t.status === 'Open').length > 0 && <span className={styles.badge}>{tickets.filter(t => t.status === 'Open').length}</span>}
+                        <span className="material-symbols-outlined">inbox</span> Inbox {tickets.filter(t => t.status === 'Open').length > 0 && <span className={styles.badge}>{tickets.filter(t => t.status === 'Open').length}</span>}
                     </button>
+
                     <button className={`${styles.tabBtn} ${activeTab === 'contact' ? styles.tabActive : ''}`} onClick={() => setActiveTab('contact')}>
-                        <span className="material-symbols-outlined">contact_support</span> Contact Us
+                        Contact Us
                     </button>
+
                 </div>
 
                 {/* FAQ Tab */}
                 {activeTab === 'faq' && (
                     <div>
-                        <div className={styles.faqSectionTabs}>
-                            <button
-                                className={`${styles.faqSectionTab} ${activeFaqSection === 'smt' ? styles.faqSectionActive : ''}`}
-                                onClick={() => setActiveFaqSection('smt')}
-                            >
-                                SMT — Sales Management Tool
-                            </button>
-                            <button
-                                className={`${styles.faqSectionTab} ${activeFaqSection === 'billing' ? styles.faqSectionActive : ''}`}
-                                onClick={() => setActiveFaqSection('billing')}
-                            >
-                                Billing & Subscriptions
-                            </button>
-                        </div>
-
                         <div className={styles.faqList}>
-                            {(activeFaqSection === 'smt' ? FAQ_SMT : FAQ_BILLING).map((item, i) => (
+                            {FAQ_ATTENDANCE.map((item, i) => (
                                 <FaqItem key={i} q={item.q} a={item.a} />
                             ))}
                         </div>
+
 
                         <div className={styles.faqFooter}>
                             <span className="material-symbols-outlined">help_outline</span>
@@ -250,38 +294,57 @@ export default function HelpPage() {
                             {tickets.map(ticket => (
                                 <div key={ticket.id} className={styles.ticketCard}>
                                     <div className={styles.ticketHeader}>
-                                        <span className={styles.ticketCategory}>{ticket.category}</span>
+                                        <span className={styles.ticketCategory}>
+                                            {(ticket as any).target_type === 'system' ? 'BizKit Support' : 'Admin Support'}
+                                        </span>
+
+
                                         {profile?.role === 'admin' && (
                                             <span style={{
                                                 fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px',
                                                 background: '#e0f2fe', color: '#0369a1', marginLeft: 'auto', marginRight: '8px'
                                             }}>
-                                                User: {ticket.user_id?.slice(0, 8)}...
+                                                By: {(() => {
+                                                    const userData = (ticket as any).users;
+                                                    if (Array.isArray(userData)) return userData[0]?.name || 'Unknown';
+                                                    return userData?.name || 'Unknown';
+                                                })()}
                                             </span>
                                         )}
+
+
+
                                         <div className={styles.actions}>
-                                            <select
-                                                className={styles.statusSelect}
-                                                value={ticket.status}
-                                                data-status={ticket.status}
-                                                onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
-                                                onClick={(e) => e.stopPropagation()}
-                                                disabled={profile?.role !== 'admin' && ticket.user_id !== user?.id}
-                                            >
-                                                <option value="Open">Open</option>
-                                                <option value="In Progress">In Progress</option>
-                                                <option value="Resolved">Resolved</option>
-                                                <option value="Closed">Closed</option>
-                                                <option value="Dropped">Dropped</option>
-                                            </select>
-                                            <button
-                                                className={styles.iconBtn}
-                                                onClick={() => openNotesModal(ticket)}
-                                                title="View/Add Notes"
-                                            >
-                                                <span className="material-symbols-outlined">description</span>
-                                            </button>
+                                            {profile?.role === 'admin' ? (
+                                                <>
+                                                    <select
+                                                        className={styles.statusSelect}
+                                                        value={ticket.status}
+                                                        data-status={ticket.status}
+                                                        onChange={(e) => handleUpdateStatus(ticket.id, e.target.value)}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <option value="Open">Open</option>
+                                                        <option value="In Progress">In Progress</option>
+                                                        <option value="Resolved">Resolved</option>
+                                                        <option value="Closed">Closed</option>
+                                                        <option value="Dropped">Dropped</option>
+                                                    </select>
+                                                    <button
+                                                        className={styles.iconBtn}
+                                                        onClick={() => openNotesModal(ticket)}
+                                                        title="View/Add Notes"
+                                                    >
+                                                        <span className="material-symbols-outlined">description</span>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <span className={styles.statusBadge} data-status={ticket.status}>
+                                                    {ticket.status}
+                                                </span>
+                                            )}
                                         </div>
+
                                     </div>
                                     {ticket.subject && <p style={{ fontWeight: 600, margin: '0 0 4px' }}>{ticket.subject}</p>}
                                     <p className={styles.ticketDesc}>{ticket.description}</p>
@@ -299,15 +362,21 @@ export default function HelpPage() {
                         <p style={{ color: '#64748b', marginBottom: '24px' }}>Fill in the form below and we&apos;ll get back to you within 1 business day.</p>
 
                         <div className={styles.inputGroup}>
-                            <label className={styles.label}>Category</label>
-                            <select className={styles.select} value={category} onChange={e => setCategory(e.target.value)}>
-                                <option>IT Support</option>
-                                <option>HR Query</option>
-                                <option>SMT Issue</option>
-                                <option>Billing Query</option>
-                                <option>Account Access</option>
-                                <option>Other</option>
-                            </select>
+                            <label className={styles.label}>Where to send?</label>
+                            {profile?.role === 'admin' ? (
+                                <select className={styles.select} value={targetType} onChange={e => { setTargetType(e.target.value as any); }}>
+                                    <option value="system">Account Related Issues (to BizKit)</option>
+                                    <option value="system">Others (to BizKit by ConsoLegal)</option>
+                                </select>
+                            ) : (
+                                <select className={styles.select} value={targetType} onChange={e => setTargetType(e.target.value as any)}>
+                                    <option value="admin">Admin (Company Support)</option>
+                                    <option value="system">BizKit (Developer Support)</option>
+                                </select>
+                            )}
+
+
+
                         </div>
                         <div className={styles.inputGroup}>
                             <label className={styles.label}>Subject</label>
@@ -329,9 +398,9 @@ export default function HelpPage() {
                             />
                         </div>
                         <button onClick={handleSubmit} disabled={loading} className={styles.primaryBtn}>
-                            <span className="material-symbols-outlined">send</span>
                             {loading ? 'Submitting...' : 'Submit & Create Ticket'}
                         </button>
+
                     </div>
                 )}
 
@@ -345,15 +414,21 @@ export default function HelpPage() {
                             <h3 style={{ marginTop: 0, marginBottom: '24px' }}>Raise New Ticket</h3>
 
                             <div className={styles.inputGroup}>
-                                <label className={styles.label}>Category</label>
-                                <select value={category} onChange={(e) => setCategory(e.target.value)} className={styles.select}>
-                                    <option>IT Support</option>
-                                    <option>HR Query</option>
-                                    <option>SMT Issue</option>
-                                    <option>Billing Query</option>
-                                    <option>Account Access</option>
-                                    <option>Other</option>
-                                </select>
+                                <label className={styles.label}>Where to send?</label>
+                                {profile?.role === 'admin' ? (
+                                    <select value={targetType} onChange={(e) => setTargetType(e.target.value as any)} className={styles.select}>
+                                        <option value="system">Account Related Issues (to BizKit)</option>
+                                        <option value="system">Others (to BizKit by ConsoLegal)</option>
+                                    </select>
+                                ) : (
+                                    <select value={targetType} onChange={(e) => setTargetType(e.target.value as any)} className={styles.select}>
+                                        <option value="admin">Admin (Company Support)</option>
+                                        <option value="system">BizKit (Developer Support)</option>
+                                    </select>
+                                )}
+
+
+
                             </div>
                             <div className={styles.inputGroup}>
                                 <label className={styles.label}>Subject</label>
@@ -421,6 +496,8 @@ export default function HelpPage() {
                     </div>
                 )}
             </div>
+            </div>
         </>
     );
 }
+

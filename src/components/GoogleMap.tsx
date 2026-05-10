@@ -44,11 +44,12 @@ const MapsComponent: React.FC<GoogleMapProps> = ({
     className,
     onLocationSelect
 }) => {
-    const { isLoaded } = useJsApiLoader({
+    const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
+        googleMapsApiKey: "AIzaSyCb7q7Ox_QPBf6priHrKzEre4375l8Ko2s",
         libraries
     });
+
 
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedMarker, setSelectedMarker] = useState<MarkerData | null>(null);
@@ -67,7 +68,9 @@ const MapsComponent: React.FC<GoogleMapProps> = ({
         }
     }, [center, map]);
 
+    if (loadError) return <div style={{ color: 'red', padding: '10px' }}>Error loading Google Maps. Check console for details.</div>;
     if (!isLoaded) return <div>Loading Maps...</div>;
+
 
     return (
         <div className={className} style={{ width: '100%', height: '100%' }}>

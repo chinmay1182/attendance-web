@@ -39,8 +39,15 @@ export default function EmployeeDashboard() {
     const [shiftEnd, setShiftEnd] = useState('');
     const [shiftHistory, setShiftHistory] = useState<any[]>([]);
     const [updatingShift, setUpdatingShift] = useState(false);
+    const [currentShift, setCurrentShift] = useState({ start: '', end: '' });
     const [allSites, setAllSites] = useState<any[]>([]);
+
+    const [shiftTypes, setShiftTypes] = useState<any[]>([]);
     const [selectedSiteId, setSelectedSiteId] = useState<string>('all');
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+    const [isGlobalUpdate, setIsGlobalUpdate] = useState(false);
+    const [userCompanies, setUserCompanies] = useState<any[]>([]);
+
 
     useEffect(() => {
         if (!loading && !user) {
@@ -56,10 +63,11 @@ export default function EmployeeDashboard() {
             const res = await fetch(`/api/dashboard/stats?uid=${user.id}`, { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
-                if (data.docs && data.docs.length > 0) setDocs(data.docs);
-                if (data.sites && data.sites.length > 0) setSites(data.sites);
+                setDocs(data.docs || []);
+                setSites(data.sites || []);
                 if (data.stats) setStats(data.stats);
             }
+
         } catch (e) {
             console.error("Failed to fetch dashboard stats", e);
         }
@@ -86,9 +94,39 @@ export default function EmployeeDashboard() {
         setIsShiftModalOpen(true);
         fetchShiftHistory();
         fetchAllSites();
-        if (profile?.shift_start) setShiftStart(profile.shift_start);
-        if (profile?.shift_end) setShiftEnd(profile.shift_end);
+        fetchShiftTypes();
+        fetchUserCompanies();
+        // Load current from profile first
+        setCurrentShift({ 
+            start: profile?.shift_start || '09:00', 
+            end: profile?.shift_end || '18:00' 
+        });
+        setShiftStart(profile?.shift_start || '09:00');
+        setShiftEnd(profile?.shift_end || '18:00');
+        setSelectedCompanyId(profile?.company_id || '');
     };
+
+
+    const fetchShiftTypes = async () => {
+        const { data } = await supabase
+            .from('shift_types')
+            .select('*')
+            .or(`is_global.eq.true${profile?.company_id ? `,company_id.eq.${profile.company_id}` : ''}`);
+        if (data) setShiftTypes(data);
+    };
+
+    const fetchUserCompanies = async () => {
+        const { data } = await supabase
+            .from('companies')
+            .select('id, name')
+            .or(`id.eq.${profile?.company_id},owner_id.eq.${user?.id}`);
+        if (data) {
+            setUserCompanies(data);
+            if (!selectedCompanyId) setSelectedCompanyId(profile?.company_id || data[0]?.id || '');
+        }
+    };
+
+
 
     const fetchAllSites = async () => {
         if (!profile?.company_id) return;
@@ -127,7 +165,8 @@ export default function EmployeeDashboard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     adminId: user.id,
-                    companyId: profile.company_id,
+                    companyId: isGlobalUpdate ? null : selectedCompanyId,
+                    isGlobal: isGlobalUpdate,
                     shiftStart,
                     shiftEnd,
                     siteId: selectedSiteId === 'all' ? null : selectedSiteId
@@ -138,9 +177,19 @@ export default function EmployeeDashboard() {
             if (!res.ok) throw new Error(data.error || "Failed to update shifts");
 
             toast.success(`Shift updated for ${data.updatedCount} employees`);
-            setIsShiftModalOpen(false);
+            
+            // Immediately update local UI state
+            setCurrentShift({ start: shiftStart, end: shiftEnd });
+            
+            // Refresh history
             fetchShiftHistory();
+            
+            // Optional: Close after a short delay so user sees the change in history
+            setTimeout(() => {
+                // setIsShiftModalOpen(false); // Commented out to let user see the history update
+            }, 1000);
         } catch (error: any) {
+
             console.error(error);
             toast.error(error.message || "Failed to update shifts");
         } finally {
@@ -349,47 +398,76 @@ export default function EmployeeDashboard() {
                 <div className={styles.modalOverlay} onClick={() => setIsShiftModalOpen(false)}>
                     <div className={styles.modal} onClick={e => e.stopPropagation()}>
                         <h2 style={{ marginTop: 0, fontSize: '1.5rem', fontWeight: 700 }}>Manage Shifts</h2>
-                        <p style={{ color: '#64748b', marginBottom: '24px' }}>Set standard shift timings for employees.</p>
+                        <p style={{ color: '#64748b', marginBottom: '24px', fontSize: '0.9rem' }}>Set standard shift timings for employees.</p>
+
 
                         <div style={{ marginBottom: '20px' }}>
-                            <label className={styles.label}>Select Site</label>
+                            <label className={styles.label}>Target Scope</label>
                             <select
                                 className={styles.input}
-                                value={selectedSiteId}
-                                onChange={e => setSelectedSiteId(e.target.value)}
+                                value={isGlobalUpdate ? 'global' : 'specific'}
+                                onChange={e => setIsGlobalUpdate(e.target.value === 'global')}
                                 style={{ appearance: 'auto' }}
                             >
-                                <option value="all">All Employees (Company-wide)</option>
-                                {allSites.map(site => (
-                                    <option key={site.id} value={site.id}>{site.name}</option>
-                                ))}
+                                <option value="specific">Company / Site Specific</option>
+                                <option value="global">All Companies (Global Update)</option>
                             </select>
-                            <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>
-                                {selectedSiteId === 'all' 
-                                    ? "This will update the shift for every employee in the company." 
-                                    : `This will only update employees assigned to ${allSites.find(s => s.id === selectedSiteId)?.name}.`}
-                            </p>
                         </div>
 
-                        <div>
-                            <label className={styles.label}>Shift Start</label>
-                            <input
-                                type="time"
-                                className={styles.input}
-                                value={shiftStart}
-                                onChange={e => setShiftStart(e.target.value)}
-                            />
+                        {!isGlobalUpdate && (
+                            <>
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label className={styles.label}>Select Company</label>
+                                    <select
+                                        className={styles.input}
+                                        value={selectedCompanyId}
+                                        onChange={e => setSelectedCompanyId(e.target.value)}
+                                        style={{ appearance: 'auto' }}
+                                    >
+                                        {userCompanies.map(comp => (
+                                            <option key={comp.id} value={comp.id}>{comp.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div style={{ marginBottom: '20px' }}>
+                                    <label className={styles.label}>Select Site</label>
+                                    <select
+                                        className={styles.input}
+                                        value={selectedSiteId}
+                                        onChange={e => setSelectedSiteId(e.target.value)}
+                                        style={{ appearance: 'auto' }}
+                                    >
+                                        <option value="all">All Employees in Company</option>
+                                        {allSites.map(site => (
+                                            <option key={site.id} value={site.id}>{site.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        )}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div>
+                                <label className={styles.label}>Shift Start</label>
+                                <input
+                                    type="time"
+                                    className={styles.input}
+                                    value={shiftStart}
+                                    onChange={e => setShiftStart(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className={styles.label}>Shift End</label>
+                                <input
+                                    type="time"
+                                    className={styles.input}
+                                    value={shiftEnd}
+                                    onChange={e => setShiftEnd(e.target.value)}
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label className={styles.label}>Shift End</label>
-                            <input
-                                type="time"
-                                className={styles.input}
-                                value={shiftEnd}
-                                onChange={e => setShiftEnd(e.target.value)}
-                            />
-                        </div>
 
                         <div className={styles.modalActions}>
                             <button className={`${styles.modalBtn} ${styles.cancelBtn}`} onClick={() => setIsShiftModalOpen(false)}>

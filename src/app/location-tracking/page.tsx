@@ -37,6 +37,8 @@ export default function LocationTrackingPage() {
     const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
     const [exportStartDate, setExportStartDate] = useState(new Date().toISOString().split('T')[0]);
     const [exportEndDate, setExportEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const [searchQuery, setSearchQuery] = useState('');
+
 
     useEffect(() => {
         if (!loading && profile?.role !== 'admin' && profile?.role !== 'hr') {
@@ -158,13 +160,26 @@ export default function LocationTrackingPage() {
         <>
             <Navbar />
             <div className={styles.container}>
-                <h1 className={styles.title}>Live Employee Tracking</h1>
+                <div className={styles.headerRow}>
+                    <h1 className={styles.title}>Live Employee Tracking</h1>
+                    <div className={styles.searchContainer}>
+                        <span className="material-symbols-outlined">search</span>
+                        <input 
+                            type="text" 
+                            placeholder="Search employee by name..." 
+                            className={styles.searchInput}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                </div>
 
 
                 <div className={styles.mapContainer}>
                     <Map
                         markers={locations
                             .filter(loc => loc.latitude !== 0 && loc.longitude !== 0)
+                            .filter(loc => loc.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
                             .map(loc => ({
                                 id: loc.user_id,
                                 lat: loc.latitude,
@@ -174,6 +189,7 @@ export default function LocationTrackingPage() {
                             }))}
                     />
                 </div>
+
 
                 <div className={styles.tableContainer}>
                     <div className={styles.tableHeader}>
@@ -241,8 +257,11 @@ export default function LocationTrackingPage() {
                                     </td>
                                 </tr>
                             )}
-                            {locations.map(loc => (
+                            {locations
+                                .filter(loc => loc.user?.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+                                .map(loc => (
                                 <tr
+
                                     key={loc.user_id}
                                     onClick={() => setSelectedEmployee(loc.user_id)}
                                     style={{

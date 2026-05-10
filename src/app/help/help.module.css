@@ -1,7 +1,9 @@
 .container {
-    padding: 0;
-    max-width: 860px;
+    padding: 20px;
+    max-width: 650px !important;
+    margin: 0 auto !important;
 }
+
 
 .pageHeader {
     display: flex;
@@ -37,7 +39,7 @@
 .raiseTicketBtn:hover {
     background: #333;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Tab Bar */
@@ -68,7 +70,7 @@
 }
 
 .tabBtn:hover {
-    background: rgba(255,255,255,0.6);
+    background: rgba(255, 255, 255, 0.6);
     color: var(--text-main);
 }
 
@@ -76,7 +78,7 @@
     background: white;
     color: var(--text-main);
     font-weight: 600;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .badge {
@@ -130,7 +132,7 @@
 
 .faqItem:hover {
     border-color: var(--primary);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .faqQuestion {
@@ -352,7 +354,7 @@
 }
 
 .ticketCard:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .ticketHeader {
@@ -417,6 +419,39 @@
     background: #fef3c7;
     color: #d97706;
 }
+
+.statusBadge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.statusBadge[data-status="Open"] {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.statusBadge[data-status="Resolved"] {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.statusBadge[data-status="In Progress"] {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.statusBadge[data-status="Closed"] {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.statusBadge[data-status="Dropped"] {
+    background: #fef3c7;
+    color: #d97706;
+}
+
 
 .iconBtn {
     background: transparent;

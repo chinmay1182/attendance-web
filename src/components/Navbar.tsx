@@ -169,7 +169,13 @@ export const Navbar = () => {
                                     Sites
                                 </Link>
 
+                                <Link href="/manage-shifts" className={`${styles.navLink} ${pathname.startsWith('/manage-shifts') ? styles.navLinkActive : styles.navLinkInactive}`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>schedule</span>
+                                    Manage Shifts
+                                </Link>
+
                                 <Link href="/location-tracking" className={`${styles.navLink} ${pathname.startsWith('/location-tracking') ? styles.navLinkActive : styles.navLinkInactive}`}>
+
                                     <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>location_searching</span>
                                     Employee Tracking
                                 </Link>

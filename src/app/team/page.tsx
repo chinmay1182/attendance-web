@@ -23,7 +23,10 @@ type Employee = {
     salary?: number;
     corporate_id?: number;
     photo_url?: string;
+    shift_start?: string;
+    shift_end?: string;
 };
+
 
 type Department = { id: string, name: string };
 type Site = { id: string, name: string };
@@ -37,10 +40,12 @@ export default function TeamPage() {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [sites, setSites] = useState<Site[]>([]);
     const [companies, setCompanies] = useState<Company[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
     // Online Status
     const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
@@ -64,6 +69,8 @@ export default function TeamPage() {
         salary: '',
         photo_url: ''
     });
+
+
     const [uploading, setUploading] = useState(false);
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +94,7 @@ export default function TeamPage() {
                 .getPublicUrl(filePath);
 
             setFormData(prev => ({ ...prev, photo_url: publicUrl }));
+
             toast.success("Photo uploaded successfully");
         } catch (error: any) {
             toast.error("Error uploading photo: " + error.message);
@@ -99,23 +107,39 @@ export default function TeamPage() {
 
     useEffect(() => {
         if (profile?.id) {
+            if (!selectedCompanyId) {
+                setSelectedCompanyId(profile.company_id || '');
+            }
             fetchData();
             setupRealtime();
         }
-    }, [profile?.id]);
+    }, [profile?.id, selectedCompanyId]);
 
-    const fetchData = async () => {
-        setLoading(true);
-        await Promise.all([fetchEmployees(), fetchDepartments(), fetchSites(), fetchCompanies(), fetchOnlineStatus()]);
+
+    const fetchData = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
+        // We only fetch employees for the selected company, but sites/deps are also company-specific
+        await Promise.all([
+            fetchEmployees(isBackground), 
+            fetchDepartments(selectedCompanyId), 
+            fetchSites(selectedCompanyId), 
+            fetchCompanies(), 
+            fetchOnlineStatus()
+        ]);
+
+
         setLoading(false);
     };
 
-    const fetchEmployees = async () => {
+    const fetchEmployees = async (isBackground = false) => {
         if (!profile?.id) return;
+        if (!isBackground) setLoading(true);
 
         try {
-            const res = await fetch(`/api/team?uid=${profile.id}`);
+            const companyId = selectedCompanyId || profile.company_id;
+            const res = await fetch(`/api/team?uid=${profile.id}${companyId ? `&companyId=${companyId}` : ''}`);
             const data = await res.json();
+
 
             if (!res.ok) throw new Error(data.error || 'Failed to load employees');
 
@@ -145,30 +169,36 @@ export default function TeamPage() {
         } catch (error) {
             console.error('Error fetching employees:', error);
             toast.error('Failed to load employees');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const fetchDepartments = async () => {
-        if (!profile?.company_id) return;
+
+    const fetchDepartments = async (companyId?: string) => {
+        const targetId = companyId || profile?.company_id;
+        if (!targetId) return;
         const { data } = await supabase
             .from('departments')
             .select('*')
-            .eq('company_id', profile.company_id)
+            .eq('company_id', targetId)
             .order('name');
         if (data) setDepartments(data);
     };
 
-    const fetchSites = async () => {
-        if (!profile?.company_id) return;
+    const fetchSites = async (companyId?: string) => {
+        const targetId = companyId || profile?.company_id;
+        if (!targetId) return;
         const { data } = await supabase
             .from('sites')
             .select('id, name')
-            .eq('company_id', profile.company_id)
+            .eq('company_id', targetId)
             .order('name');
         if (data) setSites(data);
     };
     
     const fetchCompanies = async () => {
+
         if (!profile?.id) return;
         const { data } = await supabase
             .from('companies')
@@ -193,8 +223,9 @@ export default function TeamPage() {
 
     const setupRealtime = () => {
         const channel = supabase.channel('team_page_realtime')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchEmployees())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'site_assignments' }, () => fetchEmployees())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, () => fetchEmployees(true))
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'site_assignments' }, () => fetchEmployees(true))
+
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'attendance' },
@@ -253,11 +284,15 @@ export default function TeamPage() {
             Notes: emp.bio || '-'
         }));
 
+        const selectedComp = companies.find(c => c.id === selectedCompanyId);
+        const fileName = selectedComp ? `Employees_Data_${selectedComp.name.replace(/\s+/g, '_')}.xlsx` : "Employees_Data.xlsx";
+        
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.json_to_sheet(dataToExport);
         XLSX.utils.book_append_sheet(wb, ws, "Employees");
-        XLSX.writeFile(wb, "Employees_Data.xlsx");
+        XLSX.writeFile(wb, fileName);
         toast.success("Exported successfully");
+
     };
 
     const handleSave = async () => {
@@ -338,7 +373,8 @@ export default function TeamPage() {
             }
             setIsModalOpen(false);
             resetForm();
-            fetchEmployees();
+            fetchEmployees(true);
+
         } catch (error: any) {
             console.error(error);
             toast.error(error.message || "Operation failed");
@@ -359,7 +395,8 @@ export default function TeamPage() {
 
             if (res.ok) {
                 toast.success("User deleted");
-                fetchEmployees();
+                fetchEmployees(true);
+
             } else {
                 toast.error("Failed to delete user");
             }
@@ -370,10 +407,16 @@ export default function TeamPage() {
 
     const openAdd = () => {
         resetForm();
-        setFormData(prev => ({ ...prev, companyId: profile?.company_id || '' }));
+        setFormData(prev => ({ 
+            ...prev, 
+            companyId: profile?.company_id || '',
+            shiftStart: '09:00',
+            shiftEnd: '18:00'
+        }));
         setIsEditing(false);
         setIsModalOpen(true);
     };
+
 
     const openEdit = (emp: Employee) => {
         const siteId = emp.site_assignments && emp.site_assignments.length > 0
@@ -399,6 +442,8 @@ export default function TeamPage() {
             photo_url: emp.photo_url || ''
         });
         setIsEditing(true);
+
+
         setIsModalOpen(true);
     };
 
@@ -423,14 +468,37 @@ export default function TeamPage() {
         });
     };
 
+
+
     return (
         <RoleGuard allowedRoles={['admin', 'hr']}>
             <Navbar />
 
             <div className={styles.container}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                    <h1 className={styles.title}>Team Members</h1>
-                    <button className={styles.actionBtn} onClick={handleExport} style={{ background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <h1 className={styles.title}>Team Members</h1>
+                        {companies.length > 1 && (
+                            <select 
+                                className={styles.select} 
+                                style={{ 
+                                    width: 'auto', 
+                                    marginBottom: 0, 
+                                    padding: '6px 12px', 
+                                    height: '38px', 
+                                    fontSize: '0.9rem',
+                                    background: '#fff' 
+                                }}
+                                value={selectedCompanyId}
+                                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                            >
+                                {companies.map(comp => (
+                                    <option key={comp.id} value={comp.id}>{comp.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
+                    <button className={styles.actionBtn} onClick={handleExport} style={{ background: '#fff', color: '#475569', border: '1px solid #cbd5e1', height: '38px' }}>
                         <span className="material-symbols-outlined" style={{ fontSize: '20px', marginRight: '8px' }}>download</span>
                         Export
                     </button>
@@ -751,6 +819,10 @@ export default function TeamPage() {
                                     ))}
                                 </select>
                             </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            </div>
+
 
                             {/* Salary */}
                             <div>

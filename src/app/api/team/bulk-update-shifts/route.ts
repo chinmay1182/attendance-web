@@ -5,28 +5,57 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { adminId, companyId, shiftStart, shiftEnd, siteId } = body;
+        const { adminId, companyId, shiftStart, shiftEnd, siteId, isGlobal } = body;
 
-        if (!adminId || !companyId || !shiftStart || !shiftEnd) {
+        if (!adminId || (!companyId && !isGlobal) || !shiftStart || !shiftEnd) {
             return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
         }
 
-        // 1. Verify if the sender is actually an Admin of that company
+        // 1. Verify if the sender is an Admin
         const { data: adminUser, error: adminErr } = await supabaseAdmin
             .from('users')
-            .select('role')
+            .select('role, id')
             .eq('id', adminId)
-            .eq('company_id', companyId)
             .single();
 
         if (adminErr || adminUser?.role !== 'admin') {
             return NextResponse.json({ error: 'Unauthorized. Admin privileges required.' }, { status: 403 });
         }
 
+        // 2. Determine target companies
+        let targetCompanyIds: string[] = [];
+        if (isGlobal) {
+            // Get all companies where this user is an admin or the owner
+            const { data: userCompanies } = await supabaseAdmin
+                .from('users')
+                .select('company_id')
+                .eq('id', adminId)
+                .eq('role', 'admin');
+            
+            const { data: ownedCompanies } = await supabaseAdmin
+                .from('companies')
+                .select('id')
+                .eq('owner_id', adminId);
+
+            const allCompanyIds = new Set([
+                ...(userCompanies?.map(u => u.company_id).filter(Boolean) as string[]),
+                ...(ownedCompanies?.map(c => c.id) || [])
+            ]);
+            
+            targetCompanyIds = Array.from(allCompanyIds);
+        } else {
+            targetCompanyIds = [companyId];
+        }
+
+
+        if (targetCompanyIds.length === 0) {
+            return NextResponse.json({ error: 'No target companies found.' }, { status: 404 });
+        }
+
         let userIdsToUpdate: string[] | null = null;
 
-        // 2. If siteId is provided, get the list of users assigned to that site
-        if (siteId) {
+        // 3. If siteId is provided, get the list of users assigned to that site
+        if (siteId && !isGlobal) {
             const { data: assignments, error: assignErr } = await supabaseAdmin
                 .from('site_assignments')
                 .select('user_id')
@@ -45,20 +74,21 @@ export async function POST(request: Request) {
             }
         }
 
-        // 3. Perform the bulk update
+        // 4. Perform the bulk update
         let query = supabaseAdmin
             .from('users')
             .update({
                 shift_start: shiftStart,
                 shift_end: shiftEnd
             })
-            .eq('company_id', companyId);
+            .in('company_id', targetCompanyIds);
 
         if (userIdsToUpdate) {
             query = query.in('id', userIdsToUpdate);
         }
 
         const { data: updatedUsers, error: updateErr } = await query.select('id');
+
 
         if (updateErr) {
             console.error('Bulk Shift Update Error:', updateErr);
@@ -67,16 +97,22 @@ export async function POST(request: Request) {
 
         const count = updatedUsers?.length || 0;
 
-        // 4. Record in history
-        await supabaseAdmin.from('shift_history').insert({
+        // 5. Record in history
+        const { error: historyErr } = await supabaseAdmin.from('shift_history').insert({
             admin_id: adminId,
             shift_start: shiftStart,
             shift_end: shiftEnd,
             applied_to_count: count,
-            site_id: siteId || null
+            site_id: (siteId === 'all' || !siteId) ? null : siteId
         });
 
+        if (historyErr) {
+            console.error('History Recording Error:', historyErr);
+            // We don't fail the whole request if history fails, but we log it
+        }
+
         return NextResponse.json({ success: true, updatedCount: count });
+
 
     } catch (err: any) {
         console.error('Server API Error:', err);

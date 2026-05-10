@@ -75,3 +75,21 @@
     color: var(--text-muted);
     margin-top: 4px;
 }
+
+.uploadBtn {
+    padding: 6px 16px;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+    text-align: center;
+}
+
+.uploadBtn:hover {
+    background: var(--primary);
+    color: white;
+}
