@@ -42,59 +42,6 @@ type Department = {
     name: string;
 };
 
-const JobFormFields = ({ data, onChange, departments }: { data: any, onChange: (d: any) => void, departments: any[] }) => (
-    <>
-        <div className={styles.inputGroup}>
-            <label className={styles.label}>Job Title *</label>
-            <input className={styles.input} value={data.title} onChange={e => onChange({ ...data, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
-        </div>
-
-        <div className={styles.row}>
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Department *</label>
-                <select className={styles.select} value={data.department} onChange={e => onChange({ ...data, department: e.target.value })}>
-                    <option value="">Select Dept</option>
-                    {departments.length > 0
-                        ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
-                        : (
-                            <>
-                                <option value="Engineering">Engineering</option>
-                                <option value="Design">Design</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Sales">Sales</option>
-                                <option value="HR">HR</option>
-                            </>
-                        )
-                    }
-                </select>
-            </div>
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Job Type</label>
-                <select className={styles.select} value={data.type} onChange={e => onChange({ ...data, type: e.target.value })}>
-                    <option value="Full-time">Full-time</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Contract">Contract</option>
-                    <option value="Internship">Internship</option>
-                </select>
-            </div>
-        </div>
-
-        <div className={styles.inputGroup}>
-            <label className={styles.label}>Location</label>
-            <input className={styles.input} value={data.location} onChange={e => onChange({ ...data, location: e.target.value })} placeholder="e.g. Remote / New York" />
-        </div>
-
-        <div className={styles.inputGroup}>
-            <label className={styles.label}>Description</label>
-            <textarea className={styles.textarea} value={data.description} onChange={e => onChange({ ...data, description: e.target.value })} placeholder="Job responsibilities..." />
-        </div>
-
-        <div className={styles.inputGroup}>
-            <label className={styles.label}>Requirements</label>
-            <textarea className={styles.textarea} value={data.requirements} onChange={e => onChange({ ...data, requirements: e.target.value })} placeholder="Skills needed..." />
-        </div>
-    </>
-);
 
 export default function RecruitmentPage() {
     const { user, profile } = useAuth();
@@ -455,9 +402,57 @@ export default function RecruitmentPage() {
                                 <button onClick={() => setIsCreateOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
                             </div>
 
-                            <JobFormFields data={newJob} onChange={setNewJob} departments={departments} />
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Job Title *</label>
+                                <input className={styles.input} value={newJob.title} onChange={e => setNewJob({ ...newJob, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+                            </div>
 
-                            <button onClick={handleCreateJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
+                            <div className={styles.row}>
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Department *</label>
+                                    <select className={styles.select} value={newJob.department} onChange={e => setNewJob({ ...newJob, department: e.target.value })}>
+                                        <option value="">Select Dept</option>
+                                        {departments.length > 0
+                                            ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                                            : (
+                                                <>
+                                                    <option value="Engineering">Engineering</option>
+                                                    <option value="Design">Design</option>
+                                                    <option value="Marketing">Marketing</option>
+                                                    <option value="Sales">Sales</option>
+                                                    <option value="HR">HR</option>
+                                                </>
+                                            )
+                                        }
+                                    </select>
+                                </div>
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Job Type</label>
+                                    <select className={styles.select} value={newJob.type} onChange={e => setNewJob({ ...newJob, type: e.target.value })}>
+                                        <option value="Full-time">Full-time</option>
+                                        <option value="Part-time">Part-time</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Internship">Internship</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Location</label>
+                                <input className={styles.input} value={newJob.location} onChange={e => setNewJob({ ...newJob, location: e.target.value })} placeholder="e.g. Remote / New York" />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Description</label>
+                                <textarea className={styles.textarea} value={newJob.description} onChange={e => setNewJob({ ...newJob, description: e.target.value })} placeholder="Job responsibilities..." />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Requirements</label>
+                                <textarea className={styles.textarea} value={newJob.requirements} onChange={e => setNewJob({ ...newJob, requirements: e.target.value })} placeholder="Skills needed..." />
+                            </div>
+
+                            <button onClick={handleCreateJob} className={styles.primaryBtn} style={{ width: '100%', marginTop: '20px' }} disabled={submitting}>
                                 {submitting ? 'Posting...' : 'Publish Job'}
                             </button>
                         </div>
@@ -473,9 +468,57 @@ export default function RecruitmentPage() {
                                 <button onClick={() => setIsEditOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
                             </div>
 
-                            <JobFormFields data={editJobData} onChange={setEditJobData} departments={departments} />
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Job Title *</label>
+                                <input className={styles.input} value={editJobData.title} onChange={e => setEditJobData({ ...editJobData, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+                            </div>
 
-                            <button onClick={handleEditJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
+                            <div className={styles.row}>
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Department *</label>
+                                    <select className={styles.select} value={editJobData.department} onChange={e => setEditJobData({ ...editJobData, department: e.target.value })}>
+                                        <option value="">Select Dept</option>
+                                        {departments.length > 0
+                                            ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                                            : (
+                                                <>
+                                                    <option value="Engineering">Engineering</option>
+                                                    <option value="Design">Design</option>
+                                                    <option value="Marketing">Marketing</option>
+                                                    <option value="Sales">Sales</option>
+                                                    <option value="HR">HR</option>
+                                                </>
+                                            )
+                                        }
+                                    </select>
+                                </div>
+                                <div className={styles.inputGroup}>
+                                    <label className={styles.label}>Job Type</label>
+                                    <select className={styles.select} value={editJobData.type} onChange={e => setEditJobData({ ...editJobData, type: e.target.value })}>
+                                        <option value="Full-time">Full-time</option>
+                                        <option value="Part-time">Part-time</option>
+                                        <option value="Contract">Contract</option>
+                                        <option value="Internship">Internship</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Location</label>
+                                <input className={styles.input} value={editJobData.location} onChange={e => setEditJobData({ ...editJobData, location: e.target.value })} placeholder="e.g. Remote / New York" />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Description</label>
+                                <textarea className={styles.textarea} value={editJobData.description} onChange={e => setEditJobData({ ...editJobData, description: e.target.value })} placeholder="Job responsibilities..." />
+                            </div>
+
+                            <div className={styles.inputGroup}>
+                                <label className={styles.label}>Requirements</label>
+                                <textarea className={styles.textarea} value={editJobData.requirements} onChange={e => setEditJobData({ ...editJobData, requirements: e.target.value })} placeholder="Skills needed..." />
+                            </div>
+
+                            <button onClick={handleEditJob} className={styles.primaryBtn} style={{ width: '100%', marginTop: '20px' }} disabled={submitting}>
                                 {submitting ? 'Saving...' : 'Save Changes'}
                             </button>
                         </div>
