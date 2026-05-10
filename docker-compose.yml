@@ -25,8 +25,8 @@ services:
     restart: always
     # Expose port for local development (npm run dev)
     # Note: Comment this out on VPS if not needed for external access
-    ports:
-      - "6379:6379"
+    # ports:
+    #   - "6379:6379"
     command: redis-server --save 60 1 --loglevel warning
 
     volumes:
