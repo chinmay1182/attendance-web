@@ -113,7 +113,8 @@ export default function RewardsPage() {
         });
 
         if (error) {
-            toast.error('Failed to create reward');
+            console.error('Create Reward Error:', error);
+            toast.error(error.message || 'Failed to create reward');
         } else {
             toast.success('Reward created successfully!');
             // Log audit
@@ -141,7 +142,8 @@ export default function RewardsPage() {
             .eq('id', editingReward.id);
 
         if (error) {
-            toast.error('Failed to update reward');
+            console.error('Update Reward Error:', error);
+            toast.error(error.message || 'Failed to update reward');
         } else {
             toast.success('Reward updated!');
             // Log audit
