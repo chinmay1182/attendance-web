@@ -43,14 +43,25 @@ export default function ManageShiftsPage() {
     const fetchShiftTypes = async () => {
         setLoading(true);
         try {
-            // Fetch shifts that are either global OR belong to user's company
-            const { data, error } = await supabase
-                .from('shift_types')
-                .select('*')
-                .or(`is_global.eq.true,company_id.eq.${profile?.company_id}`)
-                .order('name');
+            let companyIds: string[] = [];
+            if (profile?.company_id) companyIds.push(profile.company_id);
+            
+            // Also fetch companies they own
+            const { data: ownedCompanies } = await supabase.from('companies').select('id').eq('owner_id', profile?.id);
+            if (ownedCompanies) {
+                ownedCompanies.forEach(c => companyIds.push(c.id));
+            }
 
-            console.log('Shift Types fetched:', data, 'Error:', error);
+            let query = supabase.from('shift_types').select('*').order('name');
+            
+            if (companyIds.length > 0) {
+                const inList = companyIds.join(',');
+                query = query.or(`is_global.eq.true,company_id.in.(${inList})`);
+            } else {
+                query = query.eq('is_global', true);
+            }
+
+            const { data, error } = await query;
 
             if (error) {
                 console.error('Fetch shift types error:', error);

@@ -109,10 +109,25 @@ export default function EmployeeDashboard() {
 
 
     const fetchShiftTypes = async () => {
-        const { data } = await supabase
-            .from('shift_types')
-            .select('*')
-            .or(`is_global.eq.true${profile?.company_id ? `,company_id.eq.${profile.company_id}` : ''}`);
+        let companyIds: string[] = [];
+        if (profile?.company_id) companyIds.push(profile.company_id);
+        
+        // Also fetch companies they own
+        const { data: ownedCompanies } = await supabase.from('companies').select('id').eq('owner_id', user?.id);
+        if (ownedCompanies) {
+            ownedCompanies.forEach(c => companyIds.push(c.id));
+        }
+
+        let query = supabase.from('shift_types').select('*');
+        
+        if (companyIds.length > 0) {
+            const inList = companyIds.join(',');
+            query = query.or(`is_global.eq.true,company_id.in.(${inList})`);
+        } else {
+            query = query.eq('is_global', true);
+        }
+
+        const { data } = await query;
         if (data) setShiftTypes(data);
     };
 

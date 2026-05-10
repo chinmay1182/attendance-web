@@ -15,6 +15,7 @@ type Ticket = {
     created_at: string;
     notes?: string;
     user_id: string;
+    target_type?: string;
     users?: { name: string, email: string } | { name: string, email: string }[];
 };
 
@@ -59,6 +60,14 @@ export default function HelpPage() {
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [currentTicket, setCurrentTicket] = useState<Ticket | null>(null);
     const [newNote, setNewNote] = useState('');
+
+    useEffect(() => {
+        if (profile?.role === 'admin' || profile?.role === 'hr') {
+            setTargetType('system');
+        } else {
+            setTargetType('admin');
+        }
+    }, [profile?.role]);
 
     useEffect(() => {
         if (user) {
@@ -110,7 +119,7 @@ export default function HelpPage() {
 
         if (profile.role === 'admin' || profile.role === 'hr') {
             if (profile.company_id) {
-                query = query.or(`and(target_type.eq.admin,company_id.eq.${profile.company_id}),user_id.eq.${user.id}`);
+                query = query.eq('company_id', profile.company_id);
             } else {
                 query = query.eq('user_id', user.id);
             }
@@ -118,7 +127,12 @@ export default function HelpPage() {
             query = query.eq('user_id', user.id);
         }
 
-        const { data: ticketsData, error: ticketsError } = await query;
+        const { data: rawTicketsData, error: ticketsError } = await query;
+
+        let ticketsData = rawTicketsData;
+        if (ticketsData && (profile.role === 'admin' || profile.role === 'hr') && profile.company_id) {
+            ticketsData = ticketsData.filter(t => t.user_id === user.id || t.target_type === 'admin');
+        }
         
         if (ticketsError) {
             console.error("Fetch Tickets Error:", ticketsError);
@@ -255,7 +269,7 @@ export default function HelpPage() {
                         <span className="material-symbols-outlined">quiz</span> FAQ
                     </button>
                     <button className={`${styles.tabBtn} ${activeTab === 'tickets' ? styles.tabActive : ''}`} onClick={() => { setActiveTab('tickets'); fetchTickets(); }}>
-                        <span className="material-symbols-outlined">inbox</span> Inbox {tickets.filter(t => t.status === 'Open').length > 0 && <span className={styles.badge}>{tickets.filter(t => t.status === 'Open').length}</span>}
+                        <span className="material-symbols-outlined">inbox</span> My Tickets {tickets.filter(t => t.status === 'Open').length > 0 && <span className={styles.badge}>{tickets.filter(t => t.status === 'Open').length}</span>}
                     </button>
 
                     <button className={`${styles.tabBtn} ${activeTab === 'contact' ? styles.tabActive : ''}`} onClick={() => setActiveTab('contact')}>
@@ -315,7 +329,7 @@ export default function HelpPage() {
 
 
                                         <div className={styles.actions}>
-                                            {profile?.role === 'admin' ? (
+                                            {profile?.role === 'admin' && ticket.target_type === 'admin' ? (
                                                 <>
                                                     <select
                                                         className={styles.statusSelect}
