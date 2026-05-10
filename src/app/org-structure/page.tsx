@@ -13,7 +13,7 @@ type Department = {
 };
 
 export default function OrgStructurePage() {
-    const { profile } = useAuth();
+    const { profile, refreshProfile } = useAuth();
     const [departments, setDepartments] = useState<Department[]>([]);
     const [loading, setLoading] = useState(false);
     const [initialFetchDone, setInitialFetchDone] = useState(false);
@@ -57,6 +57,20 @@ export default function OrgStructurePage() {
             return;
         }
 
+        // Auto-refresh profile if company_id is missing
+        let activeCompanyId = profile?.company_id;
+        if (!activeCompanyId) {
+            toast.loading("Refreshing profile...", { id: 'refresh' });
+            const newProfile = await refreshProfile();
+            activeCompanyId = newProfile?.company_id;
+            toast.dismiss('refresh');
+        }
+
+        if (!activeCompanyId) {
+             toast.error("Your company ID is still missing. Please ensure your company is set up in the Companies tab.");
+             return;
+        }
+
         // Client-side duplicate check
         const isDuplicate = departments.some(dept => 
             dept.name.toLowerCase() === currentDept.name?.toLowerCase() && 
@@ -80,13 +94,9 @@ export default function OrgStructurePage() {
                 toast.success("Department updated");
             } else {
                 // Add
-                if (!profile?.company_id) {
-                    toast.error("Your company ID is missing. Please refresh the page or ensure your company is set up.");
-                    return;
-                }
                 const { error } = await supabase
                     .from('departments')
-                    .insert([{ name: currentDept.name, company_id: profile.company_id }]);
+                    .insert([{ name: currentDept.name, company_id: activeCompanyId }]);
 
                 if (error) {
                     if (error.code === '23505') {

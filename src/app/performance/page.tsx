@@ -22,7 +22,7 @@ type Employee = {
 };
 
 export default function PerformancePage() {
-    const { user, profile } = useAuth();
+    const { user, profile, refreshProfile } = useAuth();
     const [goals, setGoals] = useState<GUIGoal[]>([]);
     const [allGoals, setAllGoals] = useState<GUIGoal[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -122,6 +122,14 @@ export default function PerformancePage() {
         if (!selectedEmployee || !goalTitle) {
             toast.error('Please select employee and enter goal title');
             return;
+        }
+
+        let activeCompanyId = profile?.company_id;
+        if (!activeCompanyId && isAdmin) {
+            toast.loading("Refreshing profile...", { id: 'refresh' });
+            const newProfile = await refreshProfile();
+            activeCompanyId = newProfile?.company_id;
+            toast.dismiss('refresh');
         }
 
         const { error } = await supabase.from('performance_goals').insert({

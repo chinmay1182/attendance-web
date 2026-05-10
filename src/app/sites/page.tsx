@@ -53,7 +53,7 @@ function getDistanceFromLatLonInMeters(lat1: number, lon1: number, lat2: number,
 }
 
 export default function SitesPage() {
-    const { user, profile } = useAuth();
+    const { user, profile, refreshProfile } = useAuth();
     const isAdmin = profile?.role === 'admin';
     const isHr = profile?.role === 'hr';
     const canManage = isAdmin || isHr;
@@ -272,10 +272,18 @@ export default function SitesPage() {
         }
         setSubmitting(true);
 
-        if (!profile?.company_id) {
-            toast.error("Your company ID is missing. Please refresh the page or ensure your company is set up.");
-            setSubmitting(false);
-            return;
+        let activeCompanyId = profile?.company_id;
+        if (!activeCompanyId) {
+            toast.loading("Refreshing profile...", { id: 'refresh' });
+            const newProfile = await refreshProfile();
+            activeCompanyId = newProfile?.company_id;
+            toast.dismiss('refresh');
+        }
+
+        if (!activeCompanyId) {
+             toast.error("Your company ID is missing. Please ensure your company is set up in the Companies tab.");
+             setSubmitting(false);
+             return;
         }
 
         const payload = {
@@ -288,7 +296,7 @@ export default function SitesPage() {
             daily_tasks: newSite.daily_tasks || '',
             entry_policy: newSite.entry_policy || '',
             is_active: true,
-            company_id: profile.company_id
+            company_id: activeCompanyId
         };
 
         console.log("Submitting payload:", payload);

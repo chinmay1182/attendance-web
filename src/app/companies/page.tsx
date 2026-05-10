@@ -25,7 +25,7 @@ type Company = {
 };
 
 export default function CompaniesPage() {
-    const { user, profile } = useAuth();
+    const { user, profile, refreshProfile } = useAuth();
     const [companies, setCompanies] = useState<Company[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);

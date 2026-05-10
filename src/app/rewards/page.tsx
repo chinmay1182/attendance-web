@@ -23,7 +23,7 @@ type Employee = {
 };
 
 export default function RewardsPage() {
-    const { user, profile } = useAuth();
+    const { user, profile, refreshProfile } = useAuth();
     const [rewards, setRewards] = useState<Reward[]>([]);
     const [userPoints, setUserPoints] = useState(0);
     const [liveUpdate, setLiveUpdate] = useState(false);
@@ -104,12 +104,25 @@ export default function RewardsPage() {
             return;
         }
 
+        let activeCompanyId = profile?.company_id;
+        if (!activeCompanyId) {
+            toast.loading("Refreshing profile...", { id: 'refresh' });
+            const newProfile = await refreshProfile();
+            activeCompanyId = newProfile?.company_id;
+            toast.dismiss('refresh');
+        }
+
+        if (!activeCompanyId) {
+             toast.error("Your company ID is missing. Please ensure your company is set up in the Companies tab.");
+             return;
+        }
+
         const { error } = await supabase.from('rewards').insert({
             title: formData.title,
             description: formData.description,
             points: formData.points,
             icon: formData.icon,
-            company_id: profile?.company_id
+            company_id: activeCompanyId
         });
 
         if (error) {

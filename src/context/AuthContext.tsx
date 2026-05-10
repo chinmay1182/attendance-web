@@ -9,7 +9,7 @@ interface AuthContextType {
     profile: UserProfile | null; // Supabase Profile
     loading: boolean;
     logout: () => Promise<void>;
-    refreshProfile: () => Promise<void>;
+    refreshProfile: () => Promise<UserProfile | null>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -17,7 +17,7 @@ const AuthContext = createContext<AuthContextType>({
     profile: null,
     loading: true,
     logout: async () => { },
-    refreshProfile: async () => { },
+    refreshProfile: async () => null,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     if (typeof window !== 'undefined') {
                         localStorage.setItem(storageKey, JSON.stringify(profileData));
                     }
+                    return profileData as UserProfile;
                 }
             }
         } catch (err) {
@@ -64,12 +65,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setLoading(false);
         }
+        return null;
     };
 
     const refreshProfile = async () => {
         if (user?.id) {
-            await fetchProfile(user.id);
+            return await fetchProfile(user.id);
         }
+        return null;
     };
 
     useEffect(() => {
