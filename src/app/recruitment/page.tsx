@@ -42,6 +42,60 @@ type Department = {
     name: string;
 };
 
+const JobFormFields = ({ data, onChange, departments }: { data: any, onChange: (d: any) => void, departments: any[] }) => (
+    <>
+        <div className={styles.inputGroup}>
+            <label className={styles.label}>Job Title *</label>
+            <input className={styles.input} value={data.title} onChange={e => onChange({ ...data, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
+        </div>
+
+        <div className={styles.row}>
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Department *</label>
+                <select className={styles.select} value={data.department} onChange={e => onChange({ ...data, department: e.target.value })}>
+                    <option value="">Select Dept</option>
+                    {departments.length > 0
+                        ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
+                        : (
+                            <>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Design">Design</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Sales">Sales</option>
+                                <option value="HR">HR</option>
+                            </>
+                        )
+                    }
+                </select>
+            </div>
+            <div className={styles.inputGroup}>
+                <label className={styles.label}>Job Type</label>
+                <select className={styles.select} value={data.type} onChange={e => onChange({ ...data, type: e.target.value })}>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                </select>
+            </div>
+        </div>
+
+        <div className={styles.inputGroup}>
+            <label className={styles.label}>Location</label>
+            <input className={styles.input} value={data.location} onChange={e => onChange({ ...data, location: e.target.value })} placeholder="e.g. Remote / New York" />
+        </div>
+
+        <div className={styles.inputGroup}>
+            <label className={styles.label}>Description</label>
+            <textarea className={styles.textarea} value={data.description} onChange={e => onChange({ ...data, description: e.target.value })} placeholder="Job responsibilities..." />
+        </div>
+
+        <div className={styles.inputGroup}>
+            <label className={styles.label}>Requirements</label>
+            <textarea className={styles.textarea} value={data.requirements} onChange={e => onChange({ ...data, requirements: e.target.value })} placeholder="Skills needed..." />
+        </div>
+    </>
+);
+
 export default function RecruitmentPage() {
     const { user, profile } = useAuth();
     const [activeTab, setActiveTab] = useState<'jobs' | 'candidates'>('jobs');
@@ -280,59 +334,6 @@ export default function RecruitmentPage() {
 
     const columns = ['new', 'screening', 'interview', 'offer', 'hired', 'rejected'];
 
-    const JobFormFields = ({ data, onChange }: { data: typeof newJob, onChange: (d: typeof newJob) => void }) => (
-        <>
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Job Title *</label>
-                <input className={styles.input} value={data.title} onChange={e => onChange({ ...data, title: e.target.value })} placeholder="e.g. Senior Frontend Developer" />
-            </div>
-
-            <div className={styles.row}>
-                <div className={styles.inputGroup}>
-                    <label className={styles.label}>Department *</label>
-                    <select className={styles.select} value={data.department} onChange={e => onChange({ ...data, department: e.target.value })}>
-                        <option value="">Select Dept</option>
-                        {departments.length > 0
-                            ? departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)
-                            : (
-                                <>
-                                    <option value="Engineering">Engineering</option>
-                                    <option value="Design">Design</option>
-                                    <option value="Marketing">Marketing</option>
-                                    <option value="Sales">Sales</option>
-                                    <option value="HR">HR</option>
-                                </>
-                            )
-                        }
-                    </select>
-                </div>
-                <div className={styles.inputGroup}>
-                    <label className={styles.label}>Job Type</label>
-                    <select className={styles.select} value={data.type} onChange={e => onChange({ ...data, type: e.target.value })}>
-                        <option value="Full-time">Full-time</option>
-                        <option value="Part-time">Part-time</option>
-                        <option value="Contract">Contract</option>
-                        <option value="Internship">Internship</option>
-                    </select>
-                </div>
-            </div>
-
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Location</label>
-                <input className={styles.input} value={data.location} onChange={e => onChange({ ...data, location: e.target.value })} placeholder="e.g. Remote / New York" />
-            </div>
-
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Description</label>
-                <textarea className={styles.textarea} value={data.description} onChange={e => onChange({ ...data, description: e.target.value })} placeholder="Job responsibilities..." />
-            </div>
-
-            <div className={styles.inputGroup}>
-                <label className={styles.label}>Requirements</label>
-                <textarea className={styles.textarea} value={data.requirements} onChange={e => onChange({ ...data, requirements: e.target.value })} placeholder="Skills needed..." />
-            </div>
-        </>
-    );
 
     return (
         <>
@@ -454,7 +455,7 @@ export default function RecruitmentPage() {
                                 <button onClick={() => setIsCreateOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
                             </div>
 
-                            <JobFormFields data={newJob} onChange={setNewJob} />
+                            <JobFormFields data={newJob} onChange={setNewJob} departments={departments} />
 
                             <button onClick={handleCreateJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
                                 {submitting ? 'Posting...' : 'Publish Job'}
@@ -472,7 +473,7 @@ export default function RecruitmentPage() {
                                 <button onClick={() => setIsEditOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: '#666' }}>×</button>
                             </div>
 
-                            <JobFormFields data={editJobData} onChange={setEditJobData} />
+                            <JobFormFields data={editJobData} onChange={setEditJobData} departments={departments} />
 
                             <button onClick={handleEditJob} className={styles.primaryBtn} style={{ width: '100%' }} disabled={submitting}>
                                 {submitting ? 'Saving...' : 'Save Changes'}

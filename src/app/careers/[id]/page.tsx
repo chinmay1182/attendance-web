@@ -56,6 +56,7 @@ export default function JobApplyPage() {
             // Insert Application
             const { error: dbError } = await supabase.from('applications').insert({
                 job_id: job.id,
+                company_id: job.company_id,
                 candidate_name: form.name,
                 email: form.email,
                 phone: form.phone,
