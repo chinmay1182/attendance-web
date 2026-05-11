@@ -146,10 +146,15 @@ export default function TeamPage() {
             const usersData = data.users;
             if (!usersData) return;
 
-        // 2. Fetch Assignments with Site data
+        // 2. Fetch Assignments with Site data (filtered by company)
         const { data: assignmentsData, error: assignmentsError } = await supabase
             .from('site_assignments')
-            .select('user_id, site_id, site:sites(name)');
+            .select(`
+                user_id, 
+                site_id, 
+                site:sites!site_id!inner(name, company_id)
+            `)
+            .eq('site.company_id', companyId);
 
         if (assignmentsError) {
             console.error('Error fetching assignments:', assignmentsError);

@@ -171,8 +171,8 @@ export const ClockWidget = () => {
                 return;
             }
 
-            // Find nearest site
-            const nearestSite = await (attendanceService as any).findNearestSite(loc.lat, loc.lng);
+            // Find nearest site (filtered by company)
+            const nearestSite = await (attendanceService as any).findNearestSite(loc.lat, loc.lng, profile?.company_id);
             if (!nearestSite) {
                 alert("You are not within range of any valid site. Access Denied.");
                 setLoading(false);

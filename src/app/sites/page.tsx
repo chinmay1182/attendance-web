@@ -217,6 +217,8 @@ export default function SitesPage() {
     };
 
     const fetchAssignments = async () => {
+        if (!profile?.company_id) return;
+
         const { data, error } = await supabase
             .from('site_assignments')
             .select(`
@@ -224,11 +226,11 @@ export default function SitesPage() {
                 user:users!inner(name, email, role, company_id),
                 site:sites!site_id(name, address, latitude, longitude, radius_meters)
             `)
+            .eq('user.company_id', profile.company_id)
             .eq('status', 'active');
 
         if (error) {
-            console.error("Fetch Assignments Error Message:", error.message);
-            console.error("Fetch Assignments Error Code:", error.code);
+            console.error("Fetch Assignments Error:", error.message);
         }
 
         if (data) setAssignments(data as any);

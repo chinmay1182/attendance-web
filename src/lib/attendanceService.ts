@@ -281,9 +281,14 @@ export const attendanceService = {
         return data.publicUrl;
     },
 
-    async findNearestSite(lat: number, lng: number): Promise<{ id: string, name: string, distance: number, radius: number } | null> {
-        // Fetch all sites with basic filters
-        const { data: sites } = await supabase.from('sites').select('id, name, latitude, longitude, radius_meters');
+    async findNearestSite(lat: number, lng: number, companyId?: string): Promise<{ id: string, name: string, distance: number, radius: number } | null> {
+        // Fetch sites filtered by company if provided
+        let query = supabase.from('sites').select('id, name, latitude, longitude, radius_meters');
+        if (companyId) {
+            query = query.eq('company_id', companyId);
+        }
+        
+        const { data: sites } = await query;
 
         if (!sites || sites.length === 0) return null;
 
