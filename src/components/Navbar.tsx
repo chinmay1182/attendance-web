@@ -12,12 +12,38 @@ import { useTheme } from '../context/ThemeContext';
 
 import { Skeleton } from './Skeleton';
 import { NotificationBell } from './NotificationBell';
+import { TrialExtensionModal } from './TrialExtensionModal';
 
 export const Navbar = () => {
     const { logout, profile, user, loading } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const pathname = usePathname();
     const [isHrDrpOpen, setIsHrDrpOpen] = useState(false);
+
+    // Trial Period State
+    const [trialInfo, setTrialInfo] = useState<any>(null);
+    const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+
+    const fetchTrialInfo = async () => {
+        if (!user?.id) return;
+        try {
+            const res = await fetch(`/api/user/trial?uid=${user.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.trial) {
+                    setTrialInfo(data.trial);
+                }
+            }
+        } catch (err) {
+            console.error("Error fetching trial details:", err);
+        }
+    };
+
+    React.useEffect(() => {
+        if (user && profile?.role === 'admin') {
+            fetchTrialInfo();
+        }
+    }, [user, profile]);
 
 
 
@@ -58,7 +84,7 @@ export const Navbar = () => {
                     });
                 }
             })
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload) => {
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload: { new: any; }) => {
                 const task = payload.new as any;
                 if (task.user_id === user.id) {
                     import('react-hot-toast').then(({ default: toast }) => {
@@ -75,15 +101,82 @@ export const Navbar = () => {
         <nav className={`${styles.sidebarNav} sidebar-nav`}>
             {/* Logo Section */}
             <div className={styles.logoSection}>
-                <Image
-                    src="/BizKitLogo.svg"
-                    alt="Attendance Pross"
-                    width={180}
-                    height={40}
-                    priority
-                    className={styles.logoImage}
-                />
-                {!loading && <NotificationBell />}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Image
+                            src="/BizKitLogo.svg"
+                            alt="Attendance Pross"
+                            width={150}
+                            height={34}
+                            priority
+                            className={styles.logoImage}
+                        />
+                        {!loading && <NotificationBell />}
+                    </div>
+
+                    {/* Premium Trial Banner */}
+                    {trialInfo && (
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(236, 72, 153, 0.08))',
+                            border: '1px solid var(--glass-border)',
+                            borderRadius: '12px',
+                            padding: '10px 14px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '6px',
+                            fontSize: '0.8rem',
+                            marginTop: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--primary)' }}>schedule</span>
+                                    Trial Period
+                                </span>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: 'var(--primary)',
+                                    background: 'var(--primary-light-alpha)',
+                                    padding: '2px 6px',
+                                    borderRadius: '6px'
+                                }}>
+                                    {Math.max(0, Math.ceil((new Date(trialInfo.trial_end_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} days left
+                                </span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                Ends: {new Date(trialInfo.trial_end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+
+                            {trialInfo.trial_extension_status === 'pending' ? (
+                                <div style={{ fontSize: '0.75rem', color: '#c2410c', background: '#fff7ed', padding: '4px 8px', borderRadius: '6px', textAlign: 'center', fontWeight: 600 }}>
+                                    Extension Pending Approval
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={() => setIsTrialModalOpen(true)}
+                                    style={{
+                                        background: 'var(--primary)',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '6px 12px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        marginTop: '4px',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseOver={e => e.currentTarget.style.filter = 'brightness(0.95)'}
+                                    onMouseOut={e => e.currentTarget.style.filter = 'none'}
+                                >
+                                    Extend Trial
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Navigation Links - Scrollable Area */}
@@ -284,6 +377,15 @@ export const Navbar = () => {
                     </button>
                 </div>
             </div>
+
+            {user && (
+                <TrialExtensionModal
+                    isOpen={isTrialModalOpen}
+                    onClose={() => setIsTrialModalOpen(false)}
+                    userId={user.id}
+                    onSuccess={fetchTrialInfo}
+                />
+            )}
         </nav>
     )
 }

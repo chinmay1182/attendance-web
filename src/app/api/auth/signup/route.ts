@@ -70,6 +70,33 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        // 3. Create Business Profile for Trial period tracking if Admin
+        if (role === 'admin') {
+            const trialStart = new Date();
+            const trialEnd = new Date();
+            trialEnd.setDate(trialStart.getDate() + 7);
+
+            const { error: profileError } = await supabaseAdmin
+                .from('business_profiles')
+                .insert([{
+                    user_id: id,
+                    company_name: body.companyName || null,
+                    email: email,
+                    user_name: name,
+                    user_email: email,
+                    project_name: 'attendance web',
+                    trial_start_date: trialStart.toISOString(),
+                    trial_end_date: trialEnd.toISOString(),
+                    trial_extension_status: 'none',
+                    trial_extension_days: 0
+                }]);
+
+            if (profileError) {
+                console.error('Business Profile Setup Error:', profileError);
+                // We won't block signup, but we log the error
+            }
+        }
+
         return NextResponse.json({ success: true, data });
     } catch (err: any) {
         console.error('API Error:', err);
