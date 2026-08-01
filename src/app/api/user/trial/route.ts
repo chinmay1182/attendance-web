@@ -17,7 +17,7 @@ export async function GET(request: Request) {
             .from("business_profiles")
             .select("*")
             .eq("user_id", uid)
-            .eq("project_name", "attendance web")
+            .limit(1)
             .maybeSingle();
 
         if (error) {
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
             .from("business_profiles")
             .select("id")
             .eq("user_id", uid)
-            .eq("project_name", "attendance web")
+            .limit(1)
             .maybeSingle();
 
         if (fetchError) {
