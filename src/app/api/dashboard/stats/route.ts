@@ -34,7 +34,15 @@ export async function GET(request: Request) {
         }
 
         if (!companyId) {
-            return NextResponse.json({ error: 'User company not found' }, { status: 404 });
+            return NextResponse.json({
+                docs: [],
+                sites: [],
+                stats: {
+                    totalUsers: 0,
+                    pendingLeaves: 0,
+                    onLeaveToday: 0
+                }
+            });
         }
 
         const today = new Date().toISOString().split('T')[0];
