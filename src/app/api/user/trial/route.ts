@@ -86,7 +86,8 @@ export async function POST(request: Request) {
             .update({
                 trial_extension_days: days,
                 trial_extension_status: 'pending',
-                trial_extension_requested_at: new Date().toISOString()
+                trial_extension_requested_at: new Date().toISOString(),
+                project_name: 'attendance web'
             })
             .eq("id", currentProfile.id)
             .select()
